@@ -22,18 +22,15 @@ int WINAPI wWinMain(_In_ HINSTANCE instanceHandle,
     RegisterClass(&windowClass);
 
     HWND windowHandle = CreateWindowEx(
-        0,                              // Optional window styles.
+        0,
         windowClass.lpszClassName,
         L"Project 256",    // Window text
-        WS_OVERLAPPEDWINDOW,            // Window style
-
-        // Size and position
+        WS_OVERLAPPEDWINDOW,
         CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-
-        NULL,       // Parent window    
-        NULL,       // Menu
+        NULL,
+        NULL,
         instanceHandle,
-        NULL        // Additional application data
+        NULL
     );
 
     if (windowHandle == NULL)
@@ -46,6 +43,9 @@ int WINAPI wWinMain(_In_ HINSTANCE instanceHandle,
     MSG message = { };
     while (GetMessage(&message, NULL, 0, 0) > 0)
     {
+        if (message.message == WM_QUIT) {
+            break;
+        }
         TranslateMessage(&message);
         DispatchMessage(&message);
     }
@@ -55,5 +55,11 @@ int WINAPI wWinMain(_In_ HINSTANCE instanceHandle,
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+    switch (uMsg) {
+    case WM_CLOSE:
+        PostQuitMessage(0);
+        break;
+    }
+
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
