@@ -3,8 +3,19 @@
 
 const unsigned DrawBufferWidth = 320;
 const unsigned DrawBufferHeight = 240;
+const unsigned MouseMaxTrackLength = 32;
 
+const unsigned InputMaxControllers = 5;
+const unsigned InputMaxTaps = 20;
+const unsigned InputMaxTextLength = 256;
+
+#ifdef CXX
 extern "C" {
+#endif
+
+#ifndef bool
+#define bool int
+#endif
 
 
 struct Vec2f {
@@ -22,28 +33,27 @@ struct Button {
 
 struct Axis2
 {
-	Vec2f value;
-	Button up, down, left, right;
+	struct Vec2f value;
+	struct Button up, down, left, right;
 };
 
 struct Controller
 {
-	Axis2 left, right, dPad;
+	struct Axis2 left, right, dPad;
 };
 
 struct Tap
 {
-	Vec2i position;
+	struct Vec2i position;
 	float force;
 };
 
 struct Mouse
 {
-	const static unsigned MAX_TRACK_LENGTH = 16;
-	Button buttonLeft, buttonRight, buttonMiddle;
-	Vec2i track[MAX_TRACK_LENGTH];
-	Vec2f relativeMovement;
-	Axis2 scroll;
+	struct Button buttonLeft, buttonRight, buttonMiddle;
+	struct Vec2i track[MouseMaxTrackLength];
+	struct Vec2f relativeMovement;
+	struct Axis2 scroll;
 };
 
 struct Rumble
@@ -53,24 +63,20 @@ struct Rumble
 
 struct GameInput
 {
-	const static unsigned MAX_CONTROLLERS = 5;
-	const static unsigned MAX_TAPS = 20;
-	const static unsigned MAX_TEXT_LENGTH = 1024;
-
 	double elapsedTime_s;
-	long long unsigned upTime_µs;
+	long long unsigned upTime_microseconds;
 	long long unsigned frameNumber;
 
-	Controller controllers[MAX_CONTROLLERS];
+	struct Controller controllers[InputMaxControllers];
 	unsigned controllerCount;
 
-	Tap taps[MAX_TAPS];
+	struct Tap taps[InputMaxTaps];
 	unsigned tapCount;
 
 	bool hasMouse;
-	Mouse mouse;
+	struct Mouse mouse;
 
-	char text_utf8[MAX_TEXT_LENGTH];
+	char text_utf8[InputMaxTextLength];
 	unsigned textLength;
 
 	bool closeRequested;
@@ -79,11 +85,13 @@ struct GameInput
 struct GameOutput {
 	bool shouldQuit;
 	bool needTextInput;
-	Rumble rumble[GameInput::MAX_CONTROLLERS];
+	struct Rumble rumble[InputMaxControllers];
 };
 
 
-GameOutput doGameThings(GameInput* input, void* memory);
+struct GameOutput doGameThings(struct GameInput* input, void* memory);
 void writeDrawBuffer(void* memory, void* buffer);
 
+#ifdef CXX
 }
+#endif
