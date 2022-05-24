@@ -16,6 +16,9 @@
     <Filter Include="Source Files\Platform">
       <UniqueIdentifier>{0d4d1022-af6f-4e92-adaa-50d68f9bde8c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Platform">
+      <UniqueIdentifier>{7adc4c76-d84e-4309-b655-a8edeb530ff6}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\game\Project256.cpp">
@@ -24,5 +27,10 @@
     <ClCompile Include="..\..\src\platform_win32\WinMain.cpp">
       <Filter>Source Files\Platform</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\src\game\Project256.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

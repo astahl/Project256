@@ -22,6 +22,9 @@
     <ClCompile Include="..\..\src\game\Project256.cpp" />
     <ClCompile Include="..\..\src\platform_win32\WinMain.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\src\game\Project256.h" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
