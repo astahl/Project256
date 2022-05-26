@@ -11,15 +11,18 @@ GameOutput doGameThings(GameInput* input, void* memory)
 	};
 }
 
+static uint8_t i = 0;
 void writeDrawBuffer(void* memory, void* buffer)
 {
-	uint32_t* pixel = reinterpret_cast<uint32_t*>(buffer);
-	for (unsigned y = 0; y < DrawBufferHeight; ++y)
-	for (unsigned x = 0; x < DrawBufferWidth; ++x)
-	{
-		*pixel++ = 0xFFCC00FF;
-	}
-		
+    if (memory == nullptr) {
+        uint32_t* pixel = reinterpret_cast<uint32_t*>(buffer);
+        for (unsigned y = 0; y < DrawBufferHeight; ++y)
+        for (unsigned x = 0; x < DrawBufferWidth; ++x)
+        {
+            *pixel++ = 0xFF000000 | ((y % 2) && (x % 2) ? 0xFF : 0) ; // argb
+        }
+    }
+    ++i;
 }
 
 }

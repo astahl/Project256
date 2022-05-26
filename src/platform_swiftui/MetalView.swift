@@ -14,7 +14,9 @@ class MetalViewBase : NSObject, MTKViewDelegate {
     var pipelineState: MTLRenderPipelineState?
     var viewport = MTLViewport.init()
     var viewportSize: [Float32] = [0.0, 0.0]
-    
+    var quadVertices: [AAPLVertex]?
+    var texture: MTLTexture?
+    var image = UnsafeMutableBufferPointer<UInt32>.allocate(capacity: Int(DrawBufferWidth * DrawBufferHeight))
     func makeView() -> MTKView {
         let mtkView = MTKView.init()
         mtkView.sampleCount = 4
@@ -38,6 +40,15 @@ class MetalViewBase : NSObject, MTKViewDelegate {
         mtkView.delegate = self
         mtkView.device = device
         mtkView.clearColor = MTLClearColor(red: 0.0, green: 0.0, blue: 0.0, alpha: 1.0)
+
+        self.texture = device.makeTexture(descriptor: MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .bgra8Unorm, width: Int(DrawBufferWidth), height: Int(DrawBufferHeight), mipmapped: false))
+
+        self.quadVertices = [
+            AAPLVertex.init(position: simd_float2(0, 0), uv: simd_float2(0, 0)),
+            AAPLVertex.init(position: simd_float2(0, Float(DrawBufferHeight)), uv: simd_float2(0, 1)),
+            AAPLVertex.init(position: simd_float2(Float(DrawBufferWidth), 0), uv: simd_float2(1, 0)),
+            AAPLVertex.init(position: simd_float2(Float(DrawBufferWidth), Float(DrawBufferHeight)), uv: simd_float2(1, 1))]
+
         self.commandQueue = device.makeCommandQueue()
         self.viewport.zfar = 1.0
         return mtkView
@@ -48,14 +59,34 @@ class MetalViewBase : NSObject, MTKViewDelegate {
         self.viewport.width = size.width
         self.viewportSize[0] = Float32(size.width)
         self.viewportSize[1] = Float32(size.height)
+
+        // TODO fix this mess
+
+        // only square pixels allowed...
+        let width = UInt32(size.width)
+        let height = UInt32(size.height)
+        var widthOnTarget: UInt32 = DrawBufferWidth
+        var heightOnTarget: UInt32 = DrawBufferHeight
+
+        let factor = max(1, min(width / DrawBufferWidth, height / DrawBufferHeight))
+        widthOnTarget *= factor
+        heightOnTarget *= factor
+
+        let halfWidth = 0.5 * Float(widthOnTarget)
+        let halfHeight = 0.5 * Float(heightOnTarget)
+
+        self.quadVertices![0].position = simd_float2(-halfWidth, -halfHeight)
+        self.quadVertices![1].position = simd_float2(-halfWidth, halfHeight)
+        self.quadVertices![2].position = simd_float2(halfWidth, -halfHeight)
+        self.quadVertices![3].position = simd_float2(halfWidth, halfHeight)
     }
     
     func draw(in view: MTKView) {
-        let triangleVertices: [AAPLVertex] = [
-            AAPLVertex.init(position: simd_float2(250, -250), color: simd_float4(1, 0, 0, 1)),
-            AAPLVertex.init(position: simd_float2(-250, -250), color: simd_float4(0, 1, 0, 1)),
-            AAPLVertex.init(position: simd_float2(0, 250), color: simd_float4(0, 0, 1, 1))]
-    
+        let region = MTLRegion(origin: MTLOrigin(), size: MTLSize(width: Int(DrawBufferWidth), height: Int(DrawBufferHeight), depth: 1))
+
+        writeDrawBuffer(UnsafeMutableRawPointer.init(bitPattern: 0), image.baseAddress)
+        self.texture?.replace(region: region, mipmapLevel: 0, withBytes: image.baseAddress!, bytesPerRow: Int(DrawBufferWidth) * 4)
+
         guard let renderPassDescriptor = view.currentRenderPassDescriptor else {
             return
         }
@@ -72,7 +103,7 @@ class MetalViewBase : NSObject, MTKViewDelegate {
         encoder.setViewport(self.viewport)
         if let pipelineState = pipelineState {
             encoder.setRenderPipelineState(pipelineState)
-            triangleVertices.withUnsafeBytes {
+            self.quadVertices!.withUnsafeBytes {
                 bytes in
                 encoder.setVertexBytes(bytes.baseAddress!, length: bytes.count, index: Int(IndexVertices.rawValue))
             }
@@ -80,8 +111,10 @@ class MetalViewBase : NSObject, MTKViewDelegate {
                 bytes in
                 encoder.setVertexBytes(bytes.baseAddress!, length: bytes.count, index: Int(IndexViewportSize.rawValue))
             }
-            
-            encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
+
+            encoder.setFragmentTexture(self.texture, index: Int(IndexTexture.rawValue))
+
+            encoder.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
             
             encoder.endEncoding()
         }

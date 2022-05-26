@@ -17,6 +17,7 @@ typedef enum AAPLVertexInputIndex
 {
     IndexVertices,
     IndexViewportSize,
+    IndexTexture,
 } AAPLVertexInputIndex;
 
 //  This structure defines the layout of vertices sent to the vertex
@@ -26,7 +27,7 @@ typedef enum AAPLVertexInputIndex
 typedef struct
 {
     simd_float2 position;
-    simd_float4 color;
+    simd_float2 uv;
 } AAPLVertex;
 
 
