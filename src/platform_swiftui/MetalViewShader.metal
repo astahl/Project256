@@ -28,8 +28,8 @@ struct RasterizerData
 
 vertex RasterizerData
 vertexShader(uint vertexID [[vertex_id]],
-             constant AAPLVertex *vertices [[buffer(AAPLVertexInputIndexVertices)]],
-             constant vector_uint2 *viewportSizePointer [[buffer(AAPLVertexInputIndexViewportSize)]])
+             constant AAPLVertex *vertices [[buffer(IndexVertices)]],
+             constant simd_float2 *viewportSizePointer [[buffer(IndexViewportSize)]])
 {
     RasterizerData out;
 
@@ -39,8 +39,7 @@ vertexShader(uint vertexID [[vertex_id]],
     float2 pixelSpacePosition = vertices[vertexID].position.xy;
 
     // Get the viewport size and cast to float.
-    vector_float2 viewportSize = vector_float2(*viewportSizePointer);
-    
+    simd_float2 viewportSize = *viewportSizePointer;
 
     // To convert from positions in pixel space to positions in clip-space,
     //  divide the pixel coordinates by half the size of the viewport.

@@ -17,6 +17,8 @@
 		684555A1283D8044004AD3FB /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6845558F283D8043004AD3FB /* ContentView.swift */; };
 		684555AB283D86C9004AD3FB /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 684555AA283D86C9004AD3FB /* Assets.xcassets */; };
 		684555AC283D86C9004AD3FB /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 684555AA283D86C9004AD3FB /* Assets.xcassets */; };
+		685035D3283F9D4E00355252 /* Project256.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 68455589283D7F08004AD3FB /* Project256.cpp */; };
+		685035D4283F9D4F00355252 /* Project256.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 68455589283D7F08004AD3FB /* Project256.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -195,6 +197,7 @@
 			files = (
 				6819ACC2283ECD8E00CCBFD5 /* MetalView.swift in Sources */,
 				684555A0283D8044004AD3FB /* ContentView.swift in Sources */,
+				685035D3283F9D4E00355252 /* Project256.cpp in Sources */,
 				6819ACC5283EDFFC00CCBFD5 /* MetalViewShader.metal in Sources */,
 				6845559E283D8044004AD3FB /* Project256App.swift in Sources */,
 			);
@@ -206,6 +209,7 @@
 			files = (
 				6819ACC3283ECD8E00CCBFD5 /* MetalView.swift in Sources */,
 				684555A1283D8044004AD3FB /* ContentView.swift in Sources */,
+				685035D4283F9D4F00355252 /* Project256.cpp in Sources */,
 				6819ACC6283EDFFC00CCBFD5 /* MetalViewShader.metal in Sources */,
 				6845559F283D8044004AD3FB /* Project256App.swift in Sources */,
 			);

@@ -13,23 +13,18 @@ class MetalViewBase : NSObject, MTKViewDelegate {
     var commandQueue: MTLCommandQueue?
     var pipelineState: MTLRenderPipelineState?
     var viewport = MTLViewport.init()
-    var viewportSize: [UInt32] = [0, 0]
+    var viewportSize: [Float32] = [0.0, 0.0]
     
     func makeView() -> MTKView {
         let mtkView = MTKView.init()
         mtkView.sampleCount = 4
-        guard let device = MTLCreateSystemDefaultDevice() else {
+        guard let device = MTLCreateSystemDefaultDevice(),
+                let defaultLibrary = device.makeDefaultLibrary() else {
             return mtkView
         }
         
-        guard let defaultLibrary = device.makeDefaultLibrary() else {
-            return mtkView
-        }
-        
-        guard let vertexFunction = defaultLibrary.makeFunction(name: "vertexShader") else {
-            return mtkView
-        }
-        guard let fragmentFunction = defaultLibrary.makeFunction(name: "fragmentShader") else {
+        guard let vertexFunction = defaultLibrary.makeFunction(name: "vertexShader"),
+                let fragmentFunction = defaultLibrary.makeFunction(name: "fragmentShader") else {
             return mtkView
         }
         
@@ -51,8 +46,8 @@ class MetalViewBase : NSObject, MTKViewDelegate {
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
         self.viewport.height = size.height
         self.viewport.width = size.width
-        self.viewportSize[0] = UInt32(size.width)
-        self.viewportSize[1] = UInt32(size.height)
+        self.viewportSize[0] = Float32(size.width)
+        self.viewportSize[1] = Float32(size.height)
     }
     
     func draw(in view: MTKView) {
@@ -75,22 +70,24 @@ class MetalViewBase : NSObject, MTKViewDelegate {
         encoder.label = "MyEncoder"
         
         encoder.setViewport(self.viewport)
-        
-        encoder.setRenderPipelineState(self.pipelineState!)
-        triangleVertices.withUnsafeBytes {
-            bytes in
-            encoder.setVertexBytes(bytes.baseAddress!, length: bytes.count, index: Int(AAPLVertexInputIndexVertices.rawValue))
+        if let pipelineState = pipelineState {
+            encoder.setRenderPipelineState(pipelineState)
+            triangleVertices.withUnsafeBytes {
+                bytes in
+                encoder.setVertexBytes(bytes.baseAddress!, length: bytes.count, index: Int(IndexVertices.rawValue))
+            }
+            viewportSize.withUnsafeBytes {
+                bytes in
+                encoder.setVertexBytes(bytes.baseAddress!, length: bytes.count, index: Int(IndexViewportSize.rawValue))
+            }
+            
+            encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
+            
+            encoder.endEncoding()
         }
-        
-        viewportSize.withUnsafeBytes {
-            bytes in
-            encoder.setVertexBytes(bytes.baseAddress!, length: bytes.count, index: Int(AAPLVertexInputIndexViewportSize.rawValue))
+        if let drawable = view.currentDrawable {
+            commandBuffer.present(drawable)
         }
-        
-        encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
-        
-        encoder.endEncoding()
-        commandBuffer.present(view.currentDrawable!)
         commandBuffer.commit()
     }
 }

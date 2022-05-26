@@ -1,5 +1,6 @@
+#define CXX
 #include "Project256.h"
-
+#include <cstdint>
 
 extern "C" {
 
@@ -12,14 +13,11 @@ GameOutput doGameThings(GameInput* input, void* memory)
 
 void writeDrawBuffer(void* memory, void* buffer)
 {
-	unsigned char* pixel = reinterpret_cast<unsigned char*>(buffer);
+	uint32_t* pixel = reinterpret_cast<uint32_t*>(buffer);
 	for (unsigned y = 0; y < DrawBufferHeight; ++y)
 	for (unsigned x = 0; x < DrawBufferWidth; ++x)
 	{
-		*pixel++ = 0xFF;
-		*pixel++ = 0xCC;
-		*pixel++ = 0x00;
-		*pixel++ = 0xFF;
+		*pixel++ = 0xFFCC00FF;
 	}
 		
 }

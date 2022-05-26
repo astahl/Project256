@@ -15,8 +15,8 @@
 // match Metal API buffer set calls.
 typedef enum AAPLVertexInputIndex
 {
-    AAPLVertexInputIndexVertices     = 0,
-    AAPLVertexInputIndexViewportSize = 1,
+    IndexVertices,
+    IndexViewportSize,
 } AAPLVertexInputIndex;
 
 //  This structure defines the layout of vertices sent to the vertex

@@ -1,6 +1,5 @@
 #pragma once
 
-
 const unsigned DrawBufferWidth = 320;
 const unsigned DrawBufferHeight = 240;
 const unsigned MouseMaxTrackLength = 32;
@@ -31,38 +30,32 @@ struct Button {
 	bool endedDown;
 };
 
-struct Axis2
-{
+struct Axis2 {
 	struct Vec2f value;
 	struct Button up, down, left, right;
 };
 
-struct Controller
-{
+struct Controller {
 	struct Axis2 left, right, dPad;
 };
 
-struct Tap
-{
+struct Tap {
 	struct Vec2i position;
 	float force;
 };
 
-struct Mouse
-{
+struct Mouse {
 	struct Button buttonLeft, buttonRight, buttonMiddle;
 	struct Vec2i track[MouseMaxTrackLength];
 	struct Vec2f relativeMovement;
 	struct Axis2 scroll;
 };
 
-struct Rumble
-{
+struct Rumble {
 	float left, right;
 };
 
-struct GameInput
-{
+struct GameInput {
 	double elapsedTime_s;
 	long long unsigned upTime_microseconds;
 	long long unsigned frameNumber;
