@@ -8,24 +8,44 @@
 import SwiftUI
 import MetalKit
 
+
+enum ScalingMode {
+    case ScalingInteger
+    case ScalingFull
+}
+
 class MetalViewBase : NSObject, MTKViewDelegate {
-    
+
+    let scalingMode = ScalingMode.ScalingFull
     var commandQueue: MTLCommandQueue?
     var pipelineState: MTLRenderPipelineState?
     var viewport = MTLViewport.init()
     var viewportSize: [Float32] = [0.0, 0.0]
-    var quadVertices: [AAPLVertex]?
+    var quadVertices: [Vertex] = [
+        Vertex(position: simd_float2(0, 0), uv: simd_float2(0, 0)),
+        Vertex(position: simd_float2(0, Float(DrawBufferHeight)), uv: simd_float2(0, 1)),
+        Vertex(position: simd_float2(Float(DrawBufferWidth), 0), uv: simd_float2(1, 0)),
+        Vertex(position: simd_float2(Float(DrawBufferWidth), Float(DrawBufferHeight)), uv: simd_float2(1, 1))]
     var texture: MTLTexture?
-    var image = UnsafeMutableBufferPointer<UInt32>.allocate(capacity: Int(DrawBufferWidth * DrawBufferHeight))
+    var drawBuffer = UnsafeMutableBufferPointer<UInt32>.allocate(capacity: Int(DrawBufferWidth * DrawBufferHeight))
+
     func makeView() -> MTKView {
         let mtkView = MTKView.init()
-        mtkView.sampleCount = 4
-        guard let device = MTLCreateSystemDefaultDevice(),
-                let defaultLibrary = device.makeDefaultLibrary() else {
+        guard let device = MTLCreateSystemDefaultDevice() else {
             return mtkView
         }
-        
-        guard let vertexFunction = defaultLibrary.makeFunction(name: "vertexShader"),
+
+
+//        var sampleCount = 32
+//        while !device.supportsTextureSampleCount(sampleCount) {
+//            sampleCount >>= 1
+//        }
+//
+//        print("SampleCount \(sampleCount)")
+//        mtkView.sampleCount = sampleCount
+
+        guard let defaultLibrary = device.makeDefaultLibrary(),
+                let vertexFunction = defaultLibrary.makeFunction(name: "vertexShader"),
                 let fragmentFunction = defaultLibrary.makeFunction(name: "fragmentShader") else {
             return mtkView
         }
@@ -35,19 +55,15 @@ class MetalViewBase : NSObject, MTKViewDelegate {
         pipelineDescriptor.vertexFunction = vertexFunction
         pipelineDescriptor.label = "SimplePipeline"
         pipelineDescriptor.colorAttachments[0].pixelFormat = mtkView.colorPixelFormat
+
         pipelineDescriptor.rasterSampleCount = mtkView.sampleCount
-        try? pipelineState = device.makeRenderPipelineState(descriptor: pipelineDescriptor)
+
+        try? self.pipelineState = device.makeRenderPipelineState(descriptor: pipelineDescriptor)
         mtkView.delegate = self
         mtkView.device = device
-        mtkView.clearColor = MTLClearColor(red: 0.0, green: 0.0, blue: 0.0, alpha: 1.0)
+        mtkView.clearColor = MTLClearColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 1.0)
 
         self.texture = device.makeTexture(descriptor: MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .bgra8Unorm, width: Int(DrawBufferWidth), height: Int(DrawBufferHeight), mipmapped: false))
-
-        self.quadVertices = [
-            AAPLVertex.init(position: simd_float2(0, 0), uv: simd_float2(0, 0)),
-            AAPLVertex.init(position: simd_float2(0, Float(DrawBufferHeight)), uv: simd_float2(0, 1)),
-            AAPLVertex.init(position: simd_float2(Float(DrawBufferWidth), 0), uv: simd_float2(1, 0)),
-            AAPLVertex.init(position: simd_float2(Float(DrawBufferWidth), Float(DrawBufferHeight)), uv: simd_float2(1, 1))]
 
         self.commandQueue = device.makeCommandQueue()
         self.viewport.zfar = 1.0
@@ -62,34 +78,47 @@ class MetalViewBase : NSObject, MTKViewDelegate {
 
         // TODO fix this mess
 
-        // only square pixels allowed...
-        let width = UInt32(size.width)
-        let height = UInt32(size.height)
-        var widthOnTarget: UInt32 = DrawBufferWidth
-        var heightOnTarget: UInt32 = DrawBufferHeight
+        let width = UInt64(size.width)
+        let height = UInt64(size.height)
+        var widthOnTarget = width
+        var heightOnTarget = height
 
-        let factor = max(1, min(width / DrawBufferWidth, height / DrawBufferHeight))
-        widthOnTarget *= factor
-        heightOnTarget *= factor
+        switch scalingMode {
+        case .ScalingInteger:
+            // integer scaling, only square pixels allowed...
+            let factor = max(1, min(width / UInt64(DrawBufferWidth), height / UInt64(DrawBufferHeight)))
+            widthOnTarget = factor * UInt64(DrawBufferWidth)
+            heightOnTarget = factor * UInt64(DrawBufferHeight)
+        case .ScalingFull:
+            let targetAspectRatioFixPoint48_16 = (width << 16) / height
+            let drawAspectRatioFixPoint48_16 = UInt64((DrawAspectH << 16) / DrawAspectV)
+
+            if targetAspectRatioFixPoint48_16 < drawAspectRatioFixPoint48_16 {
+                heightOnTarget = (widthOnTarget << 16) / drawAspectRatioFixPoint48_16
+            } else {
+                widthOnTarget = (heightOnTarget * drawAspectRatioFixPoint48_16) >> 16
+            }
+        }
 
         let halfWidth = 0.5 * Float(widthOnTarget)
         let halfHeight = 0.5 * Float(heightOnTarget)
 
-        self.quadVertices![0].position = simd_float2(-halfWidth, -halfHeight)
-        self.quadVertices![1].position = simd_float2(-halfWidth, halfHeight)
-        self.quadVertices![2].position = simd_float2(halfWidth, -halfHeight)
-        self.quadVertices![3].position = simd_float2(halfWidth, halfHeight)
+        self.quadVertices[0].position = simd_float2(-halfWidth, -halfHeight)
+        self.quadVertices[1].position = simd_float2(-halfWidth, halfHeight)
+        self.quadVertices[2].position = simd_float2(halfWidth, -halfHeight)
+        self.quadVertices[3].position = simd_float2(halfWidth, halfHeight)
     }
     
     func draw(in view: MTKView) {
         let region = MTLRegion(origin: MTLOrigin(), size: MTLSize(width: Int(DrawBufferWidth), height: Int(DrawBufferHeight), depth: 1))
 
-        writeDrawBuffer(UnsafeMutableRawPointer.init(bitPattern: 0), image.baseAddress)
-        self.texture?.replace(region: region, mipmapLevel: 0, withBytes: image.baseAddress!, bytesPerRow: Int(DrawBufferWidth) * 4)
+        writeDrawBuffer(UnsafeMutableRawPointer.init(bitPattern: 0), drawBuffer.baseAddress)
+        self.texture?.replace(region: region, mipmapLevel: 0, withBytes: drawBuffer.baseAddress!, bytesPerRow: Int(DrawBufferWidth) * 4)
 
         guard let renderPassDescriptor = view.currentRenderPassDescriptor else {
             return
         }
+
         guard let commandBuffer = self.commandQueue?.makeCommandBuffer() else {
             return
         }
@@ -101,21 +130,22 @@ class MetalViewBase : NSObject, MTKViewDelegate {
         encoder.label = "MyEncoder"
         
         encoder.setViewport(self.viewport)
-        if let pipelineState = pipelineState {
+        if let pipelineState = self.pipelineState {
             encoder.setRenderPipelineState(pipelineState)
-            self.quadVertices!.withUnsafeBytes {
+            self.quadVertices.withUnsafeBytes {
                 bytes in
                 encoder.setVertexBytes(bytes.baseAddress!, length: bytes.count, index: Int(IndexVertices.rawValue))
             }
             viewportSize.withUnsafeBytes {
                 bytes in
                 encoder.setVertexBytes(bytes.baseAddress!, length: bytes.count, index: Int(IndexViewportSize.rawValue))
+                encoder.setFragmentBytes(bytes.baseAddress!, length: bytes.count, index: Int(IndexViewportSize.rawValue))
             }
 
             encoder.setFragmentTexture(self.texture, index: Int(IndexTexture.rawValue))
 
             encoder.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
-            
+
             encoder.endEncoding()
         }
         if let drawable = view.currentDrawable {

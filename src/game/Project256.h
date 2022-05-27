@@ -1,9 +1,9 @@
 #pragma once
 
-const unsigned DrawBufferWidth = 160;
-const unsigned DrawBufferHeight = 120;
-const unsigned DrawAspectH = 4;
-const unsigned DrawAspectV = 3;
+const unsigned DrawBufferWidth = 320;
+const unsigned DrawBufferHeight = 180;
+const unsigned DrawAspectH = 16;
+const unsigned DrawAspectV = 9;
 
 const unsigned MouseMaxTrackLength = 32;
 
