@@ -16,15 +16,9 @@
 typedef enum AAPLVertexInputIndex
 {
     IndexVertices,
-    IndexViewportSize,
+    IndexQuadScaleXY,
     IndexTexture,
 } AAPLVertexInputIndex;
-
-typedef struct
-{
-    simd_float2 position;
-    simd_float2 uv;
-} Vertex;
 
 
 #endif /* MetalViewShaderTypes_h */

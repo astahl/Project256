@@ -20,41 +20,25 @@ struct RasterizerData
 
 vertex RasterizerData
 vertexShader(uint vertexID [[vertex_id]],
-             constant Vertex *vertices [[buffer(IndexVertices)]],
-             constant simd_float2 *viewportSizePointer [[buffer(IndexViewportSize)]])
+             constant simd_float2 *viewportSizePointer [[buffer(IndexQuadScaleXY)]])
 {
+    constexpr float2 positions[4] = {{-1.0,-1.0}, {-1.0, 1.0}, {1.0, -1.0}, {1.0, 1.0}};
+    constexpr float2 texCoords[4] = {{0.0,0.0}, {0.0, 1.0}, {1.0, 0.0}, {1.0, 1.0}};
     RasterizerData out;
-
-    // Index into the array of positions to get the current vertex.
-    // The positions are specified in pixel dimensions (i.e. a value of 100
-    // is 100 pixels from the origin).
-    float2 pixelSpacePosition = vertices[vertexID].position.xy;
-
-    // Get the viewport size and cast to float.
-    simd_float2 viewportSize = *viewportSizePointer;
-
-    // To convert from positions in pixel space to positions in clip-space,
-    //  divide the pixel coordinates by half the size of the viewport.
     out.position = vector_float4(0.0, 0.0, 0.0, 1.0);
-    out.position.xy = pixelSpacePosition / (viewportSize / 2.0);
-
-    // Pass the input color directly to the rasterizer.
-    out.uv = vertices[vertexID].uv;
-
+    out.uv = texCoords[vertexID];
+    out.position.xy = positions[vertexID] * *viewportSizePointer;
     return out;
 }
 
 fragment half4 fragmentShader(RasterizerData in [[stage_in]],
-                              constant simd_float2 *viewportSizePointer [[buffer(IndexViewportSize)]],
                                texture2d<half> tex [[texture(IndexTexture)]])
 {
     // sample weights
     const float bias = 0.5;
-    const float spread = 0.5;
+    const float spread = 0.3;
 
     constexpr sampler nnsampler(mag_filter::nearest, min_filter::linear);
-    simd_float2 ps = *viewportSizePointer;
-//    const simd_float2 stepSize = simd_float2(0.25 * spread, 0.25 * spread) / ps;
     const simd_float2 stepSize = 0.25 * spread * simd_float2(1.0f / tex.get_width(), 1.0f / tex.get_height());
     half4 color{};
     const float remBias = (1.0 - bias) / 4;
