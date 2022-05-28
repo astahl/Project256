@@ -13,10 +13,11 @@ const unsigned InputMaxTextLength = 256;
 
 #ifdef CXX
 extern "C" {
+#define ___BOOLEAN bool
 #endif
 
-#ifndef bool
-#define bool int
+#ifndef ___BOOLEAN
+#define ___BOOLEAN int
 #endif
 
 
@@ -30,7 +31,7 @@ struct Vec2i {
 
 struct Button {
 	int transistionCount;
-	bool endedDown;
+	___BOOLEAN endedDown;
 };
 
 struct Axis2 {
@@ -69,18 +70,18 @@ struct GameInput {
 	struct Tap taps[InputMaxTaps];
 	unsigned tapCount;
 
-	bool hasMouse;
+	___BOOLEAN hasMouse;
 	struct Mouse mouse;
 
 	char text_utf8[InputMaxTextLength];
 	unsigned textLength;
 
-	bool closeRequested;
+	___BOOLEAN closeRequested;
 };
 
 struct GameOutput {
-	bool shouldQuit;
-	bool needTextInput;
+	___BOOLEAN shouldQuit;
+	___BOOLEAN needTextInput;
 	struct Rumble rumble[InputMaxControllers];
 };
 
