@@ -36,6 +36,9 @@ int WINAPI wWinMain(_In_ HINSTANCE instanceHandle,
 
     RegisterClassEx(&windowClass);
 
+    MainWindow* windowPtr{};
+    MainWindow** windowPtrPtr = &windowPtr;
+    
     HWND windowHandle = CreateWindowEx(
         0,
         windowClass.lpszClassName,
@@ -45,17 +48,14 @@ int WINAPI wWinMain(_In_ HINSTANCE instanceHandle,
         NULL,
         NULL,
         instanceHandle,
-        NULL
+        reinterpret_cast<LPVOID>(windowPtrPtr)
     );
 
     if (!windowHandle)
         return 0;
     
-    MainWindow window{windowHandle};
-    SetWindowLongPtr(windowHandle, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(&window));
-
     ShowWindow(windowHandle, nCmdShow);
-    window.doMainLoop();
+    windowPtr->doMainLoop();
 
     return 0;
 }

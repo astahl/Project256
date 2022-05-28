@@ -1,12 +1,13 @@
 #include "MainWindow.h"
-#include <Windows.h>
+#include "Direct3D12View.h"
 
 
 MainWindow::MainWindow(HWND hwnd)
     : hwnd(hwnd)
 {
-    this->memory = VirtualAlloc(NULL, 32L * 1024L * 1024L, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
-    this->drawBuffer = VirtualAlloc(0, 4 * DrawBufferHeight * DrawBufferWidth, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+    this->memory.reset(reinterpret_cast<uint8_t*>(VirtualAlloc(NULL, 32L * 1024L * 1024L, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE)));
+    this->drawBuffer.reset(reinterpret_cast<uint8_t*>(VirtualAlloc(0, 4 * DrawBufferHeight * DrawBufferWidth, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE)));
+    this->view = std::make_unique<Direct3D12View>(hwnd);
 }
 
 MainWindow::~MainWindow()
@@ -15,7 +16,7 @@ MainWindow::~MainWindow()
 }
 
 void MainWindow::onPaint() {
-    writeDrawBuffer(memory, drawBuffer);
+    writeDrawBuffer(memory.get(), drawBuffer.get());
     //HDC hdc = GetDC(hwnd);
     ValidateRect(hwnd, NULL);
 }
@@ -31,7 +32,7 @@ void MainWindow::doMainLoop() {
             TranslateMessage(&message);
             DispatchMessage(&message);
         }
-        output = doGameThings(&input, memory);
+        output = doGameThings(&input, memory.get());
 
         InvalidateRect(hwnd, NULL, FALSE);
     }
@@ -39,16 +40,24 @@ void MainWindow::doMainLoop() {
 
 LRESULT CALLBACK MainWindow::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-    MainWindow& window = *reinterpret_cast<MainWindow*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
+    static MainWindow* window = nullptr;
+
     switch (uMsg) {
-    case WM_CREATE:
-        break;
+    case WM_CREATE: {
+        CREATESTRUCT* createStruct = reinterpret_cast<CREATESTRUCT*>(lParam);
+        MainWindow** windowPP = reinterpret_cast<MainWindow**>(createStruct->lpCreateParams);
+        window = new MainWindow(hwnd);
+        *windowPP = window;
+    } break;
     case WM_PAINT:
-        window.onPaint();
+        window->onPaint();
         break;
     case WM_CLOSE:
-        window.input.closeRequested = true;
+        window->input.closeRequested = true;
         break;
+    case WM_DESTROY: {
+        delete window;
+    } break;
     }
 
     return DefWindowProc(hwnd, uMsg, wParam, lParam);

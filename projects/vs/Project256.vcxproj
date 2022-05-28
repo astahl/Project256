@@ -20,11 +20,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\game\Project256.cpp" />
+    <ClCompile Include="..\..\src\platform_win32\Direct3D12View.cpp" />
     <ClCompile Include="..\..\src\platform_win32\MainWindow.cpp" />
     <ClCompile Include="..\..\src\platform_win32\WinMain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\game\Project256.h" />
+    <ClInclude Include="..\..\src\platform_win32\Direct3D12View.h" />
     <ClInclude Include="..\..\src\platform_win32\MainWindow.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

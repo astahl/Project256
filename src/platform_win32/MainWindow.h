@@ -1,15 +1,20 @@
 #pragma once
 #include <Windows.h>
+#include <memory>
+
 
 #define CXX
 #include "../game/Project256.h"
+
+class Direct3D12View;
 
 class MainWindow
 {
     HWND hwnd;
     GameInput input;
-    void* memory;
-    void* drawBuffer;
+    std::unique_ptr<Direct3D12View> view;
+    std::unique_ptr<uint8_t> memory;
+    std::unique_ptr<uint8_t> drawBuffer;
 
     void onPaint();
 
