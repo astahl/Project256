@@ -14,17 +14,21 @@ enum ScalingMode {
     case ScalingFull
 }
 
-class MetalViewBase : NSObject, MTKViewDelegate {
-
-    let scalingMode = ScalingMode.ScalingFull
+final class MetalView : NSObject, MTKViewDelegate {
+    private var scalingMode: ScalingMode
+    private let drawBuffer: DrawBuffer
     private var commandQueue: MTLCommandQueue?
     private var pipelineState: MTLRenderPipelineState?
     private var viewport = MTLViewport.init()
     private var quadScaleXY: [Float32] = [0.0, 0.0]
     private var texture: MTLTexture?
-    private var drawBuffer = UnsafeMutableBufferPointer<UInt32>.allocate(capacity: Int(DrawBufferWidth * DrawBufferHeight))
 
-    func makeView() -> MTKView {
+    init(drawBuffer: DrawBuffer, scalingMode: ScalingMode) {
+        self.drawBuffer = drawBuffer
+        self.scalingMode = scalingMode
+    }
+
+    func makeView(context: Context) -> MTKView {
         let mtkView = MTKView.init()
         guard let device = MTLCreateSystemDefaultDevice() else {
             return mtkView
@@ -35,21 +39,23 @@ class MetalViewBase : NSObject, MTKViewDelegate {
                 let fragmentFunction = defaultLibrary.makeFunction(name: "fragmentShader") else {
             return mtkView
         }
-        
+
+
         let pipelineDescriptor = MTLRenderPipelineDescriptor.init()
         pipelineDescriptor.fragmentFunction = fragmentFunction
         pipelineDescriptor.vertexFunction = vertexFunction
         pipelineDescriptor.label = "SimplePipeline"
         pipelineDescriptor.colorAttachments[0].pixelFormat = mtkView.colorPixelFormat
-
         pipelineDescriptor.rasterSampleCount = mtkView.sampleCount
 
         try? self.pipelineState = device.makeRenderPipelineState(descriptor: pipelineDescriptor)
         mtkView.delegate = self
         mtkView.device = device
-        mtkView.clearColor = MTLClearColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 1.0)
-
-        self.texture = device.makeTexture(descriptor: MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .bgra8Unorm, width: Int(DrawBufferWidth), height: Int(DrawBufferHeight), mipmapped: false))
+        mtkView.clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 0)
+        mtkView.clearStencil = 0
+        mtkView.clearDepth = 0
+        mtkView.preferredFramesPerSecond = 60
+        self.texture = device.makeTexture(descriptor: MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .bgra8Unorm, width: drawBuffer.width, height: drawBuffer.height, mipmapped: false))
 
         self.commandQueue = device.makeCommandQueue()
         self.viewport.zfar = 1.0
@@ -59,8 +65,6 @@ class MetalViewBase : NSObject, MTKViewDelegate {
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
         self.viewport.height = size.height
         self.viewport.width = size.width
-
-
         // TODO fix this mess
 
         let width = UInt64(size.width)
@@ -71,9 +75,9 @@ class MetalViewBase : NSObject, MTKViewDelegate {
         switch scalingMode {
         case .ScalingInteger:
             // integer scaling, only square pixels allowed...
-            let factor = max(1, min(width / UInt64(DrawBufferWidth), height / UInt64(DrawBufferHeight)))
-            widthOnTarget = factor * UInt64(DrawBufferWidth)
-            heightOnTarget = factor * UInt64(DrawBufferHeight)
+            let factor = max(1, min(width / UInt64(drawBuffer.width), height / UInt64(drawBuffer.height)))
+            widthOnTarget = factor * UInt64(drawBuffer.width)
+            heightOnTarget = factor * UInt64(drawBuffer.height)
         case .ScalingFull:
             let targetAspectRatioFixPoint48_16 = (width << 16) / height
             let drawAspectRatioFixPoint48_16 = UInt64((DrawAspectH << 16) / DrawAspectV)
@@ -89,11 +93,11 @@ class MetalViewBase : NSObject, MTKViewDelegate {
     }
     
     func draw(in view: MTKView) {
-        let region = MTLRegion(origin: MTLOrigin(), size: MTLSize(width: Int(DrawBufferWidth), height: Int(DrawBufferHeight), depth: 1))
+        let region = MTLRegion(origin: MTLOrigin(), size: MTLSize(width: drawBuffer.width, height: drawBuffer.height, depth: 1))
 
         // todo can we move update tex to its own thread and just synchronize?
-        writeDrawBuffer(UnsafeMutableRawPointer.init(bitPattern: 0), drawBuffer.baseAddress)
-        self.texture?.replace(region: region, mipmapLevel: 0, withBytes: drawBuffer.baseAddress!, bytesPerRow: Int(DrawBufferWidth) * 4)
+        writeDrawBuffer(UnsafeMutableRawPointer.init(bitPattern: 0), drawBuffer.data.baseAddress!)
+        self.texture?.replace(region: region, mipmapLevel: 0, withBytes: drawBuffer.data.baseAddress!, bytesPerRow: drawBuffer.width * 4)
 
         guard let renderPassDescriptor = view.currentRenderPassDescriptor else {
             return
@@ -132,23 +136,22 @@ class MetalViewBase : NSObject, MTKViewDelegate {
 }
 
 #if os(macOS)
-final class MetalView : MetalViewBase, NSViewRepresentable {
+extension MetalView : NSViewRepresentable {
     typealias NSViewType = MTKView
     
     func makeNSView(context: Context) -> MTKView {
-        return makeView()
+        return makeView(context: context)
     }
     
     func updateNSView(_ nsView: MTKView, context: Context) {
     }
-    
 }
 #else
-final class MetalView : MetalViewBase, UIViewRepresentable {
+extension MetalView : UIViewRepresentable {
     typealias UIViewType = MTKView
     
     func makeUIView(context: Context) -> MTKView {
-        return makeView()
+        return makeView(context: context)
     }
     
     func updateUIView(_ uiView: MTKView, context: Context) {

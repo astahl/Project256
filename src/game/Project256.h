@@ -1,6 +1,8 @@
 #pragma once
 
-const unsigned DrawBufferWidth = 320;
+const long MemorySize = 32 * 1024; // 32k
+
+const unsigned DrawBufferWidth = 640;
 const unsigned DrawBufferHeight = 200;
 const unsigned DrawAspectH = 4;
 const unsigned DrawAspectV = 3;
