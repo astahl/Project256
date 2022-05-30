@@ -112,7 +112,7 @@ void Direct3D12View::Draw()
 	ExitOnFail(mCommandAllocator->Reset());
 	ExitOnFail(mCommandList->Reset(mCommandAllocator.Get(), mPipelineState.Get()));
 
-	D3D12_RESOURCE_BARRIER barrier1{
+	D3D12_RESOURCE_BARRIER barrierRenderTargetTransition {
 		.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
 		.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE,
 		.Transition = {
@@ -122,7 +122,7 @@ void Direct3D12View::Draw()
 			.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET,
 		},
 	};
-	mCommandList->ResourceBarrier(1, &barrier1);
+	mCommandList->ResourceBarrier(1, &barrierRenderTargetTransition);
 
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle{
 		.ptr = SIZE_T(mRtvHeap->GetCPUDescriptorHandleForHeapStart().ptr) + SIZE_T(mFrameIndex * mRtvDescriptorSize),
@@ -131,18 +131,10 @@ void Direct3D12View::Draw()
 	const float clearColor[] = { 0.0f, 1.0f, 0.0f, 1.0f };
 	mCommandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 
-	D3D12_RESOURCE_BARRIER barrier2{
-		.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
-		.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE,
-		.Transition = {
-			.pResource = mRenderTargets[mFrameIndex].Get(),
-			.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
-			.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET,
-			.StateAfter = D3D12_RESOURCE_STATE_PRESENT,
-		},
-	};
+	barrierRenderTargetTransition.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+	barrierRenderTargetTransition.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
 
-	mCommandList->ResourceBarrier(1, &barrier2);
+	mCommandList->ResourceBarrier(1, &barrierRenderTargetTransition);
 	ExitOnFail(mCommandList->Close());
 
 	ID3D12CommandList* cmdListPtrArray[] = {mCommandList.Get()};
