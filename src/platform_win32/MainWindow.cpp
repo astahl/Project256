@@ -5,9 +5,9 @@
 MainWindow::MainWindow(HWND hwnd)
     : hwnd(hwnd)
 {
-    this->memory.reset(reinterpret_cast<uint8_t*>(VirtualAlloc(NULL, 32L * 1024L * 1024L, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE)));
-    this->drawBuffer.reset(reinterpret_cast<uint8_t*>(VirtualAlloc(0, 4 * DrawBufferHeight * DrawBufferWidth, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE)));
-    this->view = std::make_unique<Direct3D12View>(hwnd);
+    this->memory = reinterpret_cast<uint8_t*>(VirtualAlloc(NULL, 32L * 1024L * 1024L, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
+    this->drawBuffer = reinterpret_cast<uint8_t*>(VirtualAlloc(0, 4 * DrawBufferHeight * DrawBufferWidth, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
+    this->view = new Direct3D12View(hwnd);
 }
 
 MainWindow::~MainWindow()
@@ -16,7 +16,7 @@ MainWindow::~MainWindow()
 }
 
 void MainWindow::onPaint() {
-    writeDrawBuffer(memory.get(), drawBuffer.get());
+    writeDrawBuffer(memory, drawBuffer);
     this->view->Draw();
     ValidateRect(hwnd, NULL);
 }
@@ -32,7 +32,7 @@ void MainWindow::doMainLoop() {
             TranslateMessage(&message);
             DispatchMessage(&message);
         }
-        output = doGameThings(&input, memory.get());
+        output = doGameThings(&input, memory);
 
         InvalidateRect(hwnd, NULL, FALSE);
     }
