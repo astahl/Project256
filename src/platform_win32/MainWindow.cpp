@@ -17,7 +17,7 @@ MainWindow::~MainWindow()
 
 void MainWindow::onPaint() {
     writeDrawBuffer(memory.get(), drawBuffer.get());
-    //HDC hdc = GetDC(hwnd);
+    this->view->Draw();
     ValidateRect(hwnd, NULL);
 }
 
