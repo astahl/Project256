@@ -9,64 +9,67 @@ import SwiftUI
 import MetalKit
 
 
+enum MyMTKViewErrors : Error {
+    case InitError
+}
+
 enum ScalingMode {
     case ScalingInteger
     case ScalingFull
 }
 
-final class MetalView : NSObject, MTKViewDelegate {
-    private var scalingMode: ScalingMode
-    private let drawBuffer: DrawBuffer
+
+class MyMTKView : MTKView {
+    var scalingMode: ScalingMode = .ScalingFull
+    private var drawBuffer: DrawBuffer? = nil
     private var commandQueue: MTLCommandQueue?
     private var pipelineState: MTLRenderPipelineState?
     private var viewport = MTLViewport.init()
     private var quadScaleXY: [Float32] = [0.0, 0.0]
     private var texture: MTLTexture?
 
-    init(drawBuffer: DrawBuffer, scalingMode: ScalingMode) {
-        self.drawBuffer = drawBuffer
-        self.scalingMode = scalingMode
+    required init(coder: NSCoder) {
+        super.init(coder: coder)
     }
 
-    func makeView(context: Context) -> MTKView {
-        let mtkView = MTKView.init()
+    init(drawBuffer: DrawBuffer, scalingMode: ScalingMode) throws {
+        self.drawBuffer = drawBuffer
+        self.scalingMode = scalingMode
+
         guard let device = MTLCreateSystemDefaultDevice() else {
-            return mtkView
+            throw MyMTKViewErrors.InitError
         }
+
+        super.init(frame: CGRect.zero, device: device)
 
         guard let defaultLibrary = device.makeDefaultLibrary(),
                 let vertexFunction = defaultLibrary.makeFunction(name: "vertexShader"),
                 let fragmentFunction = defaultLibrary.makeFunction(name: "fragmentShader") else {
-            return mtkView
+            throw MyMTKViewErrors.InitError
         }
-
 
         let pipelineDescriptor = MTLRenderPipelineDescriptor.init()
         pipelineDescriptor.fragmentFunction = fragmentFunction
         pipelineDescriptor.vertexFunction = vertexFunction
         pipelineDescriptor.label = "SimplePipeline"
-        pipelineDescriptor.colorAttachments[0].pixelFormat = mtkView.colorPixelFormat
-        pipelineDescriptor.rasterSampleCount = mtkView.sampleCount
+        pipelineDescriptor.colorAttachments[0].pixelFormat = super.colorPixelFormat
+        pipelineDescriptor.rasterSampleCount = super.sampleCount
 
         try? self.pipelineState = device.makeRenderPipelineState(descriptor: pipelineDescriptor)
-        mtkView.delegate = self
-        mtkView.device = device
-        mtkView.clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 0)
-        mtkView.clearStencil = 0
-        mtkView.clearDepth = 0
-        mtkView.preferredFramesPerSecond = 60
+        super.clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 0)
         self.texture = device.makeTexture(descriptor: MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .bgra8Unorm, width: drawBuffer.width, height: drawBuffer.height, mipmapped: false))
 
         self.commandQueue = device.makeCommandQueue()
         self.viewport.zfar = 1.0
-        return mtkView
     }
-    
-    func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
+
+    func update(withDrawableSize size: CGSize) {
         self.viewport.height = size.height
         self.viewport.width = size.width
         // TODO fix this mess
-
+        guard let drawBuffer = drawBuffer else {
+            return
+        }
         let width = UInt64(size.width)
         let height = UInt64(size.height)
         var widthOnTarget = width
@@ -91,15 +94,22 @@ final class MetalView : NSObject, MTKViewDelegate {
         self.quadScaleXY[0] = Float(widthOnTarget) / Float32(size.width)
         self.quadScaleXY[1] = Float(heightOnTarget) / Float32(size.height)
     }
-    
-    func draw(in view: MTKView) {
+
+    override func draw() {
+        super.draw()
+        update(withDrawableSize: drawableSize)
+
+        guard let drawBuffer = drawBuffer else {
+            return
+        }
+
         let region = MTLRegion(origin: MTLOrigin(), size: MTLSize(width: drawBuffer.width, height: drawBuffer.height, depth: 1))
 
         // todo can we move update tex to its own thread and just synchronize?
         writeDrawBuffer(UnsafeMutableRawPointer.init(bitPattern: 0), drawBuffer.data.baseAddress!)
         self.texture?.replace(region: region, mipmapLevel: 0, withBytes: drawBuffer.data.baseAddress!, bytesPerRow: drawBuffer.width * 4)
 
-        guard let renderPassDescriptor = view.currentRenderPassDescriptor else {
+        guard let renderPassDescriptor = self.currentRenderPassDescriptor else {
             return
         }
 
@@ -110,9 +120,9 @@ final class MetalView : NSObject, MTKViewDelegate {
         guard let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor) else {
             return
         }
-        
+
         encoder.label = "MyEncoder"
-        
+
         encoder.setViewport(self.viewport)
         if let pipelineState = self.pipelineState {
             encoder.setRenderPipelineState(pipelineState)
@@ -128,33 +138,49 @@ final class MetalView : NSObject, MTKViewDelegate {
 
             encoder.endEncoding()
         }
-        if let drawable = view.currentDrawable {
+        if let drawable = self.currentDrawable {
             commandBuffer.present(drawable)
         }
         commandBuffer.commit()
     }
 }
 
+final class MetalView : NSObject {
+    var scalingMode: ScalingMode
+    var drawBuffer: DrawBuffer
+
+    init(scalingMode: ScalingMode, drawBuffer: DrawBuffer) {
+        self.scalingMode = scalingMode
+        self.drawBuffer = drawBuffer
+    }
+}
+
 #if os(macOS)
 extension MetalView : NSViewRepresentable {
-    typealias NSViewType = MTKView
+    typealias NSViewType = MyMTKView
     
-    func makeNSView(context: Context) -> MTKView {
-        return makeView(context: context)
+    func makeNSView(context: Context) -> MyMTKView {
+        return (try? MyMTKView(drawBuffer: self.drawBuffer, scalingMode: self.scalingMode))!
     }
     
-    func updateNSView(_ nsView: MTKView, context: Context) {
+    func updateNSView(_ nsView: MyMTKView, context: Context) {
+        nsView.scalingMode = self.scalingMode
+        print(self)
+    }
+
+    static func dismantleNSView(_ nsView: MyMTKView, coordinator: ()) {
+        print("dismantle")
     }
 }
 #else
 extension MetalView : UIViewRepresentable {
-    typealias UIViewType = MTKView
+    typealias UIViewType = MyMTKView
     
-    func makeUIView(context: Context) -> MTKView {
-        return makeView(context: context)
+    func makeUIView(context: Context) -> MyMTKView {
+        return (try? MyMTKView(drawBuffer: self.drawBuffer, scalingMode: self.scalingMode))!
     }
     
-    func updateUIView(_ uiView: MTKView, context: Context) {
+    func updateUIView(_ uiView: MyMTKView, context: Context) {
     }
     
 }

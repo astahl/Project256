@@ -15,7 +15,7 @@ struct Project256App: App {
 
     var body: some Scene {
         WindowGroup {
-            MetalView(drawBuffer: gameState.drawBuffer, scalingMode: scalingMode)
+            MetalView(scalingMode: scalingMode, drawBuffer: gameState.drawBuffer)
         }
         #if os(macOS)
         Settings {
