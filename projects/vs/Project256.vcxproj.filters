@@ -45,4 +45,9 @@
       <Filter>Header Files\Platform</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <CopyFileToFolders Include="..\..\src\platform_win32\Shader.hlsl">
+      <Filter>Source Files\Platform</Filter>
+    </CopyFileToFolders>
+  </ItemGroup>
 </Project>

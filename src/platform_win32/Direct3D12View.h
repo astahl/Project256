@@ -20,9 +20,12 @@ class Direct3D12View {
     ComPtr<ID3D12Resource> mRenderTargets[FrameCount];
     ComPtr<ID3D12CommandAllocator> mCommandAllocator;
     ComPtr<ID3D12DescriptorHeap> mRtvHeap;
+    ComPtr<ID3D12DescriptorHeap> mCbvHeap;
     ComPtr<ID3D12PipelineState> mPipelineState;
     ComPtr<ID3D12GraphicsCommandList> mCommandList;
+    ComPtr<ID3D12RootSignature> mRootSignature;
     UINT mRtvDescriptorSize;
+    UINT mCbvDescriptorSize;
 
     // Synchronization objects.
     HANDLE mFenceEvent;
