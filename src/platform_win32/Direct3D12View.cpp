@@ -1,0 +1,406 @@
+#include "Direct3D12View.h"
+#include <dxgi1_6.h>
+#include <d3dcompiler.h>
+#include <string>
+#ifdef _DEBUG
+#include <dxgidebug.h>
+#endif
+using namespace Microsoft::WRL;
+
+Direct3D12View::Direct3D12View(HWND hwnd)
+	: mHwnd(hwnd)
+{
+	UINT dxgiFactoryFlags = 0;
+
+#ifdef _DEBUG
+// Enable the debug layer (requires the Graphics Tools "optional feature").
+// NOTE: Enabling the debug layer after device creation will invalidate the active device.
+	{
+		ComPtr<ID3D12Debug> debugController;
+		if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController))))
+		{
+			debugController->EnableDebugLayer();
+			// Enable additional debug layers.
+			dxgiFactoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
+		}
+
+		ComPtr<IDXGIInfoQueue> dxgiInfoQueue;
+		if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(dxgiInfoQueue.GetAddressOf()))))
+		{
+			dxgiInfoQueue->SetBreakOnSeverity(DXGI_DEBUG_ALL, DXGI_INFO_QUEUE_MESSAGE_SEVERITY_ERROR, true);
+			dxgiInfoQueue->SetBreakOnSeverity(DXGI_DEBUG_ALL, DXGI_INFO_QUEUE_MESSAGE_SEVERITY_CORRUPTION, true);
+
+			DXGI_INFO_QUEUE_MESSAGE_ID hide[] =
+			{
+				80 /* IDXGISwapChain::GetContainingOutput: The swapchain's adapter does not control the output on which the swapchain's window resides. */,
+			};
+			DXGI_INFO_QUEUE_FILTER filter = {};
+			filter.DenyList.NumIDs = static_cast<UINT>(std::size(hide));
+			filter.DenyList.pIDList = hide;
+			dxgiInfoQueue->AddStorageFilterEntries(DXGI_DEBUG_DXGI, &filter);
+		}
+	}
+#endif
+
+	ComPtr<IDXGIFactory7> factory;
+	ExitOnFail(CreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(&factory)));
+
+	// get the adapter
+	ComPtr<IDXGIAdapter4> adapter;
+	for (UINT adapterIndex = 0; SUCCEEDED(factory->EnumAdapterByGpuPreference(adapterIndex, DXGI_GPU_PREFERENCE_UNSPECIFIED, IID_PPV_ARGS(&adapter))); ++adapterIndex)
+	{
+		DXGI_ADAPTER_DESC3 desc;
+		adapter->GetDesc3(&desc);
+		if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
+			continue;
+
+		if (SUCCEEDED(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_11_0, __uuidof(ID3D12Device), nullptr))) {
+			break;
+		}
+	}
+	{
+		ComPtr<ID3D12Device> device;
+		ExitOnFail(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&device)));
+		ExitOnFail(device.As(&mDevice));
+	}
+	D3D12_COMMAND_QUEUE_DESC queueDesc = {
+		.Type = D3D12_COMMAND_LIST_TYPE_DIRECT,
+		.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE,
+	};
+
+	ExitOnFail(mDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&mCommandQueue)));
+
+	DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {
+		.Width = 200,
+		.Height = 200,
+		.Format = DXGI_FORMAT_R8G8B8A8_UNORM,
+		.SampleDesc = {
+			.Count = 1,
+		},
+		.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT,
+		.BufferCount = FrameCount,
+		.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD,
+	};
+
+	{
+		ComPtr<IDXGISwapChain1> swapChain;
+		// TODO no fullscreen desc?
+		ExitOnFail(factory->CreateSwapChainForHwnd(mCommandQueue.Get(), hwnd, &swapChainDesc, nullptr, nullptr, &swapChain));
+		// TODO no fullscreen?
+		ExitOnFail(factory->MakeWindowAssociation(hwnd, DXGI_MWA_NO_ALT_ENTER));
+		ExitOnFail(swapChain.As(&mSwapChain));
+	}
+	mFrameIndex = mSwapChain->GetCurrentBackBufferIndex();
+
+	// descriptor heap
+	{
+		D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc{
+			.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV,
+			.NumDescriptors = FrameCount,
+			.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
+		};
+
+		ExitOnFail(mDevice->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&mRtvHeap)));
+
+		D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc{
+			.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
+			.NumDescriptors = FrameCount,
+			.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
+		};
+		ExitOnFail(mDevice->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&mCbvHeap)));
+
+		mRtvDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+		mCbvDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	}
+
+
+	// graphics pipeline state / shader compilation & setup
+	{
+		D3D12_FEATURE_DATA_ROOT_SIGNATURE featureData = {};
+
+		// This is the highest version the sample supports. If CheckFeatureSupport succeeds, the HighestVersion returned will not be greater than this.
+		featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1;
+
+		if (FAILED(mDevice->CheckFeatureSupport(D3D12_FEATURE_ROOT_SIGNATURE, &featureData, sizeof(featureData))))
+		{
+			featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_0;
+		}
+		{
+			D3D12_DESCRIPTOR_RANGE1 range{
+				.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV,
+				.NumDescriptors = 1,
+				.RegisterSpace = 0,
+				.Flags = D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC,
+				.OffsetInDescriptorsFromTableStart = 0,
+			};
+			D3D12_ROOT_PARAMETER1 parameter{
+				.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE,
+				.DescriptorTable {
+					.NumDescriptorRanges = 1,
+					.pDescriptorRanges = &range,
+				},
+				.ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX,
+			};
+			D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags =
+				D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
+				D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
+				D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
+				D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS |
+				D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS;
+
+			D3D12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc{
+				.Version = D3D_ROOT_SIGNATURE_VERSION::D3D_ROOT_SIGNATURE_VERSION_1_1,
+				.Desc_1_1 {
+					.NumParameters = 1,
+					.pParameters = &parameter,
+					.NumStaticSamplers = 0,
+					.pStaticSamplers = nullptr,
+					.Flags = rootSignatureFlags,
+				},
+			};
+			ComPtr<ID3DBlob> signature;
+			ComPtr<ID3DBlob> error;
+
+			ExitOnFail(D3D12SerializeVersionedRootSignature(&rootSignatureDesc, &signature, &error));
+			ExitOnFail(mDevice->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&mRootSignature)));
+#ifdef _DEBUG
+			mRootSignature->SetName(L"MYRS");
+#endif
+		}
+		
+
+		ComPtr<ID3D10Blob> vertexShader;
+		ComPtr<ID3D10Blob> pixelShader;
+		ComPtr<ID3D10Blob> error;
+		UINT compileFlags = 0;
+#ifdef _DEBUG
+		compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
+#endif
+		std::wstring pathBuf(512, L'\0');
+		GetModuleFileName(nullptr, pathBuf.data(), 512);
+		size_t lastSlashPos = pathBuf.find_last_of(L'\\');
+		if (lastSlashPos != std::wstring::npos) pathBuf.erase(lastSlashPos + 1);
+		std::wstring shaderPath = pathBuf + L"Shader.hlsl";
+		HRESULT result = D3DCompileFromFile(shaderPath.c_str(), nullptr, nullptr, "pixelShader", "ps_5_0", compileFlags, 0, &pixelShader, &error);
+		if (!SUCCEEDED(result)) {
+			std::string errorMsg((char*)error.Get()->GetBufferPointer(), error.Get()->GetBufferSize());
+			OutputDebugStringA(errorMsg.c_str());
+			exit(1);
+		}
+		result = D3DCompileFromFile(shaderPath.c_str(), nullptr, nullptr, "vertexShader", "vs_5_0", compileFlags, 0, &vertexShader, &error);
+		if (!SUCCEEDED(result)) {
+			std::string errorMsg((char*)error.Get()->GetBufferPointer(), error.Get()->GetBufferSize());
+			OutputDebugStringA(errorMsg.c_str());
+			exit(1);
+		}
+
+
+		const int inputElementCount = 1;
+		D3D12_INPUT_ELEMENT_DESC inputElementDescs[inputElementCount] =
+		{
+			{ "SV_VertexID", 0, DXGI_FORMAT::DXGI_FORMAT_R32_UINT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		};
+
+
+		D3D12_RENDER_TARGET_BLEND_DESC defaultRtBlend{
+			.BlendEnable = FALSE,
+			.LogicOpEnable = FALSE,
+			.SrcBlend = D3D12_BLEND_ONE,
+			.DestBlend = D3D12_BLEND_ZERO,
+			.BlendOp = D3D12_BLEND_OP_ADD,
+			.SrcBlendAlpha = D3D12_BLEND_ONE,
+			.DestBlendAlpha = D3D12_BLEND_ZERO,
+			.BlendOpAlpha = D3D12_BLEND_OP_ADD,
+			.LogicOp = D3D12_LOGIC_OP_NOOP,
+			.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL,
+		};
+
+		D3D12_BLEND_DESC blend{
+			.AlphaToCoverageEnable = FALSE,
+			.IndependentBlendEnable = FALSE,
+		};
+		for (int i = 0; i < D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT; ++i) {
+			blend.RenderTarget[i] = defaultRtBlend;
+		}
+
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc{
+			.pRootSignature = mRootSignature.Get(),
+			.VS {
+				.pShaderBytecode = vertexShader.Get()->GetBufferPointer(),
+				.BytecodeLength = vertexShader.Get()->GetBufferSize(),
+			},
+			.PS {
+				.pShaderBytecode = pixelShader.Get()->GetBufferPointer(),
+				.BytecodeLength = pixelShader.Get()->GetBufferSize(),
+			},
+			.StreamOutput {
+				.pSODeclaration = 0,
+				.NumEntries = 0,
+				.pBufferStrides = 0,
+				.NumStrides = 0,
+				.RasterizedStream = D3D12_SO_NO_RASTERIZED_STREAM,
+			},
+			.BlendState = blend,
+			.SampleMask = UINT_MAX,
+			.RasterizerState = D3D12_RASTERIZER_DESC{
+				.FillMode = D3D12_FILL_MODE_SOLID,
+				.CullMode = D3D12_CULL_MODE_BACK,
+				.FrontCounterClockwise = FALSE,
+				.DepthBias = 0,
+				.DepthBiasClamp = 0.0f,
+				.SlopeScaledDepthBias = 0.0f,
+				.DepthClipEnable = TRUE,
+				.MultisampleEnable = FALSE,
+				.AntialiasedLineEnable = FALSE,
+				.ForcedSampleCount = 0,
+				.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF,
+			},
+			.DepthStencilState {
+				.DepthEnable = FALSE,
+				.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL,
+				.DepthFunc = D3D12_COMPARISON_FUNC_LESS,
+				.StencilEnable = FALSE,
+				.StencilReadMask = D3D12_DEFAULT_STENCIL_READ_MASK,
+				.StencilWriteMask = D3D12_DEFAULT_STENCIL_WRITE_MASK,
+				.FrontFace {
+					.StencilFailOp = D3D12_STENCIL_OP_KEEP,
+					.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP,
+					.StencilPassOp = D3D12_STENCIL_OP_KEEP,
+					.StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS,
+				},
+				.BackFace {
+					.StencilFailOp = D3D12_STENCIL_OP_KEEP,
+					.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP,
+					.StencilPassOp = D3D12_STENCIL_OP_KEEP,
+					.StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS,
+				},
+			},
+			.InputLayout = { inputElementDescs, inputElementCount },
+			.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
+			.NumRenderTargets = 1,
+			.RTVFormats = { DXGI_FORMAT_R8G8B8A8_UNORM },
+			.SampleDesc {
+				.Count = 1,
+			},
+			.NodeMask = 0,
+
+// debug flag only available on warp device
+//#ifdef _DEBUG
+//			.Flags = D3D12_PIPELINE_STATE_FLAG_TOOL_DEBUG,
+//#else
+			.Flags = D3D12_PIPELINE_STATE_FLAG_NONE,
+//#endif
+		};
+
+		ExitOnFail(mDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&mPipelineState)));
+		
+#ifdef _DEBUG
+		mPipelineState->SetName(L"MYPSO");
+#endif
+
+		ExitOnFail(mDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&mCommandAllocator)));
+		ExitOnFail(mDevice->CreateCommandList1(0, D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_LIST_FLAG_NONE, IID_PPV_ARGS(&mCommandList)));
+
+		// frame resources
+
+		D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle(mRtvHeap->GetCPUDescriptorHandleForHeapStart());
+		for (UINT i = 0; i < FrameCount; ++i) {
+			ExitOnFail(mSwapChain->GetBuffer(i, IID_PPV_ARGS(&mRenderTargets[i])));
+			mDevice->CreateRenderTargetView(mRenderTargets[i].Get(), nullptr, rtvHandle);
+			rtvHandle.ptr += mRtvDescriptorSize;
+		}
+
+
+		ExitOnFail(mDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&mFence)));
+		mFenceValue = 1;
+		mFenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+		if (mFenceEvent == nullptr) {
+			ExitOnFail(HRESULT_FROM_WIN32(GetLastError()));
+		}
+	}
+}
+
+Direct3D12View::~Direct3D12View()
+{
+	WaitForPreviousFrame();
+	CloseHandle(mFenceEvent);
+}
+
+void Direct3D12View::Draw()
+{
+	ExitOnFail(mCommandAllocator->Reset());
+	ExitOnFail(mCommandList->Reset(mCommandAllocator.Get(), mPipelineState.Get()));
+	mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
+	D3D12_RESOURCE_BARRIER barrierRenderTargetTransition {
+		.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
+		.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE,
+		.Transition = {
+			.pResource = mRenderTargets[mFrameIndex].Get(),
+			.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
+			.StateBefore = D3D12_RESOURCE_STATE_PRESENT,
+			.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET,
+		},
+	};
+	mCommandList->ResourceBarrier(1, &barrierRenderTargetTransition);
+
+	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle{
+		.ptr = SIZE_T(mRtvHeap->GetCPUDescriptorHandleForHeapStart().ptr) + SIZE_T(mFrameIndex * mRtvDescriptorSize),
+	};
+
+	const float clearColor[] = { 0.0f, 1.0f, 0.0f, 1.0f };
+	D3D12_VIEWPORT vp{
+		.TopLeftX = 0,
+		.TopLeftY = 0,
+		.Width = 200,
+		.Height = 200,
+	};
+	mCommandList->RSSetViewports(1, &vp);
+	D3D12_RECT scissorRect{
+		.left = static_cast<LONG>(vp.TopLeftX),
+		.top = static_cast<LONG>(vp.TopLeftY),
+		.right = static_cast<LONG>(vp.TopLeftX + vp.Width),
+		.bottom = static_cast<LONG>(vp.TopLeftY + vp.Height),
+	};
+	mCommandList->RSSetScissorRects(1, &scissorRect);
+	mCommandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
+	mCommandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+	mCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+	mCommandList->IASetVertexBuffers(0, 0, nullptr);
+	mCommandList->DrawInstanced(4, 1, 0, 0);
+
+	barrierRenderTargetTransition.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+	barrierRenderTargetTransition.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
+
+	mCommandList->ResourceBarrier(1, &barrierRenderTargetTransition);
+	ExitOnFail(mCommandList->Close());
+
+	ID3D12CommandList* cmdListPtrArray[] = {mCommandList.Get()};
+
+	mCommandQueue->ExecuteCommandLists(1, cmdListPtrArray);
+	ExitOnFail(mSwapChain->Present(1, 0));
+	WaitForPreviousFrame();
+}
+
+void Direct3D12View::WaitForPreviousFrame()
+{
+	// TODO this is not good it seems??
+	const UINT64 fence = mFenceValue;
+	ExitOnFail(mCommandQueue->Signal(mFence.Get(), fence));
+	mFenceValue++;
+
+	// Wait until the previous frame is finished.
+	if (mFence->GetCompletedValue() < fence)
+	{
+		ExitOnFail(mFence->SetEventOnCompletion(fence, mFenceEvent));
+		WaitForSingleObject(mFenceEvent, INFINITE);
+	}
+
+	mFrameIndex = mSwapChain->GetCurrentBackBufferIndex();
+}
+
+bool Direct3D12View::ExitOnFail(HRESULT result) {
+	if (SUCCEEDED(result)) {
+		return true;
+	}
+	exit(result);
+}
