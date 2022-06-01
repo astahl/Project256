@@ -21,6 +21,8 @@ enum ScalingMode {
 
 class MyMTKView : MTKView {
     var scalingMode: ScalingMode = .ScalingFull
+    var mouseMoveHandler: ((_ relative: CGPoint, _ position: CGPoint) -> Void)?
+
     private var drawBuffer: DrawBuffer? = nil
     private var commandQueue: MTLCommandQueue?
     private var pipelineState: MTLRenderPipelineState?
@@ -28,8 +30,26 @@ class MyMTKView : MTKView {
     private var quadScaleXY: [Float32] = [0.0, 0.0]
     private var texture: MTLTexture?
 
+    override var acceptsFirstResponder: Bool {
+        return true
+    }
+
     required init(coder: NSCoder) {
         super.init(coder: coder)
+
+    }
+
+    override func viewDidMoveToWindow() {
+        self.window?.acceptsMouseMovedEvents = true
+    }
+
+    override func keyDown(with event: NSEvent) {
+        // todo tell handler
+//        event.characters?
+    }
+
+    override func mouseMoved(with event: NSEvent) {
+        self.mouseMoveHandler?(CGPoint(x: event.deltaX, y: event.deltaY), event.locationInWindow)
     }
 
     init(drawBuffer: DrawBuffer, scalingMode: ScalingMode) throws {
@@ -56,11 +76,21 @@ class MyMTKView : MTKView {
         pipelineDescriptor.rasterSampleCount = super.sampleCount
 
         try? self.pipelineState = device.makeRenderPipelineState(descriptor: pipelineDescriptor)
-        super.clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 0)
+        super.clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 1)
         self.texture = device.makeTexture(descriptor: MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .bgra8Unorm, width: drawBuffer.width, height: drawBuffer.height, mipmapped: false))
 
         self.commandQueue = device.makeCommandQueue()
         self.viewport.zfar = 1.0
+    }
+
+    func setLetterboxColor(_ color: Color) {
+        if let srgb = CGColorSpace(name: CGColorSpace.sRGB),
+           let cgcolor = color.cgColor?.converted(to: srgb, intent: CGColorRenderingIntent.perceptual, options: nil) {
+            self.clearColor.red = cgcolor.components![0]
+            self.clearColor.green = cgcolor.components![1]
+            self.clearColor.blue = cgcolor.components![2]
+            self.clearColor.alpha = cgcolor.components![3]
+        }
     }
 
     func update(withDrawableSize size: CGSize) {
@@ -94,7 +124,10 @@ class MyMTKView : MTKView {
         self.quadScaleXY[0] = Float(widthOnTarget) / Float32(size.width)
         self.quadScaleXY[1] = Float(heightOnTarget) / Float32(size.height)
     }
+    override func resize(withOldSuperviewSize oldSize: NSSize) {
 
+        print("Appearance")
+    }
     override func draw() {
         super.draw()
         update(withDrawableSize: drawableSize)
@@ -121,17 +154,16 @@ class MyMTKView : MTKView {
             return
         }
 
+
         encoder.label = "MyEncoder"
 
         encoder.setViewport(self.viewport)
         if let pipelineState = self.pipelineState {
             encoder.setRenderPipelineState(pipelineState)
-
             quadScaleXY.withUnsafeBytes {
                 bytes in
                 encoder.setVertexBytes(bytes.baseAddress!, length: bytes.count, index: Int(IndexQuadScaleXY.rawValue))
             }
-
             encoder.setFragmentTexture(self.texture, index: Int(IndexTexture.rawValue))
 
             encoder.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
@@ -145,13 +177,26 @@ class MyMTKView : MTKView {
     }
 }
 
-final class MetalView : NSObject {
+final class MetalView {
     var scalingMode: ScalingMode
     var drawBuffer: DrawBuffer
+    var letterboxColor: Color
+    var mouseMoveHandler: ((CGPoint, CGPoint) -> Void)?
 
     init(scalingMode: ScalingMode, drawBuffer: DrawBuffer) {
         self.scalingMode = scalingMode
         self.drawBuffer = drawBuffer
+        self.letterboxColor = Color.black
+    }
+
+    func letterboxColor(_ color: Color) -> MetalView {
+        self.letterboxColor = color
+        return self
+    }
+
+    func mouseMove(_ handler: @escaping(_ relative: CGPoint, _ position: CGPoint) -> Void) -> MetalView {
+        self.mouseMoveHandler = handler
+        return self
     }
 }
 
@@ -165,11 +210,9 @@ extension MetalView : NSViewRepresentable {
     
     func updateNSView(_ nsView: MyMTKView, context: Context) {
         nsView.scalingMode = self.scalingMode
+        nsView.setLetterboxColor(self.letterboxColor)
+        nsView.mouseMoveHandler = self.mouseMoveHandler
         print(self)
-    }
-
-    static func dismantleNSView(_ nsView: MyMTKView, coordinator: ()) {
-        print("dismantle")
     }
 }
 #else

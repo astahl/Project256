@@ -21,6 +21,8 @@
 		685035D728428EE200355252 /* GameState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 685035D528428EE200355252 /* GameState.swift */; };
 		685035D92842921900355252 /* DrawBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 685035D82842921900355252 /* DrawBuffer.swift */; };
 		685035DA2842921900355252 /* DrawBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 685035D82842921900355252 /* DrawBuffer.swift */; };
+		68A2CB03284817490071CA62 /* StructHelpers.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 68A2CB01284817490071CA62 /* StructHelpers.cpp */; };
+		68A2CB04284817490071CA62 /* StructHelpers.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 68A2CB01284817490071CA62 /* StructHelpers.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -37,6 +39,8 @@
 		684555AA283D86C9004AD3FB /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		685035D528428EE200355252 /* GameState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameState.swift; sourceTree = "<group>"; };
 		685035D82842921900355252 /* DrawBuffer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawBuffer.swift; sourceTree = "<group>"; };
+		68A2CB01284817490071CA62 /* StructHelpers.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = StructHelpers.cpp; sourceTree = "<group>"; };
+		68A2CB02284817490071CA62 /* StructHelpers.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = StructHelpers.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -68,6 +72,8 @@
 				6819ACC8283EE6CB00CCBFD5 /* BridgeHeader.h */,
 				685035D528428EE200355252 /* GameState.swift */,
 				685035D82842921900355252 /* DrawBuffer.swift */,
+				68A2CB01284817490071CA62 /* StructHelpers.cpp */,
+				68A2CB02284817490071CA62 /* StructHelpers.h */,
 			);
 			name = Platform;
 			path = ../../src/platform_swiftui;
@@ -201,6 +207,7 @@
 			files = (
 				6819ACC2283ECD8E00CCBFD5 /* MetalView.swift in Sources */,
 				685035D92842921900355252 /* DrawBuffer.swift in Sources */,
+				68A2CB03284817490071CA62 /* StructHelpers.cpp in Sources */,
 				685035D3283F9D4E00355252 /* Project256.cpp in Sources */,
 				685035D628428EE200355252 /* GameState.swift in Sources */,
 				6819ACC5283EDFFC00CCBFD5 /* MetalViewShader.metal in Sources */,
@@ -214,6 +221,7 @@
 			files = (
 				6819ACC3283ECD8E00CCBFD5 /* MetalView.swift in Sources */,
 				685035DA2842921900355252 /* DrawBuffer.swift in Sources */,
+				68A2CB04284817490071CA62 /* StructHelpers.cpp in Sources */,
 				685035D4283F9D4F00355252 /* Project256.cpp in Sources */,
 				685035D728428EE200355252 /* GameState.swift in Sources */,
 				6819ACC6283EDFFC00CCBFD5 /* MetalViewShader.metal in Sources */,

@@ -52,7 +52,8 @@ struct Tap {
 
 struct Mouse {
 	struct Button buttonLeft, buttonRight, buttonMiddle;
-	struct Vec2i track[MouseMaxTrackLength];
+	struct Vec2f track[MouseMaxTrackLength];
+    unsigned trackLength;
 	struct Vec2f relativeMovement;
 	struct Axis2 scroll;
 };
@@ -86,7 +87,6 @@ struct GameOutput {
 	___BOOLEAN needTextInput;
 	struct Rumble rumble[InputMaxControllers];
 };
-
 
 struct GameOutput doGameThings(struct GameInput* input, void* memory);
 void writeDrawBuffer(void* memory, void* buffer);

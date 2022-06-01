@@ -11,7 +11,5 @@ import SwiftUI
 class GameState : ObservableObject {
     let memory = UnsafeMutableRawPointer.allocate(byteCount: MemorySize, alignment: 128)
     var input = GameInput()
-    
-    @Published var borderColor = Color.red
     @Published var drawBuffer = DrawBuffer(width: Int(DrawBufferWidth), height: Int(DrawBufferHeight))
 }
