@@ -233,6 +233,13 @@ Direct3D12View::Direct3D12View(HWND hwnd)
 				.pShaderBytecode = pixelShader.Get()->GetBufferPointer(),
 				.BytecodeLength = pixelShader.Get()->GetBufferSize(),
 			},
+			.StreamOutput {
+				.pSODeclaration = 0,
+				.NumEntries = 0,
+				.pBufferStrides = 0,
+				.NumStrides = 0,
+				.RasterizedStream = D3D12_SO_NO_RASTERIZED_STREAM,
+			},
 			.BlendState = blend,
 			.SampleMask = UINT_MAX,
 			.RasterizerState = D3D12_RASTERIZER_DESC{
@@ -276,11 +283,13 @@ Direct3D12View::Direct3D12View(HWND hwnd)
 				.Count = 1,
 			},
 			.NodeMask = 0,
-#ifdef _DEBUG
-			.Flags = D3D12_PIPELINE_STATE_FLAG_TOOL_DEBUG,
-#else
+
+// debug flag only available on warp device
+//#ifdef _DEBUG
+//			.Flags = D3D12_PIPELINE_STATE_FLAG_TOOL_DEBUG,
+//#else
 			.Flags = D3D12_PIPELINE_STATE_FLAG_NONE,
-#endif
+//#endif
 		};
 
 		ExitOnFail(mDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&mPipelineState)));
@@ -321,7 +330,7 @@ void Direct3D12View::Draw()
 {
 	ExitOnFail(mCommandAllocator->Reset());
 	ExitOnFail(mCommandList->Reset(mCommandAllocator.Get(), mPipelineState.Get()));
-
+	mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
 	D3D12_RESOURCE_BARRIER barrierRenderTargetTransition {
 		.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
 		.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE,
@@ -339,8 +348,25 @@ void Direct3D12View::Draw()
 	};
 
 	const float clearColor[] = { 0.0f, 1.0f, 0.0f, 1.0f };
+	D3D12_VIEWPORT vp{
+		.TopLeftX = 0,
+		.TopLeftY = 0,
+		.Width = 200,
+		.Height = 200,
+	};
+	mCommandList->RSSetViewports(1, &vp);
+	D3D12_RECT scissorRect{
+		.left = static_cast<LONG>(vp.TopLeftX),
+		.top = static_cast<LONG>(vp.TopLeftY),
+		.right = static_cast<LONG>(vp.TopLeftX + vp.Width),
+		.bottom = static_cast<LONG>(vp.TopLeftY + vp.Height),
+	};
+	mCommandList->RSSetScissorRects(1, &scissorRect);
+	mCommandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
 	mCommandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
-	mCommandList->DrawIndexedInstanced(4, 1, 0, 0, 0);
+	mCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+	mCommandList->IASetVertexBuffers(0, 0, nullptr);
+	mCommandList->DrawInstanced(4, 1, 0, 0);
 
 	barrierRenderTargetTransition.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
 	barrierRenderTargetTransition.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
