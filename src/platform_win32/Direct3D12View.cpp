@@ -86,10 +86,8 @@ Direct3D12View::Direct3D12View(HWND hwnd, UINT width, UINT height)
 
 	{
 		ComPtr<IDXGISwapChain1> swapChain;
-		// TODO no fullscreen desc?
 		ExitOnFail(factory->CreateSwapChainForHwnd(mCommandQueue.Get(), hwnd, &swapChainDesc, nullptr, nullptr, &swapChain));
-		// TODO no fullscreen?
-		ExitOnFail(factory->MakeWindowAssociation(hwnd, DXGI_MWA_NO_ALT_ENTER));
+		ExitOnFail(factory->MakeWindowAssociation(hwnd, 0));
 		ExitOnFail(swapChain.As(&mSwapChain));
 	}
 	mFrameIndex = mSwapChain->GetCurrentBackBufferIndex();
