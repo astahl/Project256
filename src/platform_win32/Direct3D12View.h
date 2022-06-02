@@ -3,11 +3,19 @@
 #include <d3d12.h>
 #include <dxgi1_6.h>
 #include <wrl.h>
-
+#define CXX
+#include "../game/Project256.h"
 
 using Microsoft::WRL::ComPtr;
 
 class Direct3D12View {
+    struct ShaderConstantBuffer
+    {
+        Vec2f scale;
+        float padding[62]; // Padding so the constant buffer is 256-byte aligned.
+    };
+    static_assert((sizeof(ShaderConstantBuffer) % 256) == 0, "Constant Buffer size must be 256-byte aligned");
+
     static const UINT FrameCount = 2;
 	HWND mHwnd; 
     UINT mWidth;
@@ -20,6 +28,11 @@ class Direct3D12View {
 
     D3D12_VIEWPORT mViewport;
     D3D12_RECT mScissorRect;
+
+    // resources
+    ShaderConstantBuffer mConstantBufferData;
+    ComPtr<ID3D12Resource> mConstantBuffer;
+    UINT8* mCbvDataBeginPtr;
 
     // Pipeline objects.
     ComPtr<ID3D12Resource> mRenderTargets[FrameCount];

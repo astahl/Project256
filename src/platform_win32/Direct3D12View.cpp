@@ -5,12 +5,14 @@
 #ifdef _DEBUG
 #include <dxgidebug.h>
 #endif
+
 using namespace Microsoft::WRL;
 
 Direct3D12View::Direct3D12View(HWND hwnd, UINT width, UINT height)
 	: mHwnd(hwnd)
 	, mWidth(width)
 	, mHeight(height)
+	, mCbvDataBeginPtr(nullptr)
 {
 	UINT dxgiFactoryFlags = 0;
 
@@ -53,7 +55,7 @@ Direct3D12View::Direct3D12View(HWND hwnd, UINT width, UINT height)
 	{
 		DXGI_ADAPTER_DESC3 desc;
 		adapter->GetDesc3(&desc);
-		if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
+		if (desc.Flags & DXGI_ADAPTER_FLAG3_SOFTWARE)
 			continue;
 
 		if (SUCCEEDED(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_11_0, __uuidof(ID3D12Device), nullptr))) {
@@ -112,7 +114,6 @@ Direct3D12View::Direct3D12View(HWND hwnd, UINT width, UINT height)
 		mRtvDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 		mCbvDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	}
-
 
 	this->CreateRenderTargetViews();
 
@@ -303,6 +304,56 @@ Direct3D12View::Direct3D12View(HWND hwnd, UINT width, UINT height)
 		ExitOnFail(mDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&mCommandAllocator)));
 		ExitOnFail(mDevice->CreateCommandList1(0, D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_LIST_FLAG_NONE, IID_PPV_ARGS(&mCommandList)));
 
+
+		// Create the constant buffer.
+		{
+			const UINT constantBufferSize = sizeof(ShaderConstantBuffer);    // CB size is required to be 256-byte aligned.
+
+			D3D12_HEAP_PROPERTIES props{
+				.Type = D3D12_HEAP_TYPE_UPLOAD,
+				.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
+				.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN,
+				.CreationNodeMask = 1,
+				.VisibleNodeMask = 1,
+			};
+
+			D3D12_RESOURCE_DESC resourceDesc{
+				.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER,
+				.Alignment = 0,
+				.Width = constantBufferSize,
+				.Height = 1,
+				.DepthOrArraySize = 1,
+				.MipLevels = 1,
+				.Format = DXGI_FORMAT_UNKNOWN,
+				.SampleDesc {
+					.Count = 1,
+					.Quality = 0,
+				},
+				.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR,
+				.Flags = D3D12_RESOURCE_FLAG_NONE,
+			};
+
+			ExitOnFail(mDevice->CreateCommittedResource(
+				&props,
+				D3D12_HEAP_FLAG_NONE,
+				&resourceDesc,
+				D3D12_RESOURCE_STATE_GENERIC_READ,
+				nullptr,
+				IID_PPV_ARGS(&mConstantBuffer)));
+
+			// Describe and create a constant buffer view.
+			D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
+			cbvDesc.BufferLocation = mConstantBuffer->GetGPUVirtualAddress();
+			cbvDesc.SizeInBytes = constantBufferSize;
+			mDevice->CreateConstantBufferView(&cbvDesc, mCbvHeap->GetCPUDescriptorHandleForHeapStart());
+
+			// Map and initialize the constant buffer. We don't unmap this until the
+			// app closes. Keeping things mapped for the lifetime of the resource is okay.
+			D3D12_RANGE readRange{ .Begin = 0, .End = 0 };        // We do not intend to read from this resource on the CPU.
+			ExitOnFail(mConstantBuffer->Map(0, &readRange, reinterpret_cast<void**>(&mCbvDataBeginPtr)));
+			memcpy(mCbvDataBeginPtr, &mConstantBufferData, sizeof(mConstantBufferData));
+		}
+
 		ExitOnFail(mDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&mFence)));
 		mFenceValue = 1;
 		mFenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
@@ -337,6 +388,9 @@ void Direct3D12View::Resize(UINT width, UINT height)
 		.bottom = static_cast<LONG>(mViewport.TopLeftY + mViewport.Height),
 	};
 
+	mConstantBufferData.scale = clipSpaceDrawBufferScale(width, height);
+	memcpy(mCbvDataBeginPtr, &mConstantBufferData, sizeof(mConstantBufferData));
+
 	this->WaitForPreviousFrame();
 
 	// destroy render targets
@@ -355,6 +409,12 @@ void Direct3D12View::Draw()
 	ExitOnFail(mCommandAllocator->Reset());
 	ExitOnFail(mCommandList->Reset(mCommandAllocator.Get(), mPipelineState.Get()));
 	mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
+
+	ID3D12DescriptorHeap* ppHeaps[] = { mCbvHeap.Get() };
+	mCommandList->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
+
+	mCommandList->SetGraphicsRootDescriptorTable(0, mCbvHeap->GetGPUDescriptorHandleForHeapStart());
+
 	D3D12_RESOURCE_BARRIER barrierRenderTargetTransition {
 		.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
 		.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE,

@@ -2,7 +2,7 @@
 
 const long MemorySize = 32 * 1024; // 32k
 
-const unsigned DrawBufferWidth = 640;
+const unsigned DrawBufferWidth = 320;
 const unsigned DrawBufferHeight = 200;
 const unsigned DrawAspectH = 4;
 const unsigned DrawAspectV = 3;
@@ -87,6 +87,8 @@ struct GameOutput {
 	___BOOLEAN needTextInput;
 	struct Rumble rumble[InputMaxControllers];
 };
+
+Vec2f clipSpaceDrawBufferScale(unsigned int viewportWidth, unsigned int viewportHeight);
 
 struct GameOutput doGameThings(struct GameInput* input, void* memory);
 void writeDrawBuffer(void* memory, void* buffer);
