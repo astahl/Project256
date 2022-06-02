@@ -7,7 +7,10 @@ MainWindow::MainWindow(HWND hwnd)
 {
     this->memory = reinterpret_cast<uint8_t*>(VirtualAlloc(NULL, 32L * 1024L * 1024L, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
     this->drawBuffer = reinterpret_cast<uint8_t*>(VirtualAlloc(0, 4 * DrawBufferHeight * DrawBufferWidth, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
-    this->view = new Direct3D12View(hwnd);
+
+    RECT rect{};
+    GetWindowRect(hwnd, &rect);
+    this->view = new Direct3D12View(hwnd, rect.right - rect.left, rect.bottom - rect.top);
 }
 
 MainWindow::~MainWindow()
@@ -19,6 +22,13 @@ void MainWindow::onPaint() {
     writeDrawBuffer(memory, drawBuffer);
     this->view->Draw();
     ValidateRect(hwnd, NULL);
+}
+
+void MainWindow::onResize() {
+    RECT rect{};
+    GetWindowRect(hwnd, &rect);
+    
+    this->view->Resize(rect.right - rect.left, rect.bottom - rect.top);
 }
 
 void MainWindow::doMainLoop() {
@@ -48,6 +58,9 @@ LRESULT CALLBACK MainWindow::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPA
         MainWindow** windowPP = reinterpret_cast<MainWindow**>(createStruct->lpCreateParams);
         window = new MainWindow(hwnd);
         *windowPP = window;
+    } break;
+    case WM_SIZE: {
+        window->onResize();
     } break;
     case WM_PAINT:
         window->onPaint();

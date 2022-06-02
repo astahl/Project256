@@ -10,11 +10,16 @@ using Microsoft::WRL::ComPtr;
 class Direct3D12View {
     static const UINT FrameCount = 2;
 	HWND mHwnd; 
+    UINT mWidth;
+    UINT mHeight;
 
 	ComPtr<ID3D12Device4> mDevice;
 	ComPtr<ID3D12CommandQueue> mCommandQueue;
 	ComPtr<IDXGISwapChain4> mSwapChain;
 	UINT mFrameIndex;
+
+    D3D12_VIEWPORT mViewport;
+    D3D12_RECT mScissorRect;
 
     // Pipeline objects.
     ComPtr<ID3D12Resource> mRenderTargets[FrameCount];
@@ -33,11 +38,15 @@ class Direct3D12View {
     UINT64 mFenceValue;
 
     void WaitForPreviousFrame();
+    void CreateRenderTargetViews();
+
 	static bool ExitOnFail(HRESULT result);
 
 public:
-	Direct3D12View(HWND hwnd);
+	Direct3D12View(HWND hwnd, UINT width, UINT height);
 	~Direct3D12View();
 
+
+    void Resize(UINT width, UINT height);
     void Draw(); 
 };

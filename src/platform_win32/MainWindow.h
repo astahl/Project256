@@ -16,7 +16,7 @@ class MainWindow
     uint8_t* drawBuffer;
 
     void onPaint();
-
+    void onResize();
 public:
     static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 

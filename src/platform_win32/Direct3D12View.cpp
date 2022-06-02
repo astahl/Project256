@@ -7,8 +7,10 @@
 #endif
 using namespace Microsoft::WRL;
 
-Direct3D12View::Direct3D12View(HWND hwnd)
+Direct3D12View::Direct3D12View(HWND hwnd, UINT width, UINT height)
 	: mHwnd(hwnd)
+	, mWidth(width)
+	, mHeight(height)
 {
 	UINT dxgiFactoryFlags = 0;
 
@@ -71,8 +73,8 @@ Direct3D12View::Direct3D12View(HWND hwnd)
 	ExitOnFail(mDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&mCommandQueue)));
 
 	DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {
-		.Width = 200,
-		.Height = 200,
+		.Width = mWidth,
+		.Height = mHeight,
 		.Format = DXGI_FORMAT_R8G8B8A8_UNORM,
 		.SampleDesc = {
 			.Count = 1,
@@ -113,6 +115,8 @@ Direct3D12View::Direct3D12View(HWND hwnd)
 		mCbvDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	}
 
+
+	this->CreateRenderTargetViews();
 
 	// graphics pipeline state / shader compilation & setup
 	{
@@ -301,16 +305,6 @@ Direct3D12View::Direct3D12View(HWND hwnd)
 		ExitOnFail(mDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&mCommandAllocator)));
 		ExitOnFail(mDevice->CreateCommandList1(0, D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_LIST_FLAG_NONE, IID_PPV_ARGS(&mCommandList)));
 
-		// frame resources
-
-		D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle(mRtvHeap->GetCPUDescriptorHandleForHeapStart());
-		for (UINT i = 0; i < FrameCount; ++i) {
-			ExitOnFail(mSwapChain->GetBuffer(i, IID_PPV_ARGS(&mRenderTargets[i])));
-			mDevice->CreateRenderTargetView(mRenderTargets[i].Get(), nullptr, rtvHandle);
-			rtvHandle.ptr += mRtvDescriptorSize;
-		}
-
-
 		ExitOnFail(mDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&mFence)));
 		mFenceValue = 1;
 		mFenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
@@ -324,6 +318,38 @@ Direct3D12View::~Direct3D12View()
 {
 	WaitForPreviousFrame();
 	CloseHandle(mFenceEvent);
+}
+
+
+void Direct3D12View::Resize(UINT width, UINT height)
+{
+	mWidth = width;
+	mHeight = height;
+	
+	mViewport = {
+	.TopLeftX = 0,
+	.TopLeftY = 0,
+	.Width = static_cast<FLOAT>(mWidth),
+	.Height = static_cast<FLOAT>(mHeight),
+	};
+	mScissorRect = {
+		.left = static_cast<LONG>(mViewport.TopLeftX),
+		.top = static_cast<LONG>(mViewport.TopLeftY),
+		.right = static_cast<LONG>(mViewport.TopLeftX + mViewport.Width),
+		.bottom = static_cast<LONG>(mViewport.TopLeftY + mViewport.Height),
+	};
+
+	this->WaitForPreviousFrame();
+
+	// destroy render targets
+	for (UINT i = 0; i < FrameCount; ++i) {
+		mRenderTargets[i].Reset();
+	}
+
+	ExitOnFail(mSwapChain->ResizeBuffers(FrameCount, mWidth, mHeight, DXGI_FORMAT_UNKNOWN, 0));
+	mFrameIndex = mSwapChain->GetCurrentBackBufferIndex();
+	
+	this->CreateRenderTargetViews();
 }
 
 void Direct3D12View::Draw()
@@ -347,21 +373,9 @@ void Direct3D12View::Draw()
 		.ptr = SIZE_T(mRtvHeap->GetCPUDescriptorHandleForHeapStart().ptr) + SIZE_T(mFrameIndex * mRtvDescriptorSize),
 	};
 
-	const float clearColor[] = { 0.0f, 1.0f, 0.0f, 1.0f };
-	D3D12_VIEWPORT vp{
-		.TopLeftX = 0,
-		.TopLeftY = 0,
-		.Width = 200,
-		.Height = 200,
-	};
-	mCommandList->RSSetViewports(1, &vp);
-	D3D12_RECT scissorRect{
-		.left = static_cast<LONG>(vp.TopLeftX),
-		.top = static_cast<LONG>(vp.TopLeftY),
-		.right = static_cast<LONG>(vp.TopLeftX + vp.Width),
-		.bottom = static_cast<LONG>(vp.TopLeftY + vp.Height),
-	};
-	mCommandList->RSSetScissorRects(1, &scissorRect);
+	const float clearColor[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	mCommandList->RSSetViewports(1, &mViewport);
+	mCommandList->RSSetScissorRects(1, &mScissorRect);
 	mCommandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
 	mCommandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 	mCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
@@ -396,6 +410,17 @@ void Direct3D12View::WaitForPreviousFrame()
 	}
 
 	mFrameIndex = mSwapChain->GetCurrentBackBufferIndex();
+}
+
+void Direct3D12View::CreateRenderTargetViews()
+{
+
+	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle(mRtvHeap->GetCPUDescriptorHandleForHeapStart());
+	for (UINT i = 0; i < FrameCount; ++i) {
+		ExitOnFail(mSwapChain->GetBuffer(i, IID_PPV_ARGS(&mRenderTargets[i])));
+		mDevice->CreateRenderTargetView(mRenderTargets[i].Get(), nullptr, rtvHandle);
+		rtvHandle.ptr += mRtvDescriptorSize;
+	}
 }
 
 bool Direct3D12View::ExitOnFail(HRESULT result) {
