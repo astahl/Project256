@@ -15,6 +15,16 @@ struct Project256App: App {
 
     func gameTick() {
         // TODO do timing calculation?
+        let nextTimeIndex = gameState.lastTimeIndex == 0 ? 1 : 0;
+        gettimeofday(&gameState.timevalues[nextTimeIndex], nil)
+        if gameState.lastTimeIndex != -1 {
+            let t0 = gameState.timevalues[gameState.lastTimeIndex]
+            let t1 = gameState.timevalues[nextTimeIndex];
+
+            gameState.input.elapsedTime_s = Double(t1.tv_sec - t0.tv_sec)
+            gameState.input.elapsedTime_s += Double(t1.tv_usec - t0.tv_usec) / 1_000_000.0;
+        }
+        gameState.lastTimeIndex = nextTimeIndex
         // TODO convert input?
         let output = doGameThings(&gameState.input, gameState.memory)
         if output.shouldQuit != 0 {
@@ -23,6 +33,10 @@ struct Project256App: App {
         if output.needTextInput != 0 {
 
         }
+
+
+        // todo can we move update tex to its own thread and just synchronize?
+        writeDrawBuffer(gameState.memory, gameState.drawBuffer.data.baseAddress!)
         gameState.input = GameInput()
     }
 

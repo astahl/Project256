@@ -130,8 +130,6 @@ class MyMTKView : MTKView {
 
         let region = MTLRegion(origin: MTLOrigin(), size: MTLSize(width: drawBuffer.width, height: drawBuffer.height, depth: 1))
 
-        // todo can we move update tex to its own thread and just synchronize?
-        writeDrawBuffer(UnsafeMutableRawPointer.init(bitPattern: 0), drawBuffer.data.baseAddress!)
         self.texture?.replace(region: region, mipmapLevel: 0, withBytes: drawBuffer.data.baseAddress!, bytesPerRow: drawBuffer.width * 4)
 
         guard let renderPassDescriptor = self.currentRenderPassDescriptor else {

@@ -2,6 +2,13 @@
 #include "Project256.h"
 #include <cstdint>
 
+struct GameMemory {
+    uint8_t vram[DrawBufferWidth * DrawBufferHeight];
+    uint32_t palette[2];
+    bool isInitialized;
+    Vec2i mousePosition;
+};
+
 extern "C" {
 
 Vec2f clipSpaceDrawBufferScale(unsigned int viewportWidth, unsigned int viewportHeight)
@@ -27,29 +34,67 @@ Vec2f clipSpaceDrawBufferScale(unsigned int viewportWidth, unsigned int viewport
     };
 }
 
-GameOutput doGameThings(GameInput* input, void* memory)
+GameOutput doGameThings(GameInput* pInput, void* pMemory)
 {
-    if (memory == nullptr)
+    if (pMemory == nullptr || pInput == nullptr)
     {
-        return GameOutput {
-
-        };
+        return GameOutput {};
     }
+    GameMemory& memory = *reinterpret_cast<GameMemory*>(pMemory);
+    GameInput& input = *pInput;
+
+    if (!memory.isInitialized) {
+
+        memory.palette[0] = 0xFF000000;
+        memory.palette[1] = 0xFFFFFFFF;
+        for(int i = 0; i < DrawBufferWidth * DrawBufferHeight; ++i)
+            memory.vram[i] = 0;
+    }
+
+    if (input.mouse.trackLength) {
+        Vec2f mousePosition = input.mouse.track[input.mouse.trackLength - 1];
+
+        Vec2i position{
+            .x = static_cast<int>(mousePosition.x),
+            .y = static_cast<int>(mousePosition.y),
+        };
+
+        if (position.x < DrawBufferWidth && position.x >= 0 &&
+            position.y < DrawBufferHeight && position.y >= 0)
+            memory.vram[position.x + position.y * DrawBufferWidth] = 0x1;
+
+    } else {
+       // memory.mousePosition = Vec2f{-1.0f, -1.0f};
+    }
+
 	return GameOutput{
-		.shouldQuit = input->closeRequested
+		.shouldQuit = input.closeRequested
 	};
 }
 
-void writeDrawBuffer(void* memory, void* buffer)
+void writeDrawBuffer(void* pMemory, void* buffer)
 {
-    if (memory == nullptr) {
-        uint32_t* pixel = reinterpret_cast<uint32_t*>(buffer);
+    if (buffer == nullptr) {
+        return;
+    }
+    uint32_t* pixel = reinterpret_cast<uint32_t*>(buffer);
+
+    if (pMemory == nullptr) {
         for (unsigned y = 0; y < DrawBufferHeight; ++y)
         for (unsigned x = 0; x < DrawBufferWidth; ++x)
         {
             *pixel++ = 0xFF000000 | ((y % 2) && (x % 2) ? 0xFFFFFF : 0x000000) ; // argb
         }
+        return;
     }
+
+    GameMemory& memory = *reinterpret_cast<GameMemory*>(pMemory);
+    uint8_t* vram = memory.vram;
+
+    for (unsigned y = 0; y < DrawBufferHeight; ++y)
+    for (unsigned x = 0; x < DrawBufferWidth; ++x)
+        *pixel++ = memory.palette[*vram++];
+
 }
 
 }

@@ -2,8 +2,8 @@
 
 const long MemorySize = 32 * 1024; // 32k
 
-const unsigned DrawBufferWidth = 16;
-const unsigned DrawBufferHeight = 16;
+const unsigned DrawBufferWidth = 160;
+const unsigned DrawBufferHeight = 100;
 const unsigned DrawAspectH = 4;
 const unsigned DrawAspectV = 3;
 
