@@ -9,9 +9,22 @@ import SwiftUI
 
 @main
 struct Project256App: App {
+    let textBuffer = UnsafeMutableRawBufferPointer.allocate(byteCount: Int(InputMaxTextLength), alignment: 64)
     @StateObject var gameState = GameState()
-    @State var letterboxColor = Color.red
-    private var timer: Timer?
+    @State var letterboxColor = Color.black
+
+    func gameTick() {
+        // TODO do timing calculation?
+        // TODO convert input?
+        let output = doGameThings(&gameState.input, gameState.memory)
+        if output.shouldQuit != 0 {
+            exit(0)
+        }
+        if output.needTextInput != 0 {
+
+        }
+        gameState.input = GameInput()
+    }
 
     var body: some Scene {
         WindowGroup {
@@ -22,7 +35,15 @@ struct Project256App: App {
                     relative, position in
                     inputPushMouseTrack(&gameState.input, Float(position.x), Float(position.y))
                 }
-                Text("\(gameState.input.mouse.track.0.x), \(gameState.input.mouse.track.0.y)")
+                .textInput {
+                    text in
+                    text.utf8CString.withUnsafeBytes {
+                        buffer in
+                        let count = buffer.copyBytes(to: self.textBuffer) - 1 // remove \0 at end
+                        inputPushUtf8Bytes(&gameState.input, self.textBuffer.baseAddress, UInt32(count))
+                    }
+                }
+                .beforeDraw(self.gameTick)
             }
         }
         #if os(macOS)

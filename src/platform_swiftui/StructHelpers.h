@@ -13,6 +13,7 @@ extern "C" {
 #endif
 
 void inputPushMouseTrack(struct GameInput* input, float x, float y);
+void inputPushUtf8Bytes(struct GameInput* input, char* str, unsigned count);
 void inputClear(struct GameInput* input);
 
 #ifdef CXX

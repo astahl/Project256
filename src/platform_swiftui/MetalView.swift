@@ -23,14 +23,18 @@ extension Color {
     }
 }
 
+typealias TextInputHandler = (_ text: String) -> Void
+typealias MouseMoveHandler = (_ relative: CGPoint, _ position: CGPoint) -> Void
+typealias BeforeDrawHandler = () -> Void
 
 class MyMTKView : MTKView {
-    var mouseMoveHandler: ((_ relative: CGPoint, _ position: CGPoint) -> Void)?
-
+    var textInputHandler: TextInputHandler?
+    var mouseMoveHandler: MouseMoveHandler?
+    var beforeDrawHandler: BeforeDrawHandler?
     private var drawBuffer: DrawBuffer? = nil
     private var commandQueue: MTLCommandQueue?
     private var pipelineState: MTLRenderPipelineState?
-    private var viewport = MTLViewport.init()
+    private var viewport = MTLViewport()
     private var quadScaleXY: [Float32] = [0.0, 0.0]
     private var texture: MTLTexture?
 
@@ -40,7 +44,6 @@ class MyMTKView : MTKView {
 
     required init(coder: NSCoder) {
         super.init(coder: coder)
-
     }
 
     override func viewDidMoveToWindow() {
@@ -48,12 +51,25 @@ class MyMTKView : MTKView {
     }
 
     override func keyDown(with event: NSEvent) {
-        // todo tell handler
-//        event.characters?
+        if let characters = event.characters {
+            self.textInputHandler?(characters)
+        }
     }
 
     override func mouseMoved(with event: NSEvent) {
-        self.mouseMoveHandler?(CGPoint(x: event.deltaX, y: event.deltaY), event.locationInWindow)
+        let normalizedPos = CGPoint(x: event.locationInWindow.x / self.frame.width, y: event.locationInWindow.y / self.frame.height)
+        let scaleX = CGFloat(self.quadScaleXY[0])
+        let scaleY = CGFloat(self.quadScaleXY[1])
+        let pos = normalizedPos
+            .applying(CGAffineTransform.init(translationX: -1, y: -1).scaledBy(x: 2, y: 2))
+
+        if !CGRect.init(x: -1, y: -1, width: 2, height: 2).contains(pos) {
+            return
+        }
+
+        let pixelPosition = pos.applying(CGAffineTransform.init(translationX: 0.5, y: 0.5).scaledBy(x: 0.5 / scaleX, y: 0.5 / scaleY)).applying(CGAffineTransform.init(scaleX: CGFloat(drawBuffer?.width ?? 1), y: CGFloat(drawBuffer?.height ?? 1)))
+
+        self.mouseMoveHandler?(CGPoint(x: event.deltaX, y: event.deltaY), pixelPosition)
     }
 
     init(drawBuffer: DrawBuffer, letterboxColor: Color?) throws {
@@ -79,7 +95,7 @@ class MyMTKView : MTKView {
         pipelineDescriptor.rasterSampleCount = super.sampleCount
 
         try? self.pipelineState = device.makeRenderPipelineState(descriptor: pipelineDescriptor)
-        super.clearColor = letterboxColor?.clearColor() ?? MTLClearColor(red: 0, green: 0, blue: 0, alpha: 1)
+        super.clearColor = letterboxColor?.clearColor() ?? MTLClearColor()
         self.texture = device.makeTexture(descriptor: MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .bgra8Unorm, width: drawBuffer.width, height: drawBuffer.height, mipmapped: false))
 
         self.commandQueue = device.makeCommandQueue()
@@ -101,12 +117,11 @@ class MyMTKView : MTKView {
         self.quadScaleXY[1] = scale.y
 
     }
-    override func resize(withOldSuperviewSize oldSize: NSSize) {
 
-        print("Appearance")
-    }
     override func draw() {
         super.draw()
+        self.beforeDrawHandler?()
+
         update(withDrawableSize: drawableSize)
 
         guard let drawBuffer = drawBuffer else {
@@ -155,9 +170,12 @@ class MyMTKView : MTKView {
 }
 
 final class MetalView {
-    var drawBuffer: DrawBuffer
-    var letterboxColor: Color
-    var mouseMoveHandler: ((CGPoint, CGPoint) -> Void)?
+    private var drawBuffer: DrawBuffer
+    private var letterboxColor: Color
+    private var textInputHandler: TextInputHandler?
+    private var mouseMoveHandler: MouseMoveHandler?
+    private var beforeDrawHandler: BeforeDrawHandler?
+
 
     init(drawBuffer: DrawBuffer) {
         self.drawBuffer = drawBuffer
@@ -169,8 +187,18 @@ final class MetalView {
         return self
     }
 
-    func mouseMove(_ handler: @escaping(_ relative: CGPoint, _ position: CGPoint) -> Void) -> MetalView {
+    func textInput(_ handler: @escaping(TextInputHandler)) -> MetalView {
+        self.textInputHandler = handler
+        return self
+    }
+
+    func mouseMove(_ handler: @escaping(MouseMoveHandler)) -> MetalView {
         self.mouseMoveHandler = handler
+        return self
+    }
+
+    func beforeDraw(_ handler: @escaping(BeforeDrawHandler)) -> MetalView {
+        self.beforeDrawHandler = handler
         return self
     }
 }
@@ -186,7 +214,8 @@ extension MetalView : NSViewRepresentable {
     func updateNSView(_ nsView: MyMTKView, context: Context) {
         nsView.setLetterboxColor(self.letterboxColor)
         nsView.mouseMoveHandler = self.mouseMoveHandler
-        print(self)
+        nsView.beforeDrawHandler = self.beforeDrawHandler
+        nsView.textInputHandler = self.textInputHandler
     }
 }
 #else

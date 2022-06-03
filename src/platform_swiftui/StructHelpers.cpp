@@ -19,11 +19,11 @@ void inputPushMouseTrack(GameInput* pInput, float x, float y)
         input.mouse.track[input.mouse.trackLength++] = {x, y};
 }
 
-void inputPushUtf8Byte(GameInput* pInput, char c)
+void inputPushUtf8Bytes(GameInput* pInput, char* str, unsigned count)
 {
     GameInput &input = *pInput;
-    if (input.textLength < InputMaxTextLength)
-        input.text_utf8[input.textLength++] = c;
+    while (input.textLength < InputMaxTextLength && count--)
+        input.text_utf8[input.textLength++] = *(str++);
 }
 
 void inputClear(GameInput* pInput)
