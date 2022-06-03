@@ -12,15 +12,19 @@ import MetalKit
 enum MyMTKViewErrors : Error {
     case InitError
 }
-
-enum ScalingMode {
-    case ScalingInteger
-    case ScalingFull
+extension Color {
+    func clearColor() -> MTLClearColor? {
+        if let srgb = CGColorSpace(name: CGColorSpace.sRGB),
+           let cgcolor = self.cgColor?.converted(to: srgb, intent: CGColorRenderingIntent.perceptual, options: nil),
+           let c = cgcolor.components {
+            return MTLClearColor(red: c[0], green: c[1], blue: c[2], alpha: c[3]);
+        }
+        return nil
+    }
 }
 
 
 class MyMTKView : MTKView {
-    var scalingMode: ScalingMode = .ScalingFull
     var mouseMoveHandler: ((_ relative: CGPoint, _ position: CGPoint) -> Void)?
 
     private var drawBuffer: DrawBuffer? = nil
@@ -52,9 +56,8 @@ class MyMTKView : MTKView {
         self.mouseMoveHandler?(CGPoint(x: event.deltaX, y: event.deltaY), event.locationInWindow)
     }
 
-    init(drawBuffer: DrawBuffer, scalingMode: ScalingMode) throws {
+    init(drawBuffer: DrawBuffer, letterboxColor: Color?) throws {
         self.drawBuffer = drawBuffer
-        self.scalingMode = scalingMode
 
         guard let device = MTLCreateSystemDefaultDevice() else {
             throw MyMTKViewErrors.InitError
@@ -76,7 +79,7 @@ class MyMTKView : MTKView {
         pipelineDescriptor.rasterSampleCount = super.sampleCount
 
         try? self.pipelineState = device.makeRenderPipelineState(descriptor: pipelineDescriptor)
-        super.clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 1)
+        super.clearColor = letterboxColor?.clearColor() ?? MTLClearColor(red: 0, green: 0, blue: 0, alpha: 1)
         self.texture = device.makeTexture(descriptor: MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .bgra8Unorm, width: drawBuffer.width, height: drawBuffer.height, mipmapped: false))
 
         self.commandQueue = device.makeCommandQueue()
@@ -84,45 +87,19 @@ class MyMTKView : MTKView {
     }
 
     func setLetterboxColor(_ color: Color) {
-        if let srgb = CGColorSpace(name: CGColorSpace.sRGB),
-           let cgcolor = color.cgColor?.converted(to: srgb, intent: CGColorRenderingIntent.perceptual, options: nil) {
-            self.clearColor.red = cgcolor.components![0]
-            self.clearColor.green = cgcolor.components![1]
-            self.clearColor.blue = cgcolor.components![2]
-            self.clearColor.alpha = cgcolor.components![3]
+        if let clearColor = color.clearColor() {
+            self.clearColor = clearColor
         }
     }
 
     func update(withDrawableSize size: CGSize) {
         self.viewport.height = size.height
         self.viewport.width = size.width
-        // TODO fix this mess
-        guard let drawBuffer = drawBuffer else {
-            return
-        }
-        let width = UInt64(size.width)
-        let height = UInt64(size.height)
-        var widthOnTarget = width
-        var heightOnTarget = height
 
-        switch scalingMode {
-        case .ScalingInteger:
-            // integer scaling, only square pixels allowed...
-            let factor = max(1, min(width / UInt64(drawBuffer.width), height / UInt64(drawBuffer.height)))
-            widthOnTarget = factor * UInt64(drawBuffer.width)
-            heightOnTarget = factor * UInt64(drawBuffer.height)
-        case .ScalingFull:
-            let targetAspectRatioFixPoint48_16 = (width << 16) / height
-            let drawAspectRatioFixPoint48_16 = UInt64((DrawAspectH << 16) / DrawAspectV)
+        let scale = clipSpaceDrawBufferScale(UInt32(size.width), UInt32(size.height))
+        self.quadScaleXY[0] = scale.x
+        self.quadScaleXY[1] = scale.y
 
-            if targetAspectRatioFixPoint48_16 < drawAspectRatioFixPoint48_16 {
-                heightOnTarget = (widthOnTarget << 16) / drawAspectRatioFixPoint48_16
-            } else {
-                widthOnTarget = (heightOnTarget * drawAspectRatioFixPoint48_16) >> 16
-            }
-        }
-        self.quadScaleXY[0] = Float(widthOnTarget) / Float32(size.width)
-        self.quadScaleXY[1] = Float(heightOnTarget) / Float32(size.height)
     }
     override func resize(withOldSuperviewSize oldSize: NSSize) {
 
@@ -178,13 +155,11 @@ class MyMTKView : MTKView {
 }
 
 final class MetalView {
-    var scalingMode: ScalingMode
     var drawBuffer: DrawBuffer
     var letterboxColor: Color
     var mouseMoveHandler: ((CGPoint, CGPoint) -> Void)?
 
-    init(scalingMode: ScalingMode, drawBuffer: DrawBuffer) {
-        self.scalingMode = scalingMode
+    init(drawBuffer: DrawBuffer) {
         self.drawBuffer = drawBuffer
         self.letterboxColor = Color.black
     }
@@ -205,11 +180,10 @@ extension MetalView : NSViewRepresentable {
     typealias NSViewType = MyMTKView
     
     func makeNSView(context: Context) -> MyMTKView {
-        return (try? MyMTKView(drawBuffer: self.drawBuffer, scalingMode: self.scalingMode))!
+        return (try? MyMTKView(drawBuffer: self.drawBuffer, letterboxColor: self.letterboxColor))!
     }
     
     func updateNSView(_ nsView: MyMTKView, context: Context) {
-        nsView.scalingMode = self.scalingMode
         nsView.setLetterboxColor(self.letterboxColor)
         nsView.mouseMoveHandler = self.mouseMoveHandler
         print(self)
@@ -220,7 +194,7 @@ extension MetalView : UIViewRepresentable {
     typealias UIViewType = MyMTKView
     
     func makeUIView(context: Context) -> MyMTKView {
-        return (try? MyMTKView(drawBuffer: self.drawBuffer, scalingMode: self.scalingMode))!
+        return (try? MyMTKView(drawBuffer: self.drawBuffer, letterboxColor: self.letterboxColor))!
     }
     
     func updateUIView(_ uiView: MyMTKView, context: Context) {

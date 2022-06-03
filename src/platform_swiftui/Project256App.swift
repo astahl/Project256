@@ -10,14 +10,13 @@ import SwiftUI
 @main
 struct Project256App: App {
     @StateObject var gameState = GameState()
-    @State var scalingMode = ScalingMode.ScalingFull
     @State var letterboxColor = Color.red
     private var timer: Timer?
 
     var body: some Scene {
         WindowGroup {
             ZStack {
-            MetalView(scalingMode: scalingMode, drawBuffer: gameState.drawBuffer)
+            MetalView(drawBuffer: gameState.drawBuffer)
                 .letterboxColor(self.letterboxColor)
                 .mouseMove {
                     relative, position in
@@ -29,10 +28,6 @@ struct Project256App: App {
         #if os(macOS)
         Settings {
             VStack {
-                Picker("Scaling Mode", selection: $scalingMode) {
-                    Text("Full").tag(ScalingMode.ScalingFull)
-                    Text("Integer").tag(ScalingMode.ScalingInteger)
-                }
                 ColorPicker("Letterbox", selection: $letterboxColor)
             }.padding()
         }
