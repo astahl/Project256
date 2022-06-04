@@ -5,7 +5,7 @@
 MainWindow::MainWindow(HWND hwnd)
     : hwnd(hwnd)
 {
-    this->memory = reinterpret_cast<uint8_t*>(VirtualAlloc(NULL, 32L * 1024L * 1024L, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
+    this->memory = reinterpret_cast<uint8_t*>(VirtualAlloc(NULL, MemorySize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
     this->drawBuffer = reinterpret_cast<uint8_t*>(VirtualAlloc(0, 4 * DrawBufferHeight * DrawBufferWidth, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
 
     RECT rect{};
@@ -66,10 +66,10 @@ LRESULT CALLBACK MainWindow::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPA
         window->onPaint();
         break;
     case WM_CLOSE:
-        window->input.closeRequested = true;
+        window->input.closeRequested = BOOLEAN_ENUM::eTRUE;
         break;
     case WM_DESTROY: {
-        delete window;
+        //delete window;
     } break;
     }
 

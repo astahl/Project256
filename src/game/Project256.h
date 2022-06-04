@@ -17,7 +17,7 @@ const unsigned InputMaxTextLength = 256;
 extern "C" {
 #endif
 
-enum BOOLEAN {
+enum BOOLEAN_ENUM {
     eFALSE,
     eTRUE
 };
@@ -33,7 +33,7 @@ struct Vec2i {
 
 struct Button {
 	int transistionCount;
-	enum BOOLEAN endedDown;
+	enum BOOLEAN_ENUM endedDown;
 };
 
 struct Axis2 {
@@ -73,20 +73,20 @@ struct GameInput {
 	struct Tap taps[InputMaxTaps];
 	unsigned tapCount;
 
-    enum BOOLEAN hasMouse;
+    enum BOOLEAN_ENUM hasMouse;
 	struct Mouse mouse;
 
 	char text_utf8[InputMaxTextLength];
 	unsigned textLength;
 
-	enum BOOLEAN closeRequested;
+	enum BOOLEAN_ENUM closeRequested;
 };
 
 struct GameOutput {
-	enum BOOLEAN shouldQuit;
-	enum BOOLEAN needTextInput;
-    enum BOOLEAN shouldPinMouse;
-    enum BOOLEAN shouldHideMouse;
+	enum BOOLEAN_ENUM shouldQuit;
+	enum BOOLEAN_ENUM needTextInput;
+    enum BOOLEAN_ENUM shouldPinMouse;
+    enum BOOLEAN_ENUM shouldHideMouse;
 	struct Rumble rumble[InputMaxControllers];
 };
 

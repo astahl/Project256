@@ -49,7 +49,7 @@ Direct3D12View::Direct3D12View(HWND hwnd, UINT width, UINT height)
 	ComPtr<IDXGIFactory7> factory;
 	ExitOnFail(CreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(&factory)));
 
-	// get the adapter
+	// Adapter, Device and Command Queue
 	ComPtr<IDXGIAdapter4> adapter;
 	for (UINT adapterIndex = 0; SUCCEEDED(factory->EnumAdapterByGpuPreference(adapterIndex, DXGI_GPU_PREFERENCE_UNSPECIFIED, IID_PPV_ARGS(&adapter))); ++adapterIndex)
 	{
@@ -74,6 +74,7 @@ Direct3D12View::Direct3D12View(HWND hwnd, UINT width, UINT height)
 
 	ExitOnFail(mDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&mCommandQueue)));
 
+	// Swap Chain
 	DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {
 		.Width = mWidth,
 		.Height = mHeight,
@@ -106,13 +107,21 @@ Direct3D12View::Direct3D12View(HWND hwnd, UINT width, UINT height)
 
 		D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc{
 			.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
-			.NumDescriptors = FrameCount,
+			.NumDescriptors = 1,
 			.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
 		};
 		ExitOnFail(mDevice->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&mCbvHeap)));
 
+		D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc{
+			.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
+			.NumDescriptors = 1,
+			.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
+		};
+		ExitOnFail(mDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvHeap)));
+
 		mRtvDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 		mCbvDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+		mSrvDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	}
 
 	this->CreateRenderTargetViews();
@@ -166,9 +175,6 @@ Direct3D12View::Direct3D12View(HWND hwnd, UINT width, UINT height)
 
 			ExitOnFail(D3D12SerializeVersionedRootSignature(&rootSignatureDesc, &signature, &error));
 			ExitOnFail(mDevice->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&mRootSignature)));
-#ifdef _DEBUG
-			mRootSignature->SetName(L"MYRS");
-#endif
 		}
 		
 
@@ -286,20 +292,10 @@ Direct3D12View::Direct3D12View(HWND hwnd, UINT width, UINT height)
 				.Count = 1,
 			},
 			.NodeMask = 0,
-
-// debug flag only available on warp device
-//#ifdef _DEBUG
-//			.Flags = D3D12_PIPELINE_STATE_FLAG_TOOL_DEBUG,
-//#else
 			.Flags = D3D12_PIPELINE_STATE_FLAG_NONE,
-//#endif
 		};
 
 		ExitOnFail(mDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&mPipelineState)));
-		
-#ifdef _DEBUG
-		mPipelineState->SetName(L"MYPSO");
-#endif
 
 		ExitOnFail(mDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&mCommandAllocator)));
 		ExitOnFail(mDevice->CreateCommandList1(0, D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_LIST_FLAG_NONE, IID_PPV_ARGS(&mCommandList)));
@@ -342,9 +338,10 @@ Direct3D12View::Direct3D12View(HWND hwnd, UINT width, UINT height)
 				IID_PPV_ARGS(&mConstantBuffer)));
 
 			// Describe and create a constant buffer view.
-			D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
-			cbvDesc.BufferLocation = mConstantBuffer->GetGPUVirtualAddress();
-			cbvDesc.SizeInBytes = constantBufferSize;
+			D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc {
+				.BufferLocation = mConstantBuffer->GetGPUVirtualAddress(),
+				.SizeInBytes = constantBufferSize,
+			};
 			mDevice->CreateConstantBufferView(&cbvDesc, mCbvHeap->GetCPUDescriptorHandleForHeapStart());
 
 			// Map and initialize the constant buffer. We don't unmap this until the
@@ -354,12 +351,111 @@ Direct3D12View::Direct3D12View(HWND hwnd, UINT width, UINT height)
 			memcpy(mCbvDataBeginPtr, &mConstantBufferData, sizeof(mConstantBufferData));
 		}
 
-		ExitOnFail(mDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&mFence)));
-		mFenceValue = 1;
-		mFenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-		if (mFenceEvent == nullptr) {
-			ExitOnFail(HRESULT_FROM_WIN32(GetLastError()));
+		// create Texture
+		ComPtr<ID3D12Resource> textureUploadHeap;
+		{
+			D3D12_RESOURCE_DESC textureDesc = {
+				.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D,
+				.Width = DrawBufferWidth,
+				.Height = DrawBufferHeight,
+				.DepthOrArraySize = 1,
+				.MipLevels = 1,
+				.Format = DXGI_FORMAT_R8G8B8A8_UNORM,
+				.SampleDesc {
+					.Count = 1,
+					.Quality = 0,
+				},
+				.Flags = D3D12_RESOURCE_FLAG_NONE,
+			};
+			D3D12_HEAP_PROPERTIES props{
+				.Type = D3D12_HEAP_TYPE_DEFAULT,
+				.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
+				.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN,
+				.CreationNodeMask = 1,
+				.VisibleNodeMask = 1,
+			};
+
+			ExitOnFail(mDevice->CreateCommittedResource(
+				&props,
+				D3D12_HEAP_FLAG_NONE,
+				&textureDesc,
+				D3D12_RESOURCE_STATE_COPY_DEST,
+				nullptr,
+				IID_PPV_ARGS(&mTexture)));
+
+			// Create the GPU upload buffer.
+			D3D12_HEAP_PROPERTIES uploadHeapProps{
+				.Type = D3D12_HEAP_TYPE_UPLOAD,
+				.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
+				.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN,
+				.CreationNodeMask = 1,
+				.VisibleNodeMask = 1,
+			};
+
+			UINT64 uploadBufferSize = 0;
+			mDevice->GetCopyableFootprints(&textureDesc, 0, 1, 0, nullptr, nullptr, nullptr, &uploadBufferSize);
+
+			D3D12_RESOURCE_DESC uploadHeapResourceDesc{
+				.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER,
+				.Alignment = 0,
+				.Width = uploadBufferSize,
+				.Height = 1,
+				.DepthOrArraySize = 1,
+				.MipLevels = 1,
+				.Format = DXGI_FORMAT_UNKNOWN,
+				.SampleDesc {
+					.Count = 1,
+					.Quality = 0,
+				},
+				.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR,
+				.Flags = D3D12_RESOURCE_FLAG_NONE,
+			};
+
+			ExitOnFail(mDevice->CreateCommittedResource(
+				&uploadHeapProps,
+				D3D12_HEAP_FLAG_NONE,
+				&uploadHeapResourceDesc,
+				D3D12_RESOURCE_STATE_GENERIC_READ,
+				nullptr,
+				IID_PPV_ARGS(&textureUploadHeap)));
+
+			// Copy data to the intermediate upload heap and then schedule a copy 
+			// from the upload heap to the Texture2D.
+
+			const size_t memSize = DrawBufferHeight * DrawBufferWidth * 4;
+			mDrawBuffer = reinterpret_cast<BYTE*>(VirtualAlloc(0, memSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
+			writeDrawBuffer(nullptr, mDrawBuffer);
+
+			D3D12_SUBRESOURCE_DATA textureData {
+				.pData = mDrawBuffer,
+				.RowPitch = DrawBufferWidth * 4,
+				.SlicePitch = memSize,
+			};
+
+			//UpdateSubresources(m_commandList.Get(), m_texture.Get(), textureUploadHeap.Get(), 0, 0, 1, &textureData);
+			//mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
+
+			// Describe and create a SRV for the texture.
+			D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {
+				.Format = textureDesc.Format,
+				.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D,
+				.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
+				.Texture2D {
+					.MipLevels = 1,
+				},
+			};
+			mDevice->CreateShaderResourceView(mTexture.Get(), &srvDesc, mSrvHeap->GetCPUDescriptorHandleForHeapStart());
 		}
+	}
+
+
+
+	// create fences
+	ExitOnFail(mDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&mFence)));
+	mFenceValue = 1;
+	mFenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+	if (mFenceEvent == nullptr) {
+		ExitOnFail(HRESULT_FROM_WIN32(GetLastError()));
 	}
 }
 
@@ -472,7 +568,6 @@ void Direct3D12View::WaitForPreviousFrame()
 
 void Direct3D12View::CreateRenderTargetViews()
 {
-
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle(mRtvHeap->GetCPUDescriptorHandleForHeapStart());
 	for (UINT i = 0; i < FrameCount; ++i) {
 		ExitOnFail(mSwapChain->GetBuffer(i, IID_PPV_ARGS(&mRenderTargets[i])));

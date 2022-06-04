@@ -32,18 +32,22 @@ class Direct3D12View {
     // resources
     ShaderConstantBuffer mConstantBufferData;
     ComPtr<ID3D12Resource> mConstantBuffer;
+    ComPtr<ID3D12Resource> mTexture;
     UINT8* mCbvDataBeginPtr;
+    BYTE* mDrawBuffer;
 
     // Pipeline objects.
     ComPtr<ID3D12Resource> mRenderTargets[FrameCount];
     ComPtr<ID3D12CommandAllocator> mCommandAllocator;
     ComPtr<ID3D12DescriptorHeap> mRtvHeap;
     ComPtr<ID3D12DescriptorHeap> mCbvHeap;
+    ComPtr<ID3D12DescriptorHeap> mSrvHeap;
     ComPtr<ID3D12PipelineState> mPipelineState;
     ComPtr<ID3D12GraphicsCommandList> mCommandList;
     ComPtr<ID3D12RootSignature> mRootSignature;
     UINT mRtvDescriptorSize;
     UINT mCbvDescriptorSize;
+    UINT mSrvDescriptorSize;
 
     // Synchronization objects.
     HANDLE mFenceEvent;
