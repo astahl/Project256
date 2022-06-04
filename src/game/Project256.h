@@ -1,9 +1,9 @@
 #pragma once
 
-const long MemorySize = 32 * 1024; // 32k
+const long MemorySize = 32 * 1024 * 1024; // 32M
 
-const unsigned DrawBufferWidth = 160;
-const unsigned DrawBufferHeight = 100;
+const unsigned DrawBufferWidth = 720;
+const unsigned DrawBufferHeight = 200;
 const unsigned DrawAspectH = 4;
 const unsigned DrawAspectV = 3;
 
@@ -15,12 +15,12 @@ const unsigned InputMaxTextLength = 256;
 
 #ifdef CXX
 extern "C" {
-#define ___BOOLEAN bool
 #endif
 
-#ifndef ___BOOLEAN
-#define ___BOOLEAN int
-#endif
+enum BOOLEAN {
+    eFALSE,
+    eTRUE
+};
 
 
 struct Vec2f {
@@ -33,7 +33,7 @@ struct Vec2i {
 
 struct Button {
 	int transistionCount;
-	___BOOLEAN endedDown;
+	enum BOOLEAN endedDown;
 };
 
 struct Axis2 {
@@ -73,18 +73,20 @@ struct GameInput {
 	struct Tap taps[InputMaxTaps];
 	unsigned tapCount;
 
-	___BOOLEAN hasMouse;
+    enum BOOLEAN hasMouse;
 	struct Mouse mouse;
 
 	char text_utf8[InputMaxTextLength];
 	unsigned textLength;
 
-	___BOOLEAN closeRequested;
+	enum BOOLEAN closeRequested;
 };
 
 struct GameOutput {
-	___BOOLEAN shouldQuit;
-	___BOOLEAN needTextInput;
+	enum BOOLEAN shouldQuit;
+	enum BOOLEAN needTextInput;
+    enum BOOLEAN shouldPinMouse;
+    enum BOOLEAN shouldHideMouse;
 	struct Rumble rumble[InputMaxControllers];
 };
 

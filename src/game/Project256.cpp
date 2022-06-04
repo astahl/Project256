@@ -36,19 +36,14 @@ Vec2f clipSpaceDrawBufferScale(unsigned int viewportWidth, unsigned int viewport
 
 GameOutput doGameThings(GameInput* pInput, void* pMemory)
 {
-    if (pMemory == nullptr || pInput == nullptr)
-    {
-        return GameOutput {};
-    }
     GameMemory& memory = *reinterpret_cast<GameMemory*>(pMemory);
     GameInput& input = *pInput;
 
-    if (!memory.isInitialized) {
-
-        memory.palette[0] = 0xFF000000;
-        memory.palette[1] = 0xFFFFFFFF;
+    if (input.frameNumber == 0) {
         for(int i = 0; i < DrawBufferWidth * DrawBufferHeight; ++i)
             memory.vram[i] = 0;
+        memory.palette[0] = 0xFF006600;
+        memory.palette[1] = 0xFF00FF00;
     }
 
     if (input.mouse.trackLength) {
@@ -68,7 +63,8 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
     }
 
 	return GameOutput{
-		.shouldQuit = input.closeRequested
+		.shouldQuit = input.closeRequested,
+        .shouldHideMouse = input.mouse.trackLength ? eTRUE : eFALSE,
 	};
 }
 
