@@ -12,6 +12,7 @@ struct Project256App: App {
     let textBuffer = UnsafeMutableRawBufferPointer.allocate(byteCount: Int(InputMaxTextLength), alignment: 64)
     @StateObject var gameState = GameState()
     @State var letterboxColor = Color.black
+
     func gameTick() {
         gameState.input.frameNumber = gameState.frameNumber
         gameState.frameNumber += 1
@@ -23,8 +24,9 @@ struct Project256App: App {
             exit(0)
         }
         if output.needTextInput == eTRUE {
-
+    
         }
+        #if os(macOS)
         if output.shouldHideMouse == eTRUE {
             if !gameState.isMouseHidden {
                 CGDisplayHideCursor(CGMainDisplayID())
@@ -36,6 +38,7 @@ struct Project256App: App {
                 gameState.isMouseHidden = false
             }
         }
+        #endif
         // todo can we move update tex to its own thread and just synchronize?
         writeDrawBuffer(gameState.memory, gameState.drawBuffer.data.baseAddress!)
         gameState.input = GameInput()

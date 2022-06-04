@@ -29,7 +29,6 @@ typealias BeforeDrawHandler = () -> Void
 
 class MyMTKView : MTKView {
     var textInputHandler: TextInputHandler?
-    var mouseMoveHandler: MouseMoveHandler?
     var beforeDrawHandler: BeforeDrawHandler?
     private var drawBuffer: DrawBuffer? = nil
     private var commandQueue: MTLCommandQueue?
@@ -38,39 +37,10 @@ class MyMTKView : MTKView {
     private var quadScaleXY: [Float32] = [0.0, 0.0]
     private var texture: MTLTexture?
 
-    override var acceptsFirstResponder: Bool {
-        return true
-    }
-
     required init(coder: NSCoder) {
         super.init(coder: coder)
     }
 
-    override func viewDidMoveToWindow() {
-        self.window?.acceptsMouseMovedEvents = true
-    }
-
-    override func keyDown(with event: NSEvent) {
-        if let characters = event.characters {
-            self.textInputHandler?(characters)
-        }
-    }
-
-    override func mouseMoved(with event: NSEvent) {
-        let normalizedPos = CGPoint(x: event.locationInWindow.x / self.frame.width, y: event.locationInWindow.y / self.frame.height)
-        let scaleX = CGFloat(self.quadScaleXY[0])
-        let scaleY = CGFloat(self.quadScaleXY[1])
-        let pos = normalizedPos
-            .applying(CGAffineTransform.init(translationX: -1, y: -1).scaledBy(x: 2, y: 2))
-
-        if !CGRect.init(x: -1, y: -1, width: 2, height: 2).contains(pos) {
-            return
-        }
-
-        let pixelPosition = pos.applying(CGAffineTransform.init(translationX: 0.5, y: 0.5).scaledBy(x: 0.5 / scaleX, y: 0.5 / scaleY)).applying(CGAffineTransform.init(scaleX: CGFloat(drawBuffer?.width ?? 1), y: CGFloat(drawBuffer?.height ?? 1)))
-
-        self.mouseMoveHandler?(CGPoint(x: event.deltaX, y: event.deltaY), pixelPosition)
-    }
 
     init(drawBuffer: DrawBuffer, letterboxColor: Color?) throws {
         self.drawBuffer = drawBuffer
@@ -100,6 +70,8 @@ class MyMTKView : MTKView {
 
         self.commandQueue = device.makeCommandQueue()
         self.viewport.zfar = 1.0
+        self.preferredFramesPerSecond = 60
+        self.isPaused = false
     }
 
     func setLetterboxColor(_ color: Color) {
@@ -165,6 +137,40 @@ class MyMTKView : MTKView {
         }
         commandBuffer.commit()
     }
+
+#if os(macOS)
+    var mouseMoveHandler: MouseMoveHandler?
+
+    override var acceptsFirstResponder: Bool {
+        return true
+    }
+
+    override func viewDidMoveToWindow() {
+        self.window?.acceptsMouseMovedEvents = true
+    }
+
+    override func keyDown(with event: NSEvent) {
+        if let characters = event.characters {
+            self.textInputHandler?(characters)
+        }
+    }
+
+    override func mouseMoved(with event: NSEvent) {
+        let normalizedPos = CGPoint(x: event.locationInWindow.x / self.frame.width, y: event.locationInWindow.y / self.frame.height)
+        let scaleX = CGFloat(self.quadScaleXY[0])
+        let scaleY = CGFloat(self.quadScaleXY[1])
+        let pos = normalizedPos
+            .applying(CGAffineTransform.init(translationX: -1, y: -1).scaledBy(x: 2, y: 2))
+
+        if !CGRect.init(x: -1, y: -1, width: 2, height: 2).contains(pos) {
+            return
+        }
+
+        let pixelPosition = pos.applying(CGAffineTransform.init(translationX: 0.5, y: 0.5).scaledBy(x: 0.5 / scaleX, y: 0.5 / scaleY)).applying(CGAffineTransform.init(scaleX: CGFloat(drawBuffer?.width ?? 1), y: CGFloat(drawBuffer?.height ?? 1)))
+
+        self.mouseMoveHandler?(CGPoint(x: event.deltaX, y: event.deltaY), pixelPosition)
+    }
+#endif
 }
 
 final class MetalView {
@@ -202,6 +208,7 @@ final class MetalView {
 }
 
 #if os(macOS)
+
 extension MetalView : NSViewRepresentable {
     typealias NSViewType = MyMTKView
     
@@ -225,6 +232,7 @@ extension MetalView : UIViewRepresentable {
     }
     
     func updateUIView(_ uiView: MyMTKView, context: Context) {
+        uiView.beforeDrawHandler = self.beforeDrawHandler
     }
     
 }

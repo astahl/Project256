@@ -1,12 +1,12 @@
 #define CXX
 #include "Project256.h"
 #include <cstdint>
+#include "Drawing/Palettes.cpp"
 
 struct GameMemory {
     uint8_t vram[DrawBufferWidth * DrawBufferHeight];
-    uint32_t palette[2];
-    bool isInitialized;
-    Vec2i mousePosition;
+    uint32_t palette[4];
+    Vec2f dotPosition;
 };
 
 extern "C" {
@@ -42,8 +42,8 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
     if (input.frameNumber == 0) {
         for(int i = 0; i < DrawBufferWidth * DrawBufferHeight; ++i)
             memory.vram[i] = 0;
-        memory.palette[0] = 0xFF006600;
-        memory.palette[1] = 0xFF00FF00;
+        PaletteCGA::writeTo(memory.palette, PaletteCGA::Mode::Mode4Palette1HighIntensity, PaletteCGA::Color::brown);
+        memory.dotPosition = Vec2f{10, 10};
     }
 
     if (input.mouse.trackLength) {
@@ -56,15 +56,23 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
 
         if (position.x < DrawBufferWidth && position.x >= 0 &&
             position.y < DrawBufferHeight && position.y >= 0)
-            memory.vram[position.x + position.y * DrawBufferWidth] = 0x1;
+            memory.vram[position.x + position.y * DrawBufferWidth] = 0x2;
 
     } else {
+
        // memory.mousePosition = Vec2f{-1.0f, -1.0f};
     }
+    // clear
+    memory.vram[static_cast<int>(memory.dotPosition.x) + static_cast<int>(memory.dotPosition.y) * DrawBufferWidth] = 0x0;
+    // update
+    memory.dotPosition.x += input.elapsedTime_s * 120;
+    if (memory.dotPosition.x >= DrawBufferWidth)
+        memory.dotPosition.x = 0.0;
+    // draw
+    memory.vram[static_cast<int>(memory.dotPosition.x) + static_cast<int>(memory.dotPosition.y) * DrawBufferWidth] = 0x1;
 
 	return GameOutput{
 		.shouldQuit = input.closeRequested,
-        .shouldHideMouse = input.mouse.trackLength ? eTRUE : eFALSE,
 	};
 }
 
@@ -90,7 +98,6 @@ void writeDrawBuffer(void* pMemory, void* buffer)
     for (unsigned y = 0; y < DrawBufferHeight; ++y)
     for (unsigned x = 0; x < DrawBufferWidth; ++x)
         *pixel++ = memory.palette[*vram++];
-
 }
 
 }

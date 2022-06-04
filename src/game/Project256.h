@@ -1,4 +1,5 @@
-#pragma once
+#ifndef PROJECT_256_H
+#define PROJECT_256_H
 
 const long MemorySize = 32 * 1024 * 1024; // 32M
 
@@ -21,7 +22,6 @@ enum BOOLEAN_ENUM {
     eFALSE,
     eTRUE
 };
-
 
 struct Vec2f {
 	float x, y;
@@ -97,4 +97,6 @@ void writeDrawBuffer(void* memory, void* buffer);
 
 #ifdef CXX
 }
+#endif
+
 #endif
