@@ -71,3 +71,37 @@ struct PaletteCGA {
         }
     }
 };
+
+
+struct PaletteC64 {
+
+    constexpr static uint32_t colors[16] = {
+        0xFF'00'00'00,
+        0xFF'FF'FF'FF,
+        0xFF'67'37'2B,
+        0xFF'6F'A3'B1,
+        0xFF'6F'3C'85,
+        0xFF'58'8C'43,
+        0xFF'34'28'79,
+        0xFF'B7'C6'6E,
+        0xFF'6F'4F'25,
+        0xFF'42'39'00,
+        0xFF'99'66'59,
+        0xFF'43'43'43,
+        0xFF'6B'6B'6B,
+        0xFF'9A'D1'83,
+        0xFF'6B'5E'B4,
+        0xFF'95'95'95,
+    };
+
+    enum class Color {
+        black, white, red, cyan, purple, green, blue, yellow,
+        orange, brown, lightRed, darkGray, gray, lightGreen, lightBlue, lightGray
+    };
+
+    static void writeTo(uint32_t* destination) {
+        for (size_t i = 0; i < 16; ++i) {
+            destination[i] = colors[i];
+        }
+    }
+};

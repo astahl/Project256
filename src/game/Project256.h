@@ -1,10 +1,13 @@
 #ifndef PROJECT_256_H
 #define PROJECT_256_H
 
-const long MemorySize = 32 * 1024 * 1024; // 32M
+const long MemorySize = 640 * 1024; // 640kbytes
 
-const unsigned DrawBufferWidth = 720;
+const unsigned DrawBufferWidth = 160;
 const unsigned DrawBufferHeight = 200;
+const unsigned DrawBufferBpp = 32;
+const unsigned DrawBufferBytes = DrawBufferWidth * DrawBufferHeight * DrawBufferBpp / 8;
+
 const unsigned DrawAspectH = 4;
 const unsigned DrawAspectV = 3;
 

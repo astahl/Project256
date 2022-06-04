@@ -5,9 +5,11 @@
 
 struct GameMemory {
     uint8_t vram[DrawBufferWidth * DrawBufferHeight];
-    uint32_t palette[4];
+    uint32_t palette[16];
     Vec2f dotPosition;
 };
+
+static_assert(sizeof(GameMemory) <= MemorySize, "MemorySize is too small to hold GameMemory struct");
 
 extern "C" {
 
@@ -42,7 +44,8 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
     if (input.frameNumber == 0) {
         for(int i = 0; i < DrawBufferWidth * DrawBufferHeight; ++i)
             memory.vram[i] = 0;
-        PaletteCGA::writeTo(memory.palette, PaletteCGA::Mode::Mode4Palette1HighIntensity, PaletteCGA::Color::brown);
+//        PaletteCGA::writeTo(memory.palette, PaletteCGA::Mode::Mode5LowIntensity, PaletteCGA::Color::darkGray);
+        PaletteC64::writeTo(memory.palette);
         memory.dotPosition = Vec2f{10, 10};
     }
 
@@ -56,7 +59,7 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
 
         if (position.x < DrawBufferWidth && position.x >= 0 &&
             position.y < DrawBufferHeight && position.y >= 0)
-            memory.vram[position.x + position.y * DrawBufferWidth] = 0x2;
+            memory.vram[position.x + position.y * DrawBufferWidth] = position.x % 15 + 1;
 
     } else {
 
