@@ -42,6 +42,7 @@ void MainWindow::doMainLoop() {
             TranslateMessage(&message);
             DispatchMessage(&message);
         }
+        Sleep(20);
         output = doGameThings(&input, memory);
 
         InvalidateRect(hwnd, NULL, FALSE);

@@ -68,7 +68,7 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
     // clear
     memory.vram[static_cast<int>(memory.dotPosition.x) + static_cast<int>(memory.dotPosition.y) * DrawBufferWidth] = 0x0;
     // update
-    memory.dotPosition.x += input.elapsedTime_s * 120;
+    memory.dotPosition.x += static_cast<float>(input.elapsedTime_s * 120);
     if (memory.dotPosition.x >= DrawBufferWidth)
         memory.dotPosition.x = 0.0;
     // draw
