@@ -5,8 +5,9 @@ const long MemorySize = 640 * 1024; // 640kbytes
 
 const unsigned DrawBufferWidth = 160;
 const unsigned DrawBufferHeight = 200;
+const unsigned DrawBufferPixelCount = DrawBufferWidth * DrawBufferHeight;
 const unsigned DrawBufferBpp = 32;
-const unsigned DrawBufferBytes = DrawBufferWidth * DrawBufferHeight * DrawBufferBpp / 8;
+const unsigned DrawBufferBytes = DrawBufferPixelCount * DrawBufferBpp / 8;
 
 const unsigned DrawAspectH = 4;
 const unsigned DrawAspectV = 3;

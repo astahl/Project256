@@ -38,14 +38,14 @@ Vec2f clipSpaceDrawBufferScale(unsigned int viewportWidth, unsigned int viewport
 
 GameOutput doGameThings(GameInput* pInput, void* pMemory)
 {
+    using Palette = PaletteC64;
     GameMemory& memory = *reinterpret_cast<GameMemory*>(pMemory);
     GameInput& input = *pInput;
-
     if (input.frameNumber == 0) {
-        for(int i = 0; i < DrawBufferWidth * DrawBufferHeight; ++i)
-            memory.vram[i] = 0;
+        for(int i = 0; i < DrawBufferPixelCount; ++i)
+            memory.vram[i] = rand() % Palette::count;
 //        PaletteCGA::writeTo(memory.palette, PaletteCGA::Mode::Mode5LowIntensity, PaletteCGA::Color::darkGray);
-        PaletteC64::writeTo(memory.palette);
+        Palette::writeTo(memory.palette);
         memory.dotPosition = Vec2f{10, 10};
     }
 
@@ -97,7 +97,7 @@ void writeDrawBuffer(void* pMemory, void* buffer)
 
     GameMemory& memory = *reinterpret_cast<GameMemory*>(pMemory);
     uint8_t* vram = memory.vram;
-
+    
     for (unsigned y = 0; y < DrawBufferHeight; ++y)
     for (unsigned x = 0; x < DrawBufferWidth; ++x)
         *pixel++ = memory.palette[*vram++];

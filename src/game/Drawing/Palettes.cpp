@@ -7,7 +7,6 @@
 
 #include <cstdint>
 #include <array>
-#include <ranges>
 
 struct PaletteCGA {
 
@@ -25,7 +24,9 @@ struct PaletteCGA {
         Mode5HighIntensity,
     };
 
-    constexpr static uint32_t colors[16] = {
+    constexpr static size_t count = 4;
+
+    constexpr static std::array<uint32_t,16> colors = {
         0xFF'00'00'00,
         0xFF'00'00'AA,
         0xFF'00'AA'00,
@@ -66,7 +67,7 @@ struct PaletteCGA {
                 colorNames = { background, Color::lightCyan, Color::lightRed, Color::white };
                 break;
         }
-        for (size_t i = 0; i < 4; ++i) {
+        for (size_t i = 0; i < count; ++i) {
             destination[i] = colors[static_cast<uint8_t>(colorNames[i])];
         }
     }
@@ -75,7 +76,9 @@ struct PaletteCGA {
 
 struct PaletteC64 {
 
-    constexpr static uint32_t colors[16] = {
+    constexpr static size_t count = 16;
+
+    constexpr static std::array<uint32_t,16> colors = {
         0xFF'00'00'00,
         0xFF'FF'FF'FF,
         0xFF'67'37'2B,
@@ -100,7 +103,7 @@ struct PaletteC64 {
     };
 
     static void writeTo(uint32_t* destination) {
-        for (size_t i = 0; i < 16; ++i) {
+        for (size_t i = 0; i < count; ++i) {
             destination[i] = colors[i];
         }
     }

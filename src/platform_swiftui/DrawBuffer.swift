@@ -7,7 +7,7 @@
 
 import Foundation
 
-class DrawBuffer : ObservableObject {
+class DrawBuffer {
     let width: Int
     let height: Int
     let aspectRatio: Float

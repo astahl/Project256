@@ -16,7 +16,9 @@ struct Project256App: App {
     func gameTick() {
         gameState.input.frameNumber = gameState.frameNumber
         gameState.frameNumber += 1
-        gameState.input.elapsedTime_s = gameState.frameTime.seconds()
+        let frameTime = gameState.frameTime.elapsed()
+        gameState.input.upTime_microseconds += UInt64(frameTime.microseconds)
+        gameState.input.elapsedTime_s = frameTime.seconds
         // TODO finalize inputs
         let output = doGameThings(&gameState.input, gameState.memory)
 
