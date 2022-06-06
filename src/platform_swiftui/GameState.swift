@@ -33,5 +33,21 @@ class GameState : ObservableObject {
     let frameTime = Chronometer()
     var isMouseHidden = false
     var frameNumber: UInt64 = 0
+    var upTime_microseconds: Int64 = 0
     var drawBuffer = DrawBuffer(width: Int(DrawBufferWidth), height: Int(DrawBufferHeight))
+
+    func addInputText(text: String) {
+        let cString = text.utf8CString
+        let offset = Int(input.textLength);
+        let count = min(Int(InputMaxTextLength) - offset, Int(cString.count - 1))
+        withUnsafeMutablePointer(to: &input.text_utf8.0) {
+            beginPtr in
+            let ptr = offset == 0 ? beginPtr : beginPtr.advanced(by: offset)
+            cString.withUnsafeBufferPointer {
+                cStrPtr in
+                ptr.assign(from: cStrPtr.baseAddress!, count: count)
+            }
+        }
+        input.textLength += UInt32(count)
+    }
 }

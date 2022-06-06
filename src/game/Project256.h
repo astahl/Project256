@@ -5,9 +5,6 @@ const long MemorySize = 640 * 1024; // 640kbytes
 
 const unsigned DrawBufferWidth = 160;
 const unsigned DrawBufferHeight = 200;
-const unsigned DrawBufferPixelCount = DrawBufferWidth * DrawBufferHeight;
-const unsigned DrawBufferBpp = 32;
-const unsigned DrawBufferBytes = DrawBufferPixelCount * DrawBufferBpp / 8;
 
 const unsigned DrawAspectH = 4;
 const unsigned DrawAspectV = 3;
@@ -22,10 +19,12 @@ const unsigned InputMaxTextLength = 256;
 extern "C" {
 #endif
 
-enum BOOLEAN_ENUM {
-    eFALSE,
-    eTRUE
+enum boole {
+    eFALSE = 0,
+    eTRUE = __UINT32_MAX__
 };
+
+#define BOOLEAN_ENUM enum boole
 
 struct Vec2f {
 	float x, y;
@@ -37,7 +36,7 @@ struct Vec2i {
 
 struct Button {
 	int transistionCount;
-	enum BOOLEAN_ENUM endedDown;
+    BOOLEAN_ENUM endedDown;
 };
 
 struct Axis2 {
@@ -68,7 +67,7 @@ struct Rumble {
 
 struct GameInput {
 	double elapsedTime_s;
-	long long unsigned upTime_microseconds;
+	long long upTime_microseconds;
 	long long unsigned frameNumber;
 
 	struct Controller controllers[InputMaxControllers];
@@ -77,20 +76,20 @@ struct GameInput {
 	struct Tap taps[InputMaxTaps];
 	unsigned tapCount;
 
-    enum BOOLEAN_ENUM hasMouse;
+    BOOLEAN_ENUM hasMouse;
 	struct Mouse mouse;
 
 	char text_utf8[InputMaxTextLength];
 	unsigned textLength;
 
-	enum BOOLEAN_ENUM closeRequested;
+    BOOLEAN_ENUM closeRequested;
 };
 
 struct GameOutput {
-	enum BOOLEAN_ENUM shouldQuit;
-	enum BOOLEAN_ENUM needTextInput;
-    enum BOOLEAN_ENUM shouldPinMouse;
-    enum BOOLEAN_ENUM shouldHideMouse;
+    BOOLEAN_ENUM shouldQuit;
+    BOOLEAN_ENUM needTextInput;
+    BOOLEAN_ENUM shouldPinMouse;
+    BOOLEAN_ENUM shouldHideMouse;
 	struct Rumble rumble[InputMaxControllers];
 };
 

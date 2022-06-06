@@ -7,9 +7,20 @@
 
 import SwiftUI
 
+
+extension boole {
+    var isTrue: Bool {
+        return self == eTRUE
+    }
+
+    var isFalse: Bool {
+        return self == eFALSE
+    }
+}
+
+
 @main
 struct Project256App: App {
-    let textBuffer = UnsafeMutableRawBufferPointer.allocate(byteCount: Int(InputMaxTextLength), alignment: 64)
     @StateObject var gameState = GameState()
     @State var letterboxColor = Color.black
 
@@ -17,19 +28,21 @@ struct Project256App: App {
         gameState.input.frameNumber = gameState.frameNumber
         gameState.frameNumber += 1
         let frameTime = gameState.frameTime.elapsed()
-        gameState.input.upTime_microseconds += UInt64(frameTime.microseconds)
+        gameState.upTime_microseconds += frameTime.microseconds
+
+        gameState.input.upTime_microseconds =  gameState.upTime_microseconds
         gameState.input.elapsedTime_s = frameTime.seconds
         // TODO finalize inputs
         let output = doGameThings(&gameState.input, gameState.memory)
 
-        if output.shouldQuit == eTRUE {
+        if output.shouldQuit.isTrue {
             exit(0)
         }
-        if output.needTextInput == eTRUE {
+        if output.needTextInput.isTrue {
     
         }
         #if os(macOS)
-        if output.shouldHideMouse == eTRUE {
+        if output.shouldHideMouse.isTrue {
             if !gameState.isMouseHidden {
                 CGDisplayHideCursor(CGMainDisplayID())
                 gameState.isMouseHidden = true
@@ -57,11 +70,7 @@ struct Project256App: App {
                 }
                 .textInput {
                     text in
-                    text.utf8CString.withUnsafeBytes {
-                        buffer in
-                        let count = buffer.copyBytes(to: self.textBuffer) - 1 // remove \0 at end
-                        inputPushUtf8Bytes(&gameState.input, self.textBuffer.baseAddress, UInt32(count))
-                    }
+                    gameState.addInputText(text: text)
                 }
                 .beforeDraw(self.gameTick)
             }

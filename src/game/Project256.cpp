@@ -2,11 +2,37 @@
 #include "Project256.h"
 #include <cstdint>
 #include "Drawing/Palettes.cpp"
+#include <iostream>
+
+struct Timer {
+    std::chrono::microseconds firesAt;
+
+    Timer(std::chrono::microseconds currentTime, std::chrono::microseconds period)
+    : firesAt{currentTime + period}{
+    }
+
+    bool hasFired(std::chrono::microseconds currentTime) const {
+        return currentTime > firesAt;
+    }
+};
+
+template<typename T, typename U1, typename U2>
+constexpr T wrapAround(T a, U1 lowerBound, U2 upperBound) {
+    while (a >= upperBound) {
+        a -= upperBound;
+    }
+    while (a <= lowerBound) {
+        a += upperBound;
+    }
+    return a;
+}
 
 struct GameMemory {
     uint8_t vram[DrawBufferWidth * DrawBufferHeight];
     uint32_t palette[16];
     Vec2f dotPosition;
+    Vec2f dotDirection;
+    Timer directionChangeTimer;
 };
 
 static_assert(sizeof(GameMemory) <= MemorySize, "MemorySize is too small to hold GameMemory struct");
@@ -41,36 +67,51 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
     using Palette = PaletteC64;
     GameMemory& memory = *reinterpret_cast<GameMemory*>(pMemory);
     GameInput& input = *pInput;
+    if (input.textLength)
+        std::cout << input.text_utf8;
+    const auto time = std::chrono::microseconds(input.upTime_microseconds);
+
     if (input.frameNumber == 0) {
-        for(int i = 0; i < DrawBufferPixelCount; ++i)
-            memory.vram[i] = rand() % Palette::count;
+        for(int i = 0; i < DrawBufferWidth * DrawBufferHeight; ++i)
+            memory.vram[i] = i % Palette::count;
 //        PaletteCGA::writeTo(memory.palette, PaletteCGA::Mode::Mode5LowIntensity, PaletteCGA::Color::darkGray);
         Palette::writeTo(memory.palette);
-        memory.dotPosition = Vec2f{10, 10};
+        memory.dotPosition = Vec2f{DrawBufferWidth / 2, DrawBufferHeight / 2};
     }
 
-    if (input.mouse.trackLength) {
-        Vec2f mousePosition = input.mouse.track[input.mouse.trackLength - 1];
+    if (memory.directionChangeTimer.hasFired(time)) {
+        memory.directionChangeTimer = Timer(time, std::chrono::seconds(1));
+        memory.dotDirection.x = static_cast<float>((rand() % 100) - 50) / 1.0f;
+        memory.dotDirection.y = static_cast<float>((rand() % 100) - 50) / 1.0f;
+    }
 
-        Vec2i position{
-            .x = static_cast<int>(mousePosition.x),
-            .y = static_cast<int>(mousePosition.y),
-        };
+    if (input.hasMouse) {
+        if (input.mouse.trackLength) {
+            Vec2f mousePosition = input.mouse.track[input.mouse.trackLength - 1];
 
-        if (position.x < DrawBufferWidth && position.x >= 0 &&
-            position.y < DrawBufferHeight && position.y >= 0)
-            memory.vram[position.x + position.y * DrawBufferWidth] = position.x % 15 + 1;
+            Vec2i position{
+                .x = static_cast<int>(mousePosition.x),
+                .y = static_cast<int>(mousePosition.y),
+            };
 
-    } else {
+            if (position.x < DrawBufferWidth && position.x >= 0 &&
+                position.y < DrawBufferHeight && position.y >= 0)
+                memory.vram[position.x + position.y * DrawBufferWidth] = position.x % 15 + 1;
 
-       // memory.mousePosition = Vec2f{-1.0f, -1.0f};
+        } else {
+
+           // memory.mousePosition = Vec2f{-1.0f, -1.0f};
+        }
     }
     // clear
     memory.vram[static_cast<int>(memory.dotPosition.x) + static_cast<int>(memory.dotPosition.y) * DrawBufferWidth] = 0x0;
     // update
-    memory.dotPosition.x += static_cast<float>(input.elapsedTime_s * 120);
-    if (memory.dotPosition.x >= DrawBufferWidth)
-        memory.dotPosition.x = 0.0;
+    memory.dotPosition.x += static_cast<float>(input.elapsedTime_s * memory.dotDirection.x);
+    memory.dotPosition.y += static_cast<float>(input.elapsedTime_s * memory.dotDirection.y);
+
+    memory.dotPosition.x = wrapAround(memory.dotPosition.x, 0, DrawBufferWidth);
+    memory.dotPosition.y = wrapAround(memory.dotPosition.y, 0, DrawBufferHeight);
+
     // draw
     memory.vram[static_cast<int>(memory.dotPosition.x) + static_cast<int>(memory.dotPosition.y) * DrawBufferWidth] = 0x1;
 
