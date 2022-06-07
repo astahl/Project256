@@ -45,9 +45,10 @@ class Direct3D12View {
     // Synchronization objects.
     HANDLE mFenceEvent;
     ComPtr<ID3D12Fence> mFence;
-    UINT64 mFenceValue;
+    UINT64 mFenceValues[FrameCount];
 
-    void WaitForPreviousFrame();
+    void WaitForGpu();
+    void MoveToNextFrame();
     void CreateRenderTargetViews();
 
 	static bool ExitOnFail(HRESULT result);

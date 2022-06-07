@@ -364,14 +364,14 @@ Direct3D12View::Direct3D12View(HWND hwnd, UINT width, UINT height)
 				.Width = uploadBufferSize,
 				.Height = 1,
 				.DepthOrArraySize = 1,
-				.MipLevels = 1,
-				.Format = DXGI_FORMAT_UNKNOWN,
-				.SampleDesc {
-					.Count = 1,
-					.Quality = 0,
-				},
-				.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR,
-				.Flags = D3D12_RESOURCE_FLAG_NONE,
+.MipLevels = 1,
+.Format = DXGI_FORMAT_UNKNOWN,
+.SampleDesc{
+	.Count = 1,
+	.Quality = 0,
+},
+.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR,
+.Flags = D3D12_RESOURCE_FLAG_NONE,
 			};
 
 			ExitOnFail(mDevice->CreateCommittedResource(
@@ -389,7 +389,7 @@ Direct3D12View::Direct3D12View(HWND hwnd, UINT width, UINT height)
 			mDrawBuffer = reinterpret_cast<BYTE*>(VirtualAlloc(0, memSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
 			writeDrawBuffer(nullptr, mDrawBuffer);
 
-			D3D12_SUBRESOURCE_DATA textureData {
+			D3D12_SUBRESOURCE_DATA textureData{
 				.pData = mDrawBuffer,
 				.RowPitch = DrawBufferWidth * 4,
 				.SlicePitch = memSize,
@@ -443,7 +443,7 @@ Direct3D12View::Direct3D12View(HWND hwnd, UINT width, UINT height)
 			};
 
 			mCommandList->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
-			
+
 			D3D12_RESOURCE_BARRIER barrierTextureCopyTransition{
 				.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
 				.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE,
@@ -463,19 +463,22 @@ Direct3D12View::Direct3D12View(HWND hwnd, UINT width, UINT height)
 		mCommandQueue->ExecuteCommandLists(1, cmdListPtrArray);
 	}
 
-	// create fences
-	ExitOnFail(mDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&mFence)));
-	mFenceValue = 1;
-	mFenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-	if (mFenceEvent == nullptr) {
-		ExitOnFail(HRESULT_FROM_WIN32(GetLastError()));
+	// create fence
+	{
+		ExitOnFail(mDevice->CreateFence(mFenceValues[mFrameIndex], D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&mFence)));
+		mFenceValues[mFrameIndex]++;
+
+		mFenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+		if (mFenceEvent == nullptr) {
+			ExitOnFail(HRESULT_FROM_WIN32(GetLastError()));
+		}
 	}
-	WaitForPreviousFrame();
+	WaitForGpu();
 }
 
 Direct3D12View::~Direct3D12View()
 {
-	WaitForPreviousFrame();
+	WaitForGpu();
 	CloseHandle(mFenceEvent);
 }
 
@@ -500,7 +503,7 @@ void Direct3D12View::Resize(UINT width, UINT height)
 	
 	
 	mConstantScale = clipSpaceDrawBufferScale(width, height);
-	this->WaitForPreviousFrame();
+	this->WaitForGpu();
 
 	// destroy render targets
 	for (UINT i = 0; i < FrameCount; ++i) {
@@ -560,24 +563,41 @@ void Direct3D12View::Draw()
 
 	mCommandQueue->ExecuteCommandLists(1, cmdListPtrArray);
 	ExitOnFail(mSwapChain->Present(1, 0));
-	WaitForPreviousFrame();
+	WaitForGpu();
+	MoveToNextFrame();
 }
 
-void Direct3D12View::WaitForPreviousFrame()
+void Direct3D12View::WaitForGpu()
 {
-	// TODO this is not good it seems??
-	const UINT64 fence = mFenceValue;
-	ExitOnFail(mCommandQueue->Signal(mFence.Get(), fence));
-	mFenceValue++;
+	// Schedule a Signal command in the queue.
+	ExitOnFail(mCommandQueue->Signal(mFence.Get(), mFenceValues[mFrameIndex]));
+	// Wait until the fence has been processed.
+	ExitOnFail(mFence->SetEventOnCompletion(mFenceValues[mFrameIndex], mFenceEvent));
+	WaitForSingleObjectEx(mFenceEvent, INFINITE, FALSE);
 
-	// Wait until the previous frame is finished.
-	if (mFence->GetCompletedValue() < fence)
+	// Increment the fence value for the current frame.
+	mFenceValues[mFrameIndex]++;
+}
+
+
+void Direct3D12View::MoveToNextFrame()
+{
+	// Schedule a Signal command in the queue.
+	const UINT64 currentFenceValue = mFenceValues[mFrameIndex];
+	ExitOnFail(mCommandQueue->Signal(mFence.Get(), currentFenceValue));
+
+	// Update the frame index.
+	mFrameIndex = mSwapChain->GetCurrentBackBufferIndex();
+
+	// If the next frame is not ready to be rendered yet, wait until it is ready.
+	if (mFence->GetCompletedValue() < mFenceValues[mFrameIndex])
 	{
-		ExitOnFail(mFence->SetEventOnCompletion(fence, mFenceEvent));
-		WaitForSingleObject(mFenceEvent, INFINITE);
+		ExitOnFail(mFence->SetEventOnCompletion(mFenceValues[mFrameIndex], mFenceEvent));
+		WaitForSingleObjectEx(mFenceEvent, INFINITE, FALSE);
 	}
 
-	mFrameIndex = mSwapChain->GetCurrentBackBufferIndex();
+	// Set the fence value for the next frame.
+	mFenceValues[mFrameIndex] = currentFenceValue + 1;
 }
 
 void Direct3D12View::CreateRenderTargetViews()
