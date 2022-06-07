@@ -1,6 +1,5 @@
-cbuffer ConstantBuffer : register(b0) {
+cbuffer RootConstants : register(b0) {
 	float2 scale;
-	float padding[62];
 };
 
 Texture2D g_texture : register(t0);
@@ -23,10 +22,7 @@ FragmentData vertexShader(uint vertexIndex : SV_VertexID) {
 	return result;
 }
 
-
 float4 pixelShader(FragmentData data) : SV_TARGET
 {
-	float4 color = float4(0.0, 0.0, 1.0, 1.0);
-	color.xy = data.uv;
-	return color;
+	return g_texture.Sample(g_sampler, data.uv);
 }

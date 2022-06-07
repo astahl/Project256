@@ -12,7 +12,7 @@ Direct3D12View::Direct3D12View(HWND hwnd, UINT width, UINT height)
 	: mHwnd(hwnd)
 	, mWidth(width)
 	, mHeight(height)
-	, mCbvDataBeginPtr(nullptr)
+	, mSrvDataBeginPtr(nullptr)
 {
 	UINT dxgiFactoryFlags = 0;
 
@@ -105,13 +105,6 @@ Direct3D12View::Direct3D12View(HWND hwnd, UINT width, UINT height)
 
 		ExitOnFail(mDevice->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&mRtvHeap)));
 
-		D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc{
-			.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
-			.NumDescriptors = 1,
-			.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
-		};
-		ExitOnFail(mDevice->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&mCbvHeap)));
-
 		D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc{
 			.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
 			.NumDescriptors = 1,
@@ -120,7 +113,6 @@ Direct3D12View::Direct3D12View(HWND hwnd, UINT width, UINT height)
 		ExitOnFail(mDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvHeap)));
 
 		mRtvDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-		mCbvDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 		mSrvDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	}
 
@@ -138,27 +130,31 @@ Direct3D12View::Direct3D12View(HWND hwnd, UINT width, UINT height)
 			featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_0;
 		}
 		{
-			D3D12_DESCRIPTOR_RANGE1 range{
-				.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV,
+			D3D12_ROOT_PARAMETER1 parameterCbv{
+				.ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS,
+				.Constants = {
+					.ShaderRegister = 0,
+					.RegisterSpace = 0,
+					.Num32BitValues = 2,
+				},
+				.ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX,
+			};
+
+			D3D12_DESCRIPTOR_RANGE1 rangeSrv{
+				.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
 				.NumDescriptors = 1,
 				.RegisterSpace = 0,
 				.Flags = D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC,
 				.OffsetInDescriptorsFromTableStart = 0,
 			};
-			D3D12_ROOT_PARAMETER1 parameter{
+			D3D12_ROOT_PARAMETER1 parameterSrv{
 				.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE,
 				.DescriptorTable {
 					.NumDescriptorRanges = 1,
-					.pDescriptorRanges = &range,
+					.pDescriptorRanges = &rangeSrv,
 				},
-				.ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX,
+				.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL,
 			};
-			D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags =
-				D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
-				D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
-				D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
-				D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
-				//D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS;
 
 			D3D12_STATIC_SAMPLER_DESC sampler{
 				.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT,
@@ -175,14 +171,16 @@ Direct3D12View::Direct3D12View(HWND hwnd, UINT width, UINT height)
 				.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL,
 			};
 
+			D3D12_ROOT_PARAMETER1 parameters[2] = { parameterCbv, parameterSrv };
+
 			D3D12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc{
 				.Version = D3D_ROOT_SIGNATURE_VERSION::D3D_ROOT_SIGNATURE_VERSION_1_1,
 				.Desc_1_1 {
-					.NumParameters = 1,
-					.pParameters = &parameter,
+					.NumParameters = _countof(parameters),
+					.pParameters = parameters,
 					.NumStaticSamplers = 1,
 					.pStaticSamplers = &sampler,
-					.Flags = rootSignatureFlags,
+					.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT,
 				},
 			};
 			ComPtr<ID3DBlob> signature;
@@ -316,59 +314,7 @@ Direct3D12View::Direct3D12View(HWND hwnd, UINT width, UINT height)
 		ExitOnFail(mDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, mCommandAllocator.Get(), mPipelineState.Get(), IID_PPV_ARGS(&mCommandList)));
 		//ExitOnFail(mDevice->CreateCommandList1(0, D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_LIST_FLAG_NONE, IID_PPV_ARGS(&mCommandList)));
 
-
-		// Create the constant buffer.
-		{
-			const UINT constantBufferSize = sizeof(ShaderConstantBuffer);    // CB size is required to be 256-byte aligned.
-
-			D3D12_HEAP_PROPERTIES props{
-				.Type = D3D12_HEAP_TYPE_UPLOAD,
-				.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
-				.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN,
-				.CreationNodeMask = 1,
-				.VisibleNodeMask = 1,
-			};
-
-			D3D12_RESOURCE_DESC resourceDesc{
-				.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER,
-				.Alignment = 0,
-				.Width = constantBufferSize,
-				.Height = 1,
-				.DepthOrArraySize = 1,
-				.MipLevels = 1,
-				.Format = DXGI_FORMAT_UNKNOWN,
-				.SampleDesc {
-					.Count = 1,
-					.Quality = 0,
-				},
-				.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR,
-				.Flags = D3D12_RESOURCE_FLAG_NONE,
-			};
-
-			ExitOnFail(mDevice->CreateCommittedResource(
-				&props,
-				D3D12_HEAP_FLAG_NONE,
-				&resourceDesc,
-				D3D12_RESOURCE_STATE_GENERIC_READ,
-				nullptr,
-				IID_PPV_ARGS(&mConstantBuffer)));
-
-			// Describe and create a constant buffer view.
-			D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc {
-				.BufferLocation = mConstantBuffer->GetGPUVirtualAddress(),
-				.SizeInBytes = constantBufferSize,
-			};
-			mDevice->CreateConstantBufferView(&cbvDesc, mCbvHeap->GetCPUDescriptorHandleForHeapStart());
-
-			// Map and initialize the constant buffer. We don't unmap this until the
-			// app closes. Keeping things mapped for the lifetime of the resource is okay.
-			D3D12_RANGE readRange{ .Begin = 0, .End = 0 };        // We do not intend to read from this resource on the CPU.
-			ExitOnFail(mConstantBuffer->Map(0, &readRange, reinterpret_cast<void**>(&mCbvDataBeginPtr)));
-			memcpy(mCbvDataBeginPtr, &mConstantBufferData, sizeof(mConstantBufferData));
-		}
-
 		// create Texture
-		ComPtr<ID3D12Resource> textureUploadHeap;
 		{
 			D3D12_RESOURCE_DESC textureDesc = {
 				.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D,
@@ -434,7 +380,7 @@ Direct3D12View::Direct3D12View(HWND hwnd, UINT width, UINT height)
 				&uploadHeapResourceDesc,
 				D3D12_RESOURCE_STATE_GENERIC_READ,
 				nullptr,
-				IID_PPV_ARGS(&textureUploadHeap)));
+				IID_PPV_ARGS(&mTextureUploadHeap)));
 
 			// Copy data to the intermediate upload heap and then schedule a copy 
 			// from the upload heap to the Texture2D.
@@ -450,20 +396,15 @@ Direct3D12View::Direct3D12View(HWND hwnd, UINT width, UINT height)
 			};
 
 			D3D12_RESOURCE_DESC textDesc = mTexture->GetDesc();
-			ID3D12Resource *intermediate, *destination;
 			const UINT MaxSubresources = 16;
 			UINT64 requiredSize = 0;
 			D3D12_PLACED_SUBRESOURCE_FOOTPRINT layouts[MaxSubresources];
 			UINT numRows[MaxSubresources];
 			UINT64 rowSizesInBytes[MaxSubresources];
 
-			intermediate = textureUploadHeap.Get();
-			destination = mTexture.Get();
-
-
 			mDevice->GetCopyableFootprints(&textDesc, 0, 1, 0, layouts, numRows, rowSizesInBytes, &requiredSize);
 			byte* data = nullptr;
-			ExitOnFail(intermediate->Map(0, nullptr, reinterpret_cast<void**>(&data)));
+			ExitOnFail(mTextureUploadHeap->Map(0, nullptr, reinterpret_cast<void**>(&data)));
 			D3D12_MEMCPY_DEST memcpydest{
 				.pData = data + layouts[0].Offset,
 				.RowPitch = layouts[0].Footprint.RowPitch,
@@ -473,8 +414,7 @@ Direct3D12View::Direct3D12View(HWND hwnd, UINT width, UINT height)
 			{
 				memcpy(static_cast<byte*>(memcpydest.pData) + memcpydest.RowPitch * row, mDrawBuffer + DrawBufferWidth * 4 * row, rowSizesInBytes[0]);
 			}
-			//writeDrawBuffer(nullptr, data);
-			intermediate->Unmap(0, nullptr);
+			mTextureUploadHeap->Unmap(0, nullptr);
 
 			// Describe and create a SRV for the texture.
 			D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {
@@ -490,7 +430,19 @@ Direct3D12View::Direct3D12View(HWND hwnd, UINT width, UINT height)
 			//ExitOnFail(mCommandAllocator->Reset());
 			//ExitOnFail(mCommandList->Reset(mCommandAllocator.Get(), mPipelineState.Get()));
 
-			mCommandList->CopyBufferRegion(destination, 0, intermediate, layouts[0].Offset, layouts[0].Footprint.Width);
+			D3D12_TEXTURE_COPY_LOCATION srcLocation{
+				.pResource = mTextureUploadHeap.Get(),
+				.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT,
+				.PlacedFootprint = layouts[0],
+			};
+
+			D3D12_TEXTURE_COPY_LOCATION dstLocation{
+				.pResource = mTexture.Get(),
+				.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
+				.SubresourceIndex = 0
+			};
+
+			mCommandList->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
 			
 			D3D12_RESOURCE_BARRIER barrierTextureCopyTransition{
 				.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
@@ -545,10 +497,9 @@ void Direct3D12View::Resize(UINT width, UINT height)
 		.right = static_cast<LONG>(mViewport.TopLeftX + mViewport.Width),
 		.bottom = static_cast<LONG>(mViewport.TopLeftY + mViewport.Height),
 	};
-
-	mConstantBufferData.scale = clipSpaceDrawBufferScale(width, height);
-	memcpy(mCbvDataBeginPtr, &mConstantBufferData, sizeof(mConstantBufferData));
-
+	
+	
+	mConstantScale = clipSpaceDrawBufferScale(width, height);
 	this->WaitForPreviousFrame();
 
 	// destroy render targets
@@ -568,10 +519,11 @@ void Direct3D12View::Draw()
 	ExitOnFail(mCommandList->Reset(mCommandAllocator.Get(), mPipelineState.Get()));
 	mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
 
-	ID3D12DescriptorHeap* ppHeaps[] = { mCbvHeap.Get() };
+	ID3D12DescriptorHeap* ppHeaps[] = { mSrvHeap.Get() };
 	mCommandList->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
 
-	mCommandList->SetGraphicsRootDescriptorTable(0, mCbvHeap->GetGPUDescriptorHandleForHeapStart());
+	mCommandList->SetGraphicsRoot32BitConstants(0, 2, &mConstantScale, 0);
+	mCommandList->SetGraphicsRootDescriptorTable(1, mSrvHeap->GetGPUDescriptorHandleForHeapStart());
 
 	D3D12_RESOURCE_BARRIER barrierRenderTargetTransition {
 		.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,

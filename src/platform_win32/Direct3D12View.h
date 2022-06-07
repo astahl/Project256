@@ -9,12 +9,6 @@
 using Microsoft::WRL::ComPtr;
 
 class Direct3D12View {
-    struct ShaderConstantBuffer
-    {
-        Vec2f scale;
-        float padding[62]; // Padding so the constant buffer is 256-byte aligned.
-    };
-    static_assert((sizeof(ShaderConstantBuffer) % 256) == 0, "Constant Buffer size must be 256-byte aligned");
 
     static const UINT FrameCount = 2;
 	HWND mHwnd; 
@@ -30,23 +24,22 @@ class Direct3D12View {
     D3D12_RECT mScissorRect;
 
     // resources
-    ShaderConstantBuffer mConstantBufferData;
-    ComPtr<ID3D12Resource> mConstantBuffer;
     ComPtr<ID3D12Resource> mTexture;
-    UINT8* mCbvDataBeginPtr;
+    ComPtr<ID3D12Resource> mTextureUploadHeap;
+    UINT8* mSrvDataBeginPtr;
     BYTE* mDrawBuffer;
+
+    Vec2f mConstantScale;
 
     // Pipeline objects.
     ComPtr<ID3D12Resource> mRenderTargets[FrameCount];
     ComPtr<ID3D12CommandAllocator> mCommandAllocator;
     ComPtr<ID3D12DescriptorHeap> mRtvHeap;
-    ComPtr<ID3D12DescriptorHeap> mCbvHeap;
     ComPtr<ID3D12DescriptorHeap> mSrvHeap;
     ComPtr<ID3D12PipelineState> mPipelineState;
     ComPtr<ID3D12GraphicsCommandList> mCommandList;
     ComPtr<ID3D12RootSignature> mRootSignature;
     UINT mRtvDescriptorSize;
-    UINT mCbvDescriptorSize;
     UINT mSrvDescriptorSize;
 
     // Synchronization objects.
