@@ -3,6 +3,9 @@ cbuffer ConstantBuffer : register(b0) {
 	float padding[62];
 };
 
+Texture2D g_texture : register(t0);
+SamplerState g_sampler : register(s0);
+
 struct FragmentData {
 	float4 position : SV_POSITION;
 	float2 uv : TEXCOORD;
