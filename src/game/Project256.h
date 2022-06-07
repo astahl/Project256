@@ -16,12 +16,18 @@ const unsigned InputMaxTaps = 20;
 const unsigned InputMaxTextLength = 256;
 
 #ifdef CXX
+#include <cstdint>
+
 extern "C" {
 #endif
 
 enum boole {
     eFALSE = 0,
-    eTRUE = __UINT32_MAX__
+#ifdef __UINT32_MAX__
+    eTRUE = __UINT32_MAX__ 
+#else
+	eTRUE = UINT32_MAX
+#endif
 };
 
 #define BOOLEAN_ENUM enum boole

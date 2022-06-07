@@ -3,6 +3,7 @@
 #include <cstdint>
 #include "Drawing/Palettes.cpp"
 #include <iostream>
+#include <chrono>
 
 struct Timer {
     std::chrono::microseconds firesAt;

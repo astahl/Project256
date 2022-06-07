@@ -67,7 +67,7 @@ LRESULT CALLBACK MainWindow::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPA
         window->onPaint();
         break;
     case WM_CLOSE:
-        window->input.closeRequested = BOOLEAN_ENUM::eTRUE;
+        window->input.closeRequested = boole::eTRUE;
         break;
     case WM_DESTROY: {
         //delete window;
