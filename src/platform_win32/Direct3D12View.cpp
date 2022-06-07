@@ -13,6 +13,8 @@ Direct3D12View::Direct3D12View(HWND hwnd, UINT width, UINT height)
 	, mWidth(width)
 	, mHeight(height)
 	, mSrvDataBeginPtr(nullptr)
+	, mFrameIndex(0)
+	, mFenceValues{}
 {
 	UINT dxgiFactoryFlags = 0;
 
@@ -310,8 +312,10 @@ Direct3D12View::Direct3D12View(HWND hwnd, UINT width, UINT height)
 
 		ExitOnFail(mDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&mPipelineState)));
 
-		ExitOnFail(mDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&mCommandAllocator)));
-		ExitOnFail(mDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, mCommandAllocator.Get(), mPipelineState.Get(), IID_PPV_ARGS(&mCommandList)));
+		for (int i = 0; i < FrameCount; ++i)
+			ExitOnFail(mDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&mCommandAllocator[i])));
+
+		ExitOnFail(mDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, mCommandAllocator[mFrameIndex].Get(), mPipelineState.Get(), IID_PPV_ARGS(&mCommandList)));
 		//ExitOnFail(mDevice->CreateCommandList1(0, D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_LIST_FLAG_NONE, IID_PPV_ARGS(&mCommandList)));
 
 		// create Texture
@@ -364,14 +368,14 @@ Direct3D12View::Direct3D12View(HWND hwnd, UINT width, UINT height)
 				.Width = uploadBufferSize,
 				.Height = 1,
 				.DepthOrArraySize = 1,
-.MipLevels = 1,
-.Format = DXGI_FORMAT_UNKNOWN,
-.SampleDesc{
-	.Count = 1,
-	.Quality = 0,
-},
-.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR,
-.Flags = D3D12_RESOURCE_FLAG_NONE,
+				.MipLevels = 1,
+				.Format = DXGI_FORMAT_UNKNOWN,
+				.SampleDesc{
+					.Count = 1,
+					.Quality = 0,
+				},
+				.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR,
+				.Flags = D3D12_RESOURCE_FLAG_NONE,
 			};
 
 			ExitOnFail(mDevice->CreateCommittedResource(
@@ -518,8 +522,8 @@ void Direct3D12View::Resize(UINT width, UINT height)
 
 void Direct3D12View::Draw()
 {
-	ExitOnFail(mCommandAllocator->Reset());
-	ExitOnFail(mCommandList->Reset(mCommandAllocator.Get(), mPipelineState.Get()));
+	ExitOnFail(mCommandAllocator[mFrameIndex]->Reset());
+	ExitOnFail(mCommandList->Reset(mCommandAllocator[mFrameIndex].Get(), mPipelineState.Get()));
 	mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
 
 	ID3D12DescriptorHeap* ppHeaps[] = { mSrvHeap.Get() };
@@ -563,7 +567,7 @@ void Direct3D12View::Draw()
 
 	mCommandQueue->ExecuteCommandLists(1, cmdListPtrArray);
 	ExitOnFail(mSwapChain->Present(1, 0));
-	WaitForGpu();
+
 	MoveToNextFrame();
 }
 

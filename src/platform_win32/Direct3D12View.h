@@ -33,7 +33,7 @@ class Direct3D12View {
 
     // Pipeline objects.
     ComPtr<ID3D12Resource> mRenderTargets[FrameCount];
-    ComPtr<ID3D12CommandAllocator> mCommandAllocator;
+    ComPtr<ID3D12CommandAllocator> mCommandAllocator[FrameCount];
     ComPtr<ID3D12DescriptorHeap> mRtvHeap;
     ComPtr<ID3D12DescriptorHeap> mSrvHeap;
     ComPtr<ID3D12PipelineState> mPipelineState;
