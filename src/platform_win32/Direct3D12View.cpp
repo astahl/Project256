@@ -381,6 +381,7 @@ Direct3D12View::Direct3D12View(HWND hwnd, UINT width, UINT height)
 					.Count = 1,
 					.Quality = 0,
 				},
+				.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN,
 				.Flags = D3D12_RESOURCE_FLAG_NONE,
 			};
 			D3D12_HEAP_PROPERTIES props{
@@ -504,15 +505,11 @@ Direct3D12View::Direct3D12View(HWND hwnd, UINT width, UINT height)
 			mCommandList->ResourceBarrier(1, &barrierTextureCopyTransition);
 		}
 
-
 		ExitOnFail(mCommandList->Close());
 
 		ID3D12CommandList* cmdListPtrArray[] = { mCommandList.Get() };
 		mCommandQueue->ExecuteCommandLists(1, cmdListPtrArray);
-		WaitForPreviousFrame();
 	}
-
-
 
 	// create fences
 	ExitOnFail(mDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&mFence)));
@@ -521,6 +518,7 @@ Direct3D12View::Direct3D12View(HWND hwnd, UINT width, UINT height)
 	if (mFenceEvent == nullptr) {
 		ExitOnFail(HRESULT_FROM_WIN32(GetLastError()));
 	}
+	WaitForPreviousFrame();
 }
 
 Direct3D12View::~Direct3D12View()
