@@ -50,4 +50,8 @@ class GameState : ObservableObject {
         }
         input.textLength += UInt32(count)
     }
+
+    func clearInput() {
+        input = GameInput()
+    }
 }

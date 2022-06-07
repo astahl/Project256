@@ -56,7 +56,7 @@ struct Project256App: App {
         #endif
         // todo can we move update tex to its own thread and just synchronize?
         writeDrawBuffer(gameState.memory, gameState.drawBuffer.data.baseAddress!)
-        gameState.input = GameInput()
+        gameState.clearInput()
     }
 
     var body: some Scene {
