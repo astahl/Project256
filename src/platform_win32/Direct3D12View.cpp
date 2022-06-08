@@ -512,6 +512,7 @@ void Direct3D12View::Resize(UINT width, UINT height)
 	// destroy render targets
 	for (UINT i = 0; i < FrameCount; ++i) {
 		mRenderTargets[i].Reset();
+		mFenceValues[i] = mFenceValues[mFrameIndex];
 	}
 
 	ExitOnFail(mSwapChain->ResizeBuffers(FrameCount, mWidth, mHeight, DXGI_FORMAT_UNKNOWN, 0));
