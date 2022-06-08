@@ -2,6 +2,7 @@
 #include "Project256.h"
 #include <cstdint>
 #include "Drawing/Palettes.cpp"
+#include "Drawing/Generators.cpp"
 #include <iostream>
 #include <chrono>
 
@@ -27,6 +28,12 @@ constexpr T wrapAround(T a, U1 lowerBound, U2 upperBound) {
         a += width;
     }
     return a;
+}
+
+template<typename Color, int Pitch = DrawBufferWidth>
+constexpr void put(uint8_t* drawBuffer, Vec2i position, Color color)
+{
+    drawBuffer[position.x + position.y * Pitch] = static_cast<uint8_t>(color);
 }
 
 enum class GameState {
@@ -80,71 +87,55 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
     if (input.textLength)
         std::cout << input.text_utf8;
 
-    switch(memory.state) {
-        case GameState::Initialise: {
-            for(int i = 0; i < DrawBufferWidth * DrawBufferHeight; ++i)
-                memory.vram[i] = (i + input.frameNumber) % Palette::count;
-            Palette::writeTo(memory.palette);
-            memory.dotPosition = Vec2f{DrawBufferWidth / 2, DrawBufferHeight / 2};
-            memory.state = GameState::TitleScreen;
-        } break;
-        case GameState::TitleScreen: {
-            for(int i = 0; i < DrawBufferWidth * DrawBufferHeight; ++i)
-                memory.vram[i] = 0x3;
-            if (input.tapCount || input.mouse.buttonLeft.transistionCount || input.textLength) {
-                memory.state = GameState::MainMenu;
-            }
-        } break;
-        case GameState::MainMenu: {
-            for(int i = 0; i < DrawBufferWidth * DrawBufferHeight; ++i)
-                memory.vram[i] = 0x4;
-            if (input.tapCount || input.mouse.buttonLeft.transistionCount || input.textLength) {
-                memory.state = GameState::TheThickOfIt;
-            }
-        } break;
-        case GameState::TheThickOfIt: {
-            const auto time = std::chrono::microseconds(input.upTime_microseconds);
-            if (memory.directionChangeTimer.hasFired(time)) {
-                memory.directionChangeTimer = Timer(time, std::chrono::seconds(1));
-                memory.dotDirection.x = static_cast<float>((rand() % 100) - 50) / 1.0f;
-                memory.dotDirection.y = static_cast<float>((rand() % 100) - 50) / 1.0f;
-            }
+    if (input.frameNumber == 0) {
+        for(int i = 0; i < DrawBufferWidth * DrawBufferHeight; ++i)
+            memory.vram[i] = (i + input.frameNumber) % Palette::count;
 
-            if (input.hasMouse) {
-                if (input.mouse.trackLength) {
-                    Vec2f mousePosition = input.mouse.track[input.mouse.trackLength - 1];
-
-                    Vec2i position{
-                        .x = static_cast<int>(mousePosition.x),
-                        .y = static_cast<int>(mousePosition.y),
-                    };
-
-                    if (position.x < DrawBufferWidth && position.x >= 0 &&
-                        position.y < DrawBufferHeight && position.y >= 0)
-                        memory.vram[position.x + position.y * DrawBufferWidth] = position.x % Palette::count;
-
-                } else {
-
-                }
-            }
-            // clear
-            memory.vram[static_cast<int>(memory.dotPosition.x) + static_cast<int>(memory.dotPosition.y) * DrawBufferWidth] = 0x0;
-            // update
-            memory.dotPosition.x += static_cast<float>(input.elapsedTime_s * memory.dotDirection.x);
-            memory.dotPosition.y += static_cast<float>(input.elapsedTime_s * memory.dotDirection.y);
-
-            memory.dotPosition.x = wrapAround(memory.dotPosition.x, 0, DrawBufferWidth);
-            memory.dotPosition.y = wrapAround(memory.dotPosition.y, 0, DrawBufferHeight);
-
-            // draw
-            memory.vram[static_cast<int>(memory.dotPosition.x) + static_cast<int>(memory.dotPosition.y) * DrawBufferWidth] = 0x1;
-
-            if (input.closeRequested) {
-                memory.state = GameState::MainMenu;
-            }
-
-        } break;
+        Palette::writeTo(memory.palette);
+        memory.dotPosition = Vec2f{DrawBufferWidth / 2, DrawBufferHeight / 2};
+        for(int i = 0; i < DrawBufferWidth * DrawBufferHeight; ++i)
+            memory.vram[i] = 0x4;
     }
+
+    for (auto p : Rectangle {.bottomLeft = {10,10}, .topRight = {DrawBufferWidth - 1,  DrawBufferHeight - 1}})
+        put(memory.vram, p, Palette::Color::green);
+
+    const auto time = std::chrono::microseconds(input.upTime_microseconds);
+    if (memory.directionChangeTimer.hasFired(time)) {
+        memory.directionChangeTimer = Timer(time, std::chrono::seconds(1));
+        memory.dotDirection.x = static_cast<float>((rand() % 100) - 50) / 1.0f;
+        memory.dotDirection.y = static_cast<float>((rand() % 100) - 50) / 1.0f;
+    }
+
+    if (input.hasMouse) {
+        if (input.mouse.trackLength) {
+            Vec2f mousePosition = input.mouse.track[input.mouse.trackLength - 1];
+
+            Vec2i position{
+                .x = static_cast<int>(mousePosition.x),
+                .y = static_cast<int>(mousePosition.y),
+            };
+
+            if (position.x < DrawBufferWidth && position.x >= 0 &&
+                position.y < DrawBufferHeight && position.y >= 0)
+                memory.vram[position.x + position.y * DrawBufferWidth] = position.x % Palette::count;
+
+        } else {
+
+        }
+    }
+    // clear
+    memory.vram[static_cast<int>(memory.dotPosition.x) + static_cast<int>(memory.dotPosition.y) * DrawBufferWidth] = 0x0;
+    // update
+    memory.dotPosition.x += static_cast<float>(input.elapsedTime_s * memory.dotDirection.x);
+    memory.dotPosition.y += static_cast<float>(input.elapsedTime_s * memory.dotDirection.y);
+
+    memory.dotPosition.x = wrapAround(memory.dotPosition.x, 0, DrawBufferWidth);
+    memory.dotPosition.y = wrapAround(memory.dotPosition.y, 0, DrawBufferHeight);
+
+    // draw
+    memory.vram[static_cast<int>(memory.dotPosition.x) + static_cast<int>(memory.dotPosition.y) * DrawBufferWidth] = 0x1;
+
 
 	return GameOutput{
 		//.shouldQuit = input.closeRequested,
