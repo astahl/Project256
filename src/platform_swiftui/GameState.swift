@@ -53,5 +53,7 @@ class GameState : ObservableObject {
 
     func clearInput() {
         input = GameInput()
+        input.hasMouse = eTRUE
+        
     }
 }

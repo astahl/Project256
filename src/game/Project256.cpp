@@ -29,12 +29,20 @@ constexpr T wrapAround(T a, U1 lowerBound, U2 upperBound) {
     return a;
 }
 
+enum class GameState {
+    Initialise,
+    TitleScreen,
+    MainMenu,
+    TheThickOfIt
+};
+
 struct GameMemory {
     uint8_t vram[DrawBufferWidth * DrawBufferHeight];
     uint32_t palette[16];
     Vec2f dotPosition;
     Vec2f dotDirection;
     Timer directionChangeTimer;
+    GameState state;
 };
 
 static_assert(sizeof(GameMemory) <= MemorySize, "MemorySize is too small to hold GameMemory struct");
@@ -66,59 +74,80 @@ Vec2f clipSpaceDrawBufferScale(unsigned int viewportWidth, unsigned int viewport
 
 GameOutput doGameThings(GameInput* pInput, void* pMemory)
 {
-    using Palette = PaletteAppleII;
+    using Palette = PaletteC64;
     GameMemory& memory = *reinterpret_cast<GameMemory*>(pMemory);
     GameInput& input = *pInput;
     if (input.textLength)
         std::cout << input.text_utf8;
-    const auto time = std::chrono::microseconds(input.upTime_microseconds);
 
-    if (input.frameNumber == 0) {
-        for(int i = 0; i < DrawBufferWidth * DrawBufferHeight; ++i)
-            memory.vram[i] = i % Palette::count;
-//        PaletteCGA::writeTo(memory.palette, PaletteCGA::Mode::Mode5LowIntensity, PaletteCGA::Color::darkGray);
-        Palette::writeTo(memory.palette);
-        memory.dotPosition = Vec2f{DrawBufferWidth / 2, DrawBufferHeight / 2};
+    switch(memory.state) {
+        case GameState::Initialise: {
+            for(int i = 0; i < DrawBufferWidth * DrawBufferHeight; ++i)
+                memory.vram[i] = (i + input.frameNumber) % Palette::count;
+            Palette::writeTo(memory.palette);
+            memory.dotPosition = Vec2f{DrawBufferWidth / 2, DrawBufferHeight / 2};
+            memory.state = GameState::TitleScreen;
+        } break;
+        case GameState::TitleScreen: {
+            for(int i = 0; i < DrawBufferWidth * DrawBufferHeight; ++i)
+                memory.vram[i] = 0x3;
+            if (input.tapCount || input.mouse.buttonLeft.transistionCount || input.textLength) {
+                memory.state = GameState::MainMenu;
+            }
+        } break;
+        case GameState::MainMenu: {
+            for(int i = 0; i < DrawBufferWidth * DrawBufferHeight; ++i)
+                memory.vram[i] = 0x4;
+            if (input.tapCount || input.mouse.buttonLeft.transistionCount || input.textLength) {
+                memory.state = GameState::TheThickOfIt;
+            }
+        } break;
+        case GameState::TheThickOfIt: {
+            const auto time = std::chrono::microseconds(input.upTime_microseconds);
+            if (memory.directionChangeTimer.hasFired(time)) {
+                memory.directionChangeTimer = Timer(time, std::chrono::seconds(1));
+                memory.dotDirection.x = static_cast<float>((rand() % 100) - 50) / 1.0f;
+                memory.dotDirection.y = static_cast<float>((rand() % 100) - 50) / 1.0f;
+            }
+
+            if (input.hasMouse) {
+                if (input.mouse.trackLength) {
+                    Vec2f mousePosition = input.mouse.track[input.mouse.trackLength - 1];
+
+                    Vec2i position{
+                        .x = static_cast<int>(mousePosition.x),
+                        .y = static_cast<int>(mousePosition.y),
+                    };
+
+                    if (position.x < DrawBufferWidth && position.x >= 0 &&
+                        position.y < DrawBufferHeight && position.y >= 0)
+                        memory.vram[position.x + position.y * DrawBufferWidth] = position.x % Palette::count;
+
+                } else {
+
+                }
+            }
+            // clear
+            memory.vram[static_cast<int>(memory.dotPosition.x) + static_cast<int>(memory.dotPosition.y) * DrawBufferWidth] = 0x0;
+            // update
+            memory.dotPosition.x += static_cast<float>(input.elapsedTime_s * memory.dotDirection.x);
+            memory.dotPosition.y += static_cast<float>(input.elapsedTime_s * memory.dotDirection.y);
+
+            memory.dotPosition.x = wrapAround(memory.dotPosition.x, 0, DrawBufferWidth);
+            memory.dotPosition.y = wrapAround(memory.dotPosition.y, 0, DrawBufferHeight);
+
+            // draw
+            memory.vram[static_cast<int>(memory.dotPosition.x) + static_cast<int>(memory.dotPosition.y) * DrawBufferWidth] = 0x1;
+
+            if (input.closeRequested) {
+                memory.state = GameState::MainMenu;
+            }
+
+        } break;
     }
-
-    if (memory.directionChangeTimer.hasFired(time)) {
-        memory.directionChangeTimer = Timer(time, std::chrono::seconds(1));
-        memory.dotDirection.x = static_cast<float>((rand() % 100) - 50) / 1.0f;
-        memory.dotDirection.y = static_cast<float>((rand() % 100) - 50) / 1.0f;
-    }
-
-    if (input.hasMouse) {
-        if (input.mouse.trackLength) {
-            Vec2f mousePosition = input.mouse.track[input.mouse.trackLength - 1];
-
-            Vec2i position{
-                .x = static_cast<int>(mousePosition.x),
-                .y = static_cast<int>(mousePosition.y),
-            };
-
-            if (position.x < DrawBufferWidth && position.x >= 0 &&
-                position.y < DrawBufferHeight && position.y >= 0)
-                memory.vram[position.x + position.y * DrawBufferWidth] = position.x % 15 + 1;
-
-        } else {
-
-           // memory.mousePosition = Vec2f{-1.0f, -1.0f};
-        }
-    }
-    // clear
-    memory.vram[static_cast<int>(memory.dotPosition.x) + static_cast<int>(memory.dotPosition.y) * DrawBufferWidth] = 0x0;
-    // update
-    memory.dotPosition.x += static_cast<float>(input.elapsedTime_s * memory.dotDirection.x);
-    memory.dotPosition.y += static_cast<float>(input.elapsedTime_s * memory.dotDirection.y);
-
-    memory.dotPosition.x = wrapAround(memory.dotPosition.x, 0, DrawBufferWidth);
-    memory.dotPosition.y = wrapAround(memory.dotPosition.y, 0, DrawBufferHeight);
-
-    // draw
-    memory.vram[static_cast<int>(memory.dotPosition.x) + static_cast<int>(memory.dotPosition.y) * DrawBufferWidth] = 0x1;
 
 	return GameOutput{
-		.shouldQuit = input.closeRequested,
+		//.shouldQuit = input.closeRequested,
 	};
 }
 
