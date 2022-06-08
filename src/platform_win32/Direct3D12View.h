@@ -28,6 +28,7 @@ class Direct3D12View {
     ComPtr<ID3D12Resource> mTextureUploadHeap;
     UINT8* mSrvDataBeginPtr;
     BYTE* mDrawBuffer;
+    bool mNeedsUpload;
 
     Vec2f mConstantScale;
 
@@ -59,5 +60,6 @@ public:
 
 
     void Resize(UINT width, UINT height);
+    void SetDrawBuffer(byte* drawBuffer);
     void Draw(); 
 };
