@@ -19,11 +19,12 @@ struct Timer {
 
 template<typename T, typename U1, typename U2>
 constexpr T wrapAround(T a, U1 lowerBound, U2 upperBound) {
+    auto width = upperBound - lowerBound;
     while (a >= upperBound) {
-        a -= upperBound;
+        a -= width;
     }
     while (a <= lowerBound) {
-        a += upperBound;
+        a += width;
     }
     return a;
 }
