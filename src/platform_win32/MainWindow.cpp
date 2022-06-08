@@ -20,6 +20,7 @@ MainWindow::~MainWindow()
 
 void MainWindow::onPaint() {
     writeDrawBuffer(memory, drawBuffer);
+    this->view->SetDrawBuffer(drawBuffer);
     this->view->Draw();
     ValidateRect(hwnd, NULL);
 }

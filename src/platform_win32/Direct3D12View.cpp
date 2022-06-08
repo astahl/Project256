@@ -386,39 +386,13 @@ Direct3D12View::Direct3D12View(HWND hwnd, UINT width, UINT height)
 				nullptr,
 				IID_PPV_ARGS(&mTextureUploadHeap)));
 
-			// Copy data to the intermediate upload heap and then schedule a copy 
-			// from the upload heap to the Texture2D.
-
 			const size_t memSize = DrawBufferHeight * DrawBufferWidth * 4;
-			mDrawBuffer = reinterpret_cast<BYTE*>(VirtualAlloc(0, memSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
-			writeDrawBuffer(nullptr, mDrawBuffer);
 
 			D3D12_SUBRESOURCE_DATA textureData{
 				.pData = mDrawBuffer,
 				.RowPitch = DrawBufferWidth * 4,
 				.SlicePitch = memSize,
 			};
-
-			D3D12_RESOURCE_DESC textDesc = mTexture->GetDesc();
-			const UINT MaxSubresources = 16;
-			UINT64 requiredSize = 0;
-			D3D12_PLACED_SUBRESOURCE_FOOTPRINT layouts[MaxSubresources];
-			UINT numRows[MaxSubresources];
-			UINT64 rowSizesInBytes[MaxSubresources];
-
-			mDevice->GetCopyableFootprints(&textDesc, 0, 1, 0, layouts, numRows, rowSizesInBytes, &requiredSize);
-			byte* data = nullptr;
-			ExitOnFail(mTextureUploadHeap->Map(0, nullptr, reinterpret_cast<void**>(&data)));
-			D3D12_MEMCPY_DEST memcpydest{
-				.pData = data + layouts[0].Offset,
-				.RowPitch = layouts[0].Footprint.RowPitch,
-				.SlicePitch = layouts[0].Footprint.RowPitch * numRows[0],
-			};
-			for (UINT row = 0; row < numRows[0]; ++row)
-			{
-				memcpy(static_cast<byte*>(memcpydest.pData) + memcpydest.RowPitch * row, mDrawBuffer + DrawBufferWidth * 4 * row, rowSizesInBytes[0]);
-			}
-			mTextureUploadHeap->Unmap(0, nullptr);
 
 			// Describe and create a SRV for the texture.
 			D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {
@@ -430,35 +404,6 @@ Direct3D12View::Direct3D12View(HWND hwnd, UINT width, UINT height)
 				},
 			};
 			mDevice->CreateShaderResourceView(mTexture.Get(), &srvDesc, mSrvHeap->GetCPUDescriptorHandleForHeapStart());
-
-			//ExitOnFail(mCommandAllocator->Reset());
-			//ExitOnFail(mCommandList->Reset(mCommandAllocator.Get(), mPipelineState.Get()));
-
-			D3D12_TEXTURE_COPY_LOCATION srcLocation{
-				.pResource = mTextureUploadHeap.Get(),
-				.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT,
-				.PlacedFootprint = layouts[0],
-			};
-
-			D3D12_TEXTURE_COPY_LOCATION dstLocation{
-				.pResource = mTexture.Get(),
-				.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
-				.SubresourceIndex = 0
-			};
-
-			mCommandList->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
-
-			D3D12_RESOURCE_BARRIER barrierTextureCopyTransition{
-				.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
-				.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE,
-				.Transition = {
-					.pResource = mTexture.Get(),
-					.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
-					.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST,
-					.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-				},
-			};
-			mCommandList->ResourceBarrier(1, &barrierTextureCopyTransition);
 		}
 
 		ExitOnFail(mCommandList->Close());
@@ -486,6 +431,29 @@ Direct3D12View::~Direct3D12View()
 	CloseHandle(mFenceEvent);
 }
 
+void Direct3D12View::SetDrawBuffer(byte* drawBuffer) {
+	D3D12_RESOURCE_DESC textDesc = mTexture->GetDesc();
+	const UINT MaxSubresources = 16;
+	UINT64 requiredSize = 0;
+	D3D12_PLACED_SUBRESOURCE_FOOTPRINT layouts[MaxSubresources];
+	UINT numRows[MaxSubresources];
+	UINT64 rowSizesInBytes[MaxSubresources];
+
+	mDevice->GetCopyableFootprints(&textDesc, 0, 1, 0, layouts, numRows, rowSizesInBytes, &requiredSize);
+	byte* data = nullptr;
+	ExitOnFail(mTextureUploadHeap->Map(0, nullptr, reinterpret_cast<void**>(&data)));
+	D3D12_MEMCPY_DEST memcpydest{
+		.pData = data + layouts[0].Offset,
+		.RowPitch = layouts[0].Footprint.RowPitch,
+		.SlicePitch = layouts[0].Footprint.RowPitch * numRows[0],
+	};
+	for (UINT row = 0; row < numRows[0]; ++row)
+	{
+		memcpy(static_cast<byte*>(memcpydest.pData) + memcpydest.RowPitch * row, drawBuffer + DrawBufferWidth * 4 * row, rowSizesInBytes[0]);
+	}
+	mTextureUploadHeap->Unmap(0, nullptr);
+	mNeedsUpload = true;
+}
 
 void Direct3D12View::Resize(UINT width, UINT height)
 {
@@ -504,7 +472,6 @@ void Direct3D12View::Resize(UINT width, UINT height)
 		.right = static_cast<LONG>(mViewport.TopLeftX + mViewport.Width),
 		.bottom = static_cast<LONG>(mViewport.TopLeftY + mViewport.Height),
 	};
-	
 	
 	mConstantScale = clipSpaceDrawBufferScale(width, height);
 	this->WaitForGpu();
@@ -525,6 +492,43 @@ void Direct3D12View::Draw()
 {
 	ExitOnFail(mCommandAllocator[mFrameIndex]->Reset());
 	ExitOnFail(mCommandList->Reset(mCommandAllocator[mFrameIndex].Get(), mPipelineState.Get()));
+
+	if (mNeedsUpload) {
+		mNeedsUpload = false;
+		D3D12_PLACED_SUBRESOURCE_FOOTPRINT layout{};
+		D3D12_RESOURCE_DESC textureDesc = mTexture->GetDesc();
+		mDevice->GetCopyableFootprints(&textureDesc, 0, 1, 0, &layout, nullptr, nullptr, nullptr);
+		D3D12_TEXTURE_COPY_LOCATION srcLocation{
+			.pResource = mTextureUploadHeap.Get(),
+			.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT,
+			.PlacedFootprint = layout,
+		};
+
+		D3D12_TEXTURE_COPY_LOCATION dstLocation{
+			.pResource = mTexture.Get(),
+			.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
+			.SubresourceIndex = 0
+		};
+
+		D3D12_RESOURCE_BARRIER barrierTextureCopyTransition{
+			.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
+			.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE,
+			.Transition = {
+				.pResource = mTexture.Get(),
+				.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
+				.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+				.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST ,
+			},
+		};
+		mCommandList->ResourceBarrier(1, &barrierTextureCopyTransition);
+
+		mCommandList->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
+
+		barrierTextureCopyTransition.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
+		barrierTextureCopyTransition.Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+		mCommandList->ResourceBarrier(1, &barrierTextureCopyTransition);
+	}
+
 	mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
 
 	ID3D12DescriptorHeap* ppHeaps[] = { mSrvHeap.Get() };
