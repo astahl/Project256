@@ -65,7 +65,7 @@ Vec2f clipSpaceDrawBufferScale(unsigned int viewportWidth, unsigned int viewport
 
 GameOutput doGameThings(GameInput* pInput, void* pMemory)
 {
-    using Palette = PaletteC64;
+    using Palette = PaletteAppleII;
     GameMemory& memory = *reinterpret_cast<GameMemory*>(pMemory);
     GameInput& input = *pInput;
     if (input.textLength)

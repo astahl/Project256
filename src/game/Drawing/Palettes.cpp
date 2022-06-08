@@ -8,6 +8,58 @@
 #include <cstdint>
 #include <array>
 
+// uses SMPTE 240M conversion
+constexpr uint32_t YCbCrToARGB(double Y, double Cb, double Cr) {
+    double KB = 0.087;
+    double KR = 0.212;
+    double KG = 1 - KB - KR;
+
+    double R = Y + 0 * Cb + (2 - 2 * KR) * Cr;
+    double G = Y + (-KB / KG * (2 - 2 * KB)) * Cb + (-KR / KG *  (2 - 2 * KR)) * Cr;
+    double B = Y + (2 - 2 * KB) * Cb + 0 * Cr;
+
+    return 0xFF'00'00'00 |
+    std::clamp(static_cast<int>(256 * R), 0, 255) << 16 |
+    std::clamp(static_cast<int>(256 * G), 0, 255) << 8 |
+    std::clamp(static_cast<int>(256 * B), 0, 255);
+}
+
+
+struct PaletteAppleII {
+
+    constexpr static size_t count = 16;
+
+    enum class Color : uint8_t {
+        black, magenta, darkBlue, purple, darkGreen, grey1, mediumBlue,
+        lightBlue, brown, orange, grey2, pink, green, yellow, aqua, white
+    };
+
+    constexpr static std::array<uint32_t,16> colors = {
+        YCbCrToARGB(0, 0, 0),
+        YCbCrToARGB(0.25, 0, 0.5),
+        YCbCrToARGB(0.25, 0.5, 0),
+        YCbCrToARGB(0.5, 1, 1),
+        YCbCrToARGB(0.25, 0, -0.5),
+        YCbCrToARGB(0.5, 0, 0),
+        YCbCrToARGB(0.5, 1, -1),
+        YCbCrToARGB(0.75, 0.5, 0),
+        YCbCrToARGB(0.25, -0.5, 0),
+        YCbCrToARGB(0.5, -1, 1),
+        YCbCrToARGB(0.5, 0, 0),
+        YCbCrToARGB(0.75, 0, 0.5),
+        YCbCrToARGB(0.5, -1, -1),
+        YCbCrToARGB(0.75, -0.5, 0),
+        YCbCrToARGB(0.75, 0, -0.5),
+        YCbCrToARGB(1, 0, 0),
+    };
+
+    static void writeTo(uint32_t* destination) {
+        for (size_t i = 0; i < count; ++i) {
+            destination[i] = colors[i];
+        }
+    }
+};
+
 struct PaletteCGA {
 
     enum class Color : uint8_t {
