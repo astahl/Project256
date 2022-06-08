@@ -326,7 +326,7 @@ Direct3D12View::Direct3D12View(HWND hwnd, UINT width, UINT height)
 				.Height = DrawBufferHeight,
 				.DepthOrArraySize = 1,
 				.MipLevels = 1,
-				.Format = DXGI_FORMAT_R8G8B8A8_UNORM,
+				.Format = DXGI_FORMAT_B8G8R8A8_UNORM,
 				.SampleDesc {
 					.Count = 1,
 					.Quality = 0,
