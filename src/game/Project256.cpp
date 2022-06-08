@@ -132,7 +132,7 @@ void writeDrawBuffer(void* pMemory, void* buffer)
         for (unsigned y = 0; y < DrawBufferHeight; ++y)
         for (unsigned x = 0; x < DrawBufferWidth; ++x)
         {
-            *pixel++ = 0xFF000000 | ((y % 2) && (x % 2) ? 0xFFFFFF : 0x000000) ; // argb
+            *pixel++ = 0xFF000000 | ((y % 2) && (x % 2) ? 0xFFFFFF : y) ; // argb
         }
         return;
     }
