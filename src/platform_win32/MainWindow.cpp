@@ -40,11 +40,25 @@ struct GameState {
     int64_t upTime{};
     GameInput input;
     Chronometer frameTime{};
+    bool forceCursor;
 };
 
 enum class Timers : UINT_PTR {
     HighFrequency
 };
+
+static void setCursorVisible(bool shouldShow) {
+    CURSORINFO cursorInfo{ .cbSize = sizeof(CURSORINFO) };
+    GetCursorInfo(&cursorInfo);
+    if (!shouldShow && cursorInfo.flags == CURSOR_SHOWING) // cursor is visible
+    {
+        ShowCursor(FALSE);
+    }
+    else if (shouldShow && cursorInfo.flags == 0)
+    {
+        ShowCursor(TRUE);
+    }
+}
 
 
 MainWindow::MainWindow(HWND hwnd)
@@ -66,13 +80,6 @@ MainWindow::~MainWindow()
 }
 
 void MainWindow::onTick() {
-    GameInput& input = state->input;
-
-    bool mouseWasOver = input.mouse.endedOver == eTRUE && input.mouse.trackLength > 0;
-    Vec2f lastMousePosition{};
-    if (mouseWasOver) {
-        lastMousePosition = input.mouse.track[input.mouse.trackLength - 1];
-    }
     state->input.hasMouse = eTRUE;
 
     state->input.frameNumber = state->frameCount++;
@@ -81,19 +88,37 @@ void MainWindow::onTick() {
     state->input.elapsedTime_s = frameTime.seconds;
     state->input.upTime_microseconds = state->upTime;;
 
-    GameOutput output{};
-    output = doGameThings(&state->input, memory);
+    GameInput inputCopy = state->input;
     state->input = {};
+    GameOutput output{};
+    output = doGameThings(&inputCopy, memory);
+  
     if (output.shouldQuit) {
         PostQuitMessage(0);
         return;
     }
-    if (mouseWasOver) {
-        input.mouse.track[0] = lastMousePosition;
-        ++input.mouse.trackLength;
-        input.mouse.endedOver = eTRUE;
+
+    if ((output.shouldShowSystemCursor == eTRUE) != state->forceCursor) {
+        state->forceCursor = output.shouldShowSystemCursor == eTRUE;
+        setCursorVisible(state->forceCursor);
     }
 
+    if (output.shouldPinMouse) {
+        RECT rect{};
+        GetClientRect(hwnd, &rect);
+        POINT center{ .x = rect.left + (rect.right - rect.left) / 2, .y = rect.top + (rect.bottom - rect.top) / 2 };
+        ClientToScreen(hwnd, &center);
+        SetCursorPos(center.x, center.y);
+    }
+
+    if (inputCopy.mouse.trackLength && inputCopy.mouse.endedOver) {
+        state->input.mouse.track[0] = inputCopy.mouse.track[inputCopy.mouse.trackLength - 1];
+        state->input.mouse.trackLength += 1;
+        state->input.mouse.endedOver = eTRUE;
+    }
+    state->input.mouse.buttonLeft.endedDown = inputCopy.mouse.buttonLeft.endedDown;
+    state->input.mouse.buttonRight.endedDown = inputCopy.mouse.buttonRight.endedDown;
+    state->input.mouse.buttonMiddle.endedDown = inputCopy.mouse.buttonMiddle.endedDown;
     InvalidateRect(hwnd, NULL, FALSE);
 }
 
@@ -133,13 +158,32 @@ void MainWindow::onMouseMove(POINTS points) {
     auto normalizedToWindow = Vec2f{ .x = static_cast<float>(points.x) / width, .y = static_cast<float>(points.y) / height };
     auto relativeToCenter = Vec2f{ .x = (normalizedToWindow.x - 0.5f) * 2, .y = (normalizedToWindow.y  - 0.5f) * 2 };
     auto scaledPos = Vec2f{ .x = relativeToCenter.x / scale.x * 0.5f + 0.5f, .y = relativeToCenter.y / scale.y * -0.5f  + 0.5f };
-    if (scaledPos.x < 0.0f || scaledPos.x > 1.0f || scaledPos.y < 0.0f || scaledPos.x > 1.0f) {
+    if (scaledPos.x < 0.0f || scaledPos.x >= 1.0f || scaledPos.y < 0.0f || scaledPos.y >= 1.0f) {
         // outside
+        setCursorVisible(TRUE);
         mouse.endedOver = eFALSE;
     } else {
+        setCursorVisible(state->forceCursor);
         auto pixelPos = Vec2f{ .x = scaledPos.x * DrawBufferWidth, .y = scaledPos.y * DrawBufferHeight };
         mouse.track[mouse.trackLength++] = pixelPos;
         mouse.endedOver = eTRUE;
+    }
+}
+
+void MainWindow::onMouseButton(MouseButtons button, MouseButtonClick click) {
+    auto& mouse = this->state->input.mouse;
+    auto& btn = button == MouseButtons::Left ? mouse.buttonLeft : (button == MouseButtons::Right ? mouse.buttonRight : mouse.buttonMiddle);
+    switch (click) {
+    case MouseButtonClick::Down:
+        btn.transitionCount++;
+        btn.endedDown = eTRUE;
+        break;
+    case MouseButtonClick::Up:
+        btn.transitionCount++;
+        btn.endedDown = eFALSE;
+        break;
+    case MouseButtonClick::DoubleClick:
+        break;
     }
 }
 
@@ -184,6 +228,33 @@ LRESULT CALLBACK MainWindow::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPA
         break;
     case WM_MOUSEMOVE:
         window->onMouseMove(MAKEPOINTS(lParam));
+        break;
+    case WM_LBUTTONDOWN: 
+        window->onMouseButton(MouseButtons::Left, MouseButtonClick::Down);
+        break;
+    case WM_LBUTTONUP:
+        window->onMouseButton(MouseButtons::Left, MouseButtonClick::Up);
+        break;
+    case WM_LBUTTONDBLCLK:
+        window->onMouseButton(MouseButtons::Left, MouseButtonClick::DoubleClick);
+        break;
+    case WM_RBUTTONDOWN:
+        window->onMouseButton(MouseButtons::Right, MouseButtonClick::Down);
+        break;
+    case WM_RBUTTONUP:
+        window->onMouseButton(MouseButtons::Right, MouseButtonClick::Up);
+        break;
+    case WM_RBUTTONDBLCLK:
+        window->onMouseButton(MouseButtons::Right, MouseButtonClick::DoubleClick);
+        break;
+    case WM_MBUTTONDOWN:
+        window->onMouseButton(MouseButtons::Middle, MouseButtonClick::Down);
+        break;
+    case WM_MBUTTONUP:
+        window->onMouseButton(MouseButtons::Middle, MouseButtonClick::Up);
+        break;
+    case WM_MBUTTONDBLCLK:
+        window->onMouseButton(MouseButtons::Middle, MouseButtonClick::DoubleClick);
         break;
     case WM_DESTROY: {
         //delete window;

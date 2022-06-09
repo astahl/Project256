@@ -7,6 +7,9 @@ class Direct3D12View;
 
 struct GameState; 
 
+enum class MouseButtons { Left, Right, Middle };
+enum class MouseButtonClick { Down, Up, DoubleClick };
+
 class MainWindow
 {
     GameState* state;
@@ -21,6 +24,7 @@ class MainWindow
     void onClose();
     void onTimer(WPARAM timerId);
     void onMouseMove(POINTS points);
+    void onMouseButton(MouseButtons button, MouseButtonClick clickType);
 public:
     static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 

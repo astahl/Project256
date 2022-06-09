@@ -3,7 +3,7 @@
 
 const long MemorySize = 640 * 1024; // 640kbytes
 
-const unsigned DrawBufferWidth = 160;
+const unsigned DrawBufferWidth = 320;
 const unsigned DrawBufferHeight = 200;
 
 const unsigned DrawAspectH = 4;
@@ -41,7 +41,7 @@ struct Vec2i {
 };
 
 struct Button {
-	int transistionCount;
+	int transitionCount;
     BOOLEAN_ENUM endedDown;
 };
 
@@ -96,7 +96,7 @@ struct GameOutput {
     BOOLEAN_ENUM shouldQuit;
     BOOLEAN_ENUM needTextInput;
     BOOLEAN_ENUM shouldPinMouse;
-    BOOLEAN_ENUM shouldHideMouse;
+    BOOLEAN_ENUM shouldShowSystemCursor;
 	struct Rumble rumble[InputMaxControllers];
 };
 
