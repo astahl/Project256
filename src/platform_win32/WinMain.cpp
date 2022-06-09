@@ -15,6 +15,7 @@ int WINAPI wWinMain(_In_ HINSTANCE instanceHandle,
     _In_ LPWSTR /* commandLine */,
     _In_ int nCmdShow) 
 {
+    SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
     auto windowProc = (&MainWindow::WindowProc);
     WNDCLASSEX windowClass {
         .cbSize = sizeof(WNDCLASSEX),

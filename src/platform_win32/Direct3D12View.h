@@ -58,7 +58,7 @@ public:
 	Direct3D12View(HWND hwnd, UINT width, UINT height);
 	~Direct3D12View();
 
-
+    Vec2f currentScale() const;
     void Resize(UINT width, UINT height);
     void SetDrawBuffer(byte* drawBuffer);
     void Draw(); 

@@ -18,6 +18,9 @@ class MainWindow
     void onPaint();
     void onResize();
     void onTick();
+    void onClose();
+    void onTimer(WPARAM timerId);
+    void onMouseMove(POINTS points);
 public:
     static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
