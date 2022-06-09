@@ -167,11 +167,12 @@ class MyMTKView : MTKView {
         let pos = normalizedPos
             .applying(CGAffineTransform.init(translationX: -1, y: -1).scaledBy(x: 2, y: 2))
 
-        if !CGRect.init(x: -1, y: -1, width: 2, height: 2).contains(pos) {
+        let scaled = pos.applying(CGAffineTransform.init(translationX: 0.5, y: 0.5).scaledBy(x: 0.5 / scaleX, y: 0.5 / scaleY))
+
+        if !CGRect.init(x: 0, y: 0, width: 1, height: 1).contains(scaled) {
             self.mouseMoveHandler?(CGPoint(x: event.deltaX, y: event.deltaY), nil)
         } else {
-
-            let pixelPosition = pos.applying(CGAffineTransform.init(translationX: 0.5, y: 0.5).scaledBy(x: 0.5 / scaleX, y: 0.5 / scaleY)).applying(CGAffineTransform.init(scaleX: CGFloat(drawBuffer?.width ?? 1), y: CGFloat(drawBuffer?.height ?? 1)))
+            let pixelPosition = scaled.applying(CGAffineTransform.init(scaleX: CGFloat(drawBuffer?.width ?? 1), y: CGFloat(drawBuffer?.height ?? 1)))
 
             self.mouseMoveHandler?(CGPoint(x: event.deltaX, y: event.deltaY), pixelPosition)
         }
