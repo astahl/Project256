@@ -1,6 +1,6 @@
 #include "MainWindow.h"
 #include "Direct3D12View.h"
-
+#include <initializer_list>
 #define CXX
 #include "../game/Project256.h"
 
@@ -41,6 +41,7 @@ struct GameState {
     GameInput input;
     Chronometer frameTime{};
     bool forceCursor;
+    Vec2i lastCursorPosition;
 };
 
 enum class Timers : UINT_PTR {
@@ -168,6 +169,13 @@ void MainWindow::onMouseMove(POINTS points) {
         mouse.track[mouse.trackLength++] = pixelPos;
         mouse.endedOver = eTRUE;
     }
+    mouse.relativeMovement.x += static_cast<float>(points.x - this->state->lastCursorPosition.x) / scale.x;
+    mouse.relativeMovement.y -= static_cast<float>(points.y - this->state->lastCursorPosition.y) / scale.y;
+    this->state->lastCursorPosition = Vec2i{ .x = points.x, .y = points.y };
+}
+
+void MainWindow::onMouseLeave() {
+    // nothing to do, really?
 }
 
 void MainWindow::onMouseButton(MouseButtons button, MouseButtonClick click) {
@@ -255,6 +263,9 @@ LRESULT CALLBACK MainWindow::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPA
         break;
     case WM_MBUTTONDBLCLK:
         window->onMouseButton(MouseButtons::Middle, MouseButtonClick::DoubleClick);
+        break;
+    case WM_MOUSELEAVE:
+        window->onMouseLeave();
         break;
     case WM_DESTROY: {
         //delete window;

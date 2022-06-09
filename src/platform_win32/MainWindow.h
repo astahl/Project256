@@ -24,6 +24,7 @@ class MainWindow
     void onClose();
     void onTimer(WPARAM timerId);
     void onMouseMove(POINTS points);
+    void onMouseLeave();
     void onMouseButton(MouseButtons button, MouseButtonClick clickType);
 public:
     static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
