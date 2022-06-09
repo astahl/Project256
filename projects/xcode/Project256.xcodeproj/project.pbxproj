@@ -23,8 +23,6 @@
 		685035DA2842921900355252 /* DrawBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 685035D82842921900355252 /* DrawBuffer.swift */; };
 		689A250C284BE37D0086DD58 /* Palettes.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 689A250B284BE37D0086DD58 /* Palettes.cpp */; };
 		689A250D284BE37D0086DD58 /* Palettes.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 689A250B284BE37D0086DD58 /* Palettes.cpp */; };
-		68A2CB03284817490071CA62 /* StructHelpers.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 68A2CB01284817490071CA62 /* StructHelpers.cpp */; };
-		68A2CB04284817490071CA62 /* StructHelpers.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 68A2CB01284817490071CA62 /* StructHelpers.cpp */; };
 		68D205CC28512A0000CB4213 /* Generators.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 68D205CB28512A0000CB4213 /* Generators.cpp */; };
 		68D205CD28512A0000CB4213 /* Generators.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 68D205CB28512A0000CB4213 /* Generators.cpp */; };
 /* End PBXBuildFile section */
@@ -44,8 +42,6 @@
 		685035D528428EE200355252 /* GameState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameState.swift; sourceTree = "<group>"; };
 		685035D82842921900355252 /* DrawBuffer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawBuffer.swift; sourceTree = "<group>"; };
 		689A250B284BE37D0086DD58 /* Palettes.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = Palettes.cpp; path = ../../src/game/Drawing/Palettes.cpp; sourceTree = "<group>"; };
-		68A2CB01284817490071CA62 /* StructHelpers.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = StructHelpers.cpp; sourceTree = "<group>"; };
-		68A2CB02284817490071CA62 /* StructHelpers.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = StructHelpers.h; sourceTree = "<group>"; };
 		68D205CB28512A0000CB4213 /* Generators.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = Generators.cpp; path = ../../src/game/Drawing/Generators.cpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -78,8 +74,6 @@
 				6819ACC8283EE6CB00CCBFD5 /* BridgeHeader.h */,
 				685035D528428EE200355252 /* GameState.swift */,
 				685035D82842921900355252 /* DrawBuffer.swift */,
-				68A2CB01284817490071CA62 /* StructHelpers.cpp */,
-				68A2CB02284817490071CA62 /* StructHelpers.h */,
 			);
 			name = Platform;
 			path = ../../src/platform_swiftui;
@@ -215,7 +209,6 @@
 			files = (
 				6819ACC2283ECD8E00CCBFD5 /* MetalView.swift in Sources */,
 				685035D92842921900355252 /* DrawBuffer.swift in Sources */,
-				68A2CB03284817490071CA62 /* StructHelpers.cpp in Sources */,
 				685035D3283F9D4E00355252 /* Project256.cpp in Sources */,
 				685035D628428EE200355252 /* GameState.swift in Sources */,
 				68D205CC28512A0000CB4213 /* Generators.cpp in Sources */,
@@ -231,7 +224,6 @@
 			files = (
 				6819ACC3283ECD8E00CCBFD5 /* MetalView.swift in Sources */,
 				685035DA2842921900355252 /* DrawBuffer.swift in Sources */,
-				68A2CB04284817490071CA62 /* StructHelpers.cpp in Sources */,
 				685035D4283F9D4F00355252 /* Project256.cpp in Sources */,
 				685035D728428EE200355252 /* GameState.swift in Sources */,
 				68D205CD28512A0000CB4213 /* Generators.cpp in Sources */,

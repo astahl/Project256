@@ -27,6 +27,57 @@ class Chronometer {
     }
 }
 
+func withUnsafeElementPointer<T, Result>(firstElement: inout T, offset: Int, body: @escaping (UnsafePointer<T>) throws -> Result) rethrows -> Result {
+    do {
+        return try withUnsafePointer(to: &firstElement) {
+            beginPtr in
+            let ptr = offset == 0 ? beginPtr : beginPtr.advanced(by: offset)
+            do {
+                return try body(ptr)
+            } catch {
+                throw error
+            }
+        }
+    } catch {
+        throw error
+    }
+}
+
+func withUnsafeMutableElementPointer<T, Result>(firstElement: inout T, offset: Int, body: @escaping  (UnsafeMutablePointer<T>) throws -> Result) rethrows -> Result {
+    do {
+        return try withUnsafeMutablePointer(to: &firstElement) {
+            beginPtr in
+            let ptr = offset == 0 ? beginPtr : beginPtr.advanced(by: offset)
+            do {
+                return try body(ptr)
+            } catch {
+                throw error
+            }
+        }
+    } catch {
+        throw error
+    }
+}
+
+func withUnsafeMutableBuffer<T, Result>(start: inout T, end: inout T, body: @escaping  (UnsafeMutableBufferPointer<T>) throws -> Result) rethrows -> Result {
+    do {
+        return try withUnsafeMutablePointer(to: &start) {
+            startPtr in
+            return try withUnsafeMutablePointer(to: &end) {
+                endPtr in
+                let count = startPtr.distance(to: endPtr) + 1
+                do {
+                    return try body(UnsafeMutableBufferPointer(start: startPtr, count: count))
+                } catch {
+                    throw error
+                }
+            }
+        }
+    } catch {
+        throw error
+    }
+}
+
 class GameState : ObservableObject {
     let memory = UnsafeMutableRawPointer.allocate(byteCount: MemorySize, alignment: 128)
     var input = GameInput()
@@ -36,13 +87,14 @@ class GameState : ObservableObject {
     var upTime_microseconds: Int64 = 0
     var drawBuffer = DrawBuffer(width: Int(DrawBufferWidth), height: Int(DrawBufferHeight))
 
+
+
     func addInputText(text: String) {
         let cString = text.utf8CString
         let offset = Int(input.textLength);
         let count = min(Int(InputMaxTextLength) - offset, Int(cString.count - 1))
-        withUnsafeMutablePointer(to: &input.text_utf8.0) {
-            beginPtr in
-            let ptr = offset == 0 ? beginPtr : beginPtr.advanced(by: offset)
+        withUnsafeMutableElementPointer(firstElement: &input.text_utf8.0, offset: offset) {
+            ptr in
             cString.withUnsafeBufferPointer {
                 cStrPtr in
                 ptr.assign(from: cStrPtr.baseAddress!, count: count)
@@ -51,9 +103,35 @@ class GameState : ObservableObject {
         input.textLength += UInt32(count)
     }
 
+    func addInputMouseMovement(relative: CGPoint, position: CGPoint?)
+    {
+        input.mouse.relativeMovement = Vec2f(x: Float(relative.x), y: Float(relative.y))
+        if let pos = position {
+            input.mouse.endedOver = eTRUE
+            let offset = min(Int(input.mouse.trackLength), Int(InputMouseMaxTrackLength - 1))
+            withUnsafeMutableElementPointer(firstElement: &input.mouse.track.0, offset: offset) {
+                ptr in
+                ptr.pointee = Vec2f(x: Float(pos.x), y: Float(pos.y))
+            }
+            input.mouse.trackLength += 1
+        } else {
+            input.mouse.endedOver = eFALSE
+        }
+    }
+
     func clearInput() {
+        var oldMousePosition: Vec2f? = nil
+        if input.mouse.endedOver == eTRUE && input.mouse.trackLength > 0 {
+            oldMousePosition = withUnsafeElementPointer(firstElement: &input.mouse.track.0, offset: Int(input.mouse.trackLength - 1)) { $0.pointee }
+        }
+
         input = GameInput()
         input.hasMouse = eTRUE
+        if let newMousePosition = oldMousePosition {
+            input.mouse.trackLength = 1
+            input.mouse.track.0 = newMousePosition
+            input.mouse.endedOver = eTRUE
+        }
         
     }
 }

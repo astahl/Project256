@@ -88,7 +88,7 @@ constexpr T wrapAround(T a, U1 lowerBound, U2 upperBound) {
     while (!(a < upperBound)) {
         a = a - width;
     }
-    while (!(lowerBound < a)) {
+    while (a < lowerBound) {
         a = a + width;
     }
     return a;
@@ -156,8 +156,7 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
 
         Palette::writeTo(memory.palette);
         memory.dotPosition = 0.5 * Vec2f{DrawBufferWidth, DrawBufferHeight};
-        for(int i = 0; i < DrawBufferWidth * DrawBufferHeight; ++i)
-            memory.vram[i] = 0x4;
+
     }
 
     const auto time = std::chrono::microseconds(input.upTime_microseconds);
@@ -166,13 +165,16 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
         memory.dotDirection = itof((rand2d() % 100) - Vec2i{50, 50});
     }
 
+    for(int i = 0; i < DrawBufferWidth * DrawBufferHeight; ++i)
+        memory.vram[i] = 0x4;
+
     if (input.hasMouse) {
         if (input.mouse.trackLength) {
             Vec2f mousePosition = input.mouse.track[input.mouse.trackLength - 1];
 
             Vec2i position = truncate(mousePosition);
 
-            for (auto p : Generators::Rectangle {.bottomLeft = position - Vec2i{0,8}, .topRight = position + Vec2i{4, 0}})
+            for (auto p : Generators::Rectangle {.bottomLeft = position - Vec2i{3,6}, .topRight = position + Vec2i{3, 6}})
                 put(memory.vram, wrapAround2d(p, Vec2i{}, Vec2i{DrawBufferWidth, DrawBufferHeight}), Palette::Color::green);
 
         } else {

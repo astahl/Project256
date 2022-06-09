@@ -66,13 +66,14 @@ struct Project256App: App {
                 .letterboxColor(self.letterboxColor)
                 .mouseMove {
                     relative, position in
-                    inputPushMouseTrack(&gameState.input, Float(position.x), Float(position.y))
+                    gameState.addInputMouseMovement(relative: relative, position: position)
                 }
                 .textInput {
                     text in
                     gameState.addInputText(text: text)
                 }
                 .beforeDraw(self.gameTick)
+
             }
         }
         #if os(macOS)

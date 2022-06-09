@@ -9,7 +9,7 @@ const unsigned DrawBufferHeight = 200;
 const unsigned DrawAspectH = 4;
 const unsigned DrawAspectV = 3;
 
-const unsigned MouseMaxTrackLength = 32;
+const unsigned InputMouseMaxTrackLength = 32;
 
 const unsigned InputMaxControllers = 5;
 const unsigned InputMaxTaps = 20;
@@ -61,8 +61,9 @@ struct Tap {
 
 struct Mouse {
 	struct Button buttonLeft, buttonRight, buttonMiddle;
-	struct Vec2f track[MouseMaxTrackLength];
+	struct Vec2f track[InputMouseMaxTrackLength];
     unsigned trackLength;
+    BOOLEAN_ENUM endedOver;
 	struct Vec2f relativeMovement;
 	struct Axis2 scroll;
 };

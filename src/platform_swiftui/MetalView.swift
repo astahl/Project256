@@ -24,7 +24,7 @@ extension Color {
 }
 
 typealias TextInputHandler = (_ text: String) -> Void
-typealias MouseMoveHandler = (_ relative: CGPoint, _ position: CGPoint) -> Void
+typealias MouseMoveHandler = (_ relative: CGPoint, _ position: CGPoint?) -> Void
 typealias BeforeDrawHandler = () -> Void
 
 class MyMTKView : MTKView {
@@ -41,8 +41,11 @@ class MyMTKView : MTKView {
         super.init(coder: coder)
     }
 
-
     init(drawBuffer: DrawBuffer, letterboxColor: Color?) throws {
+
+        #if os(iOS)
+//        addGestureRecognizer(UILongPressGestureRecognizer)
+        #endif
         self.drawBuffer = drawBuffer
 
         guard let device = MTLCreateSystemDefaultDevice() else {
@@ -138,6 +141,8 @@ class MyMTKView : MTKView {
         commandBuffer.commit()
     }
 
+
+
 #if os(macOS)
     var mouseMoveHandler: MouseMoveHandler?
 
@@ -163,12 +168,13 @@ class MyMTKView : MTKView {
             .applying(CGAffineTransform.init(translationX: -1, y: -1).scaledBy(x: 2, y: 2))
 
         if !CGRect.init(x: -1, y: -1, width: 2, height: 2).contains(pos) {
-            return
+            self.mouseMoveHandler?(CGPoint(x: event.deltaX, y: event.deltaY), nil)
+        } else {
+
+            let pixelPosition = pos.applying(CGAffineTransform.init(translationX: 0.5, y: 0.5).scaledBy(x: 0.5 / scaleX, y: 0.5 / scaleY)).applying(CGAffineTransform.init(scaleX: CGFloat(drawBuffer?.width ?? 1), y: CGFloat(drawBuffer?.height ?? 1)))
+
+            self.mouseMoveHandler?(CGPoint(x: event.deltaX, y: event.deltaY), pixelPosition)
         }
-
-        let pixelPosition = pos.applying(CGAffineTransform.init(translationX: 0.5, y: 0.5).scaledBy(x: 0.5 / scaleX, y: 0.5 / scaleY)).applying(CGAffineTransform.init(scaleX: CGFloat(drawBuffer?.width ?? 1), y: CGFloat(drawBuffer?.height ?? 1)))
-
-        self.mouseMoveHandler?(CGPoint(x: event.deltaX, y: event.deltaY), pixelPosition)
     }
 #endif
 }

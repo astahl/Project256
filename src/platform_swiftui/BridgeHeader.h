@@ -10,5 +10,4 @@
 
 #include "../game/Project256.h"
 #include "MetalViewShaderTypes.h"
-#include "StructHelpers.h"
 #endif /* BridgeHeader_h */
