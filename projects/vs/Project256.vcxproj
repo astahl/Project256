@@ -19,6 +19,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\src\game\Drawing\Generators.cpp" />
+    <ClCompile Include="..\..\src\game\Drawing\Palettes.cpp" />
     <ClCompile Include="..\..\src\game\Project256.cpp" />
     <ClCompile Include="..\..\src\platform_win32\Direct3D12View.cpp" />
     <ClCompile Include="..\..\src\platform_win32\MainWindow.cpp" />

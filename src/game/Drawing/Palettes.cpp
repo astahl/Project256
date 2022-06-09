@@ -7,6 +7,7 @@
 
 #include <cstdint>
 #include <array>
+#include <algorithm>
 
 // uses SMPTE 240M conversion
 constexpr uint32_t YCbCrToARGB(double Y, double Cb, double Cr) {

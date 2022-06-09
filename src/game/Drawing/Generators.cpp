@@ -7,6 +7,10 @@
 #define CXX
 #include "../Project256.h"
 
+#include <algorithm>
+
+namespace Generators {
+
 struct Rectangle {
     const Vec2i bottomLeft;
     const Vec2i topRight;
@@ -22,7 +26,8 @@ struct Rectangle {
             if (current.x == topRight.x) {
                 ++current.y;
                 current.x = bottomLeft.x;
-            } else {
+            }
+            else {
                 ++current.x;
             }
             return *this;
@@ -32,7 +37,7 @@ struct Rectangle {
             return current.x != other.current.x || current.y != other.current.y;
         }
     };
-    const Iterator mEnd = ++(Iterator{.bottomLeft = bottomLeft, .topRight = topRight, .current = topRight});
+    const Iterator mEnd = ++(Iterator{ .bottomLeft = bottomLeft, .topRight = topRight, .current = topRight });
 
     constexpr Iterator begin() {
         return Iterator{
@@ -45,4 +50,10 @@ struct Rectangle {
     constexpr Iterator end() {
         return mEnd;
     }
+
+    constexpr size_t size() {
+        return (topRight.x - bottomLeft.x) * (topRight.y - bottomLeft.y);
+    }
 };
+
+}

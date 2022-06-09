@@ -39,7 +39,7 @@ constexpr bool operator<(Vec1 left, Vec2 right)
 template<typename Scalar, typename Vec>
 constexpr Vec operator*(Scalar left, Vec right)
 {
-    using dimType = typeof(Vec::x);
+    using dimType = decltype(Vec::x);
     return Vec{
         .x = static_cast<dimType>(left * right.x),
         .y = static_cast<dimType>(left * right.y)};
@@ -48,7 +48,7 @@ constexpr Vec operator*(Scalar left, Vec right)
 template<typename Scalar, typename Vec>
 constexpr Vec operator/(Vec left, Scalar right)
 {
-    using dimType = typeof(Vec::x);
+    using dimType = decltype(Vec::x);
     return Vec{
         .x = static_cast<dimType>(left.x / right),
         .y = static_cast<dimType>(left.y / right)};
@@ -106,12 +106,6 @@ constexpr void put(uint8_t* drawBuffer, Vec2 position, Color color)
     drawBuffer[static_cast<int>(position.x) + static_cast<int>(position.y) * Pitch] = static_cast<uint8_t>(color);
 }
 
-enum class GameState {
-    Initialise,
-    TitleScreen,
-    MainMenu,
-    TheThickOfIt
-};
 
 struct GameMemory {
     uint8_t vram[DrawBufferWidth * DrawBufferHeight];
@@ -119,7 +113,6 @@ struct GameMemory {
     Vec2f dotPosition;
     Vec2f dotDirection;
     Timer directionChangeTimer;
-    GameState state;
 };
 
 static_assert(sizeof(GameMemory) <= MemorySize, "MemorySize is too small to hold GameMemory struct");
@@ -167,8 +160,6 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
             memory.vram[i] = 0x4;
     }
 
-
-
     const auto time = std::chrono::microseconds(input.upTime_microseconds);
     if (memory.directionChangeTimer.hasFired(time)) {
         memory.directionChangeTimer = Timer(time, std::chrono::seconds(1));
@@ -181,7 +172,7 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
 
             Vec2i position = truncate(mousePosition);
 
-            for (auto p : Rectangle {.bottomLeft = position - Vec2i{0,8}, .topRight = position + Vec2i{4, 0}})
+            for (auto p : Generators::Rectangle {.bottomLeft = position - Vec2i{0,8}, .topRight = position + Vec2i{4, 0}})
                 put(memory.vram, wrapAround2d(p, Vec2i{}, Vec2i{DrawBufferWidth, DrawBufferHeight}), Palette::Color::green);
 
         } else {
@@ -197,7 +188,7 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
     put(memory.vram, memory.dotPosition, Palette::Color::lightRed);
 
 	return GameOutput{
-		//.shouldQuit = input.closeRequested,
+		.shouldQuit = input.closeRequested,
 	};
 }
 

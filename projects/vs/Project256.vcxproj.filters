@@ -33,6 +33,12 @@
     <ClCompile Include="..\..\src\platform_win32\Direct3D12View.cpp">
       <Filter>Source Files\Platform</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\game\Drawing\Generators.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\game\Drawing\Palettes.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\game\Project256.h">
