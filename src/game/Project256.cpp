@@ -174,8 +174,10 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
 
             Vec2i position = truncate(mousePosition);
 
-            for (auto p : Generators::Rectangle {.bottomLeft = position - Vec2i{3,6}, .topRight = position + Vec2i{3, 6}})
-                put(memory.vram, wrapAround2d(p, Vec2i{}, Vec2i{DrawBufferWidth, DrawBufferHeight}), Palette::Color::green);
+            for (auto p : Generators::Rectangle{ .bottomLeft = position - Vec2i{3,0}, .topRight = position + Vec2i{3, 0} })
+                put(memory.vram, wrapAround2d(p, Vec2i{}, Vec2i{ DrawBufferWidth, DrawBufferHeight }), Palette::Color::green);
+            for (auto p : Generators::Rectangle{ .bottomLeft = position - Vec2i{0,3}, .topRight = position + Vec2i{0, 3} })
+                put(memory.vram, wrapAround2d(p, Vec2i{}, Vec2i{ DrawBufferWidth, DrawBufferHeight }), Palette::Color::green);
 
         } else {
 

@@ -66,7 +66,13 @@ MainWindow::~MainWindow()
 }
 
 void MainWindow::onTick() {
+    GameInput& input = state->input;
 
+    bool mouseWasOver = input.mouse.endedOver == eTRUE && input.mouse.trackLength > 0;
+    Vec2f lastMousePosition{};
+    if (mouseWasOver) {
+        lastMousePosition = input.mouse.track[input.mouse.trackLength - 1];
+    }
     state->input.hasMouse = eTRUE;
 
     state->input.frameNumber = state->frameCount++;
@@ -82,7 +88,11 @@ void MainWindow::onTick() {
         PostQuitMessage(0);
         return;
     }
-
+    if (mouseWasOver) {
+        input.mouse.track[0] = lastMousePosition;
+        ++input.mouse.trackLength;
+        input.mouse.endedOver = eTRUE;
+    }
 
     InvalidateRect(hwnd, NULL, FALSE);
 }
@@ -117,15 +127,20 @@ void MainWindow::onMouseMove(POINTS points) {
     auto& mouse = this->state->input.mouse;
     auto scale = this->view->currentScale();
     RECT windowRect{};
-    GetWindowRect(hwnd, &windowRect);
+    GetClientRect(hwnd, &windowRect);
     const int width = windowRect.right - windowRect.left;
     const int height = windowRect.top - windowRect.bottom; // nb: y-flip!
     auto normalizedToWindow = Vec2f{ .x = static_cast<float>(points.x) / width, .y = static_cast<float>(points.y) / height };
     auto relativeToCenter = Vec2f{ .x = normalizedToWindow.x * 2 - 1, .y = normalizedToWindow.y * 2 - 1 };
     auto scaledPos = Vec2f{ .x = relativeToCenter.x * 0.5f / scale.x + 0.5f, .y = relativeToCenter.y * 0.5f / scale.y + 0.5f };
-    auto pixelPos = Vec2f{ .x = scaledPos.x * DrawBufferWidth, .y = scaledPos.y * DrawBufferHeight };
- 
-    mouse.track[mouse.trackLength++] = pixelPos;
+    if (scaledPos.x < 0.0f && scaledPos.x > 1.0f && scaledPos.y < 0.0f && scaledPos.x > 1.0f) {
+        // outside
+        mouse.endedOver = eFALSE;
+    } else {
+        auto pixelPos = Vec2f{ .x = scaledPos.x * DrawBufferWidth, .y = scaledPos.y * DrawBufferHeight };
+        mouse.track[mouse.trackLength++] = pixelPos;
+        mouse.endedOver = eTRUE;
+    }
 }
 
 void MainWindow::doMainLoop() {

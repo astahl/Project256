@@ -19,9 +19,11 @@ struct Rectangle {
         const Vec2i& bottomLeft;
         const Vec2i& topRight;
         Vec2i current;
+        
         constexpr Vec2i operator*() {
             return current;
         }
+
         constexpr Iterator& operator++() {
             if (current.x == topRight.x) {
                 ++current.y;
@@ -34,7 +36,7 @@ struct Rectangle {
         }
 
         constexpr bool operator!=(const Iterator& other) {
-            return current.x != other.current.x || current.y != other.current.y;
+            return (current.x != other.current.x) || (current.y != other.current.y);
         }
     };
     const Iterator mEnd = ++(Iterator{ .bottomLeft = bottomLeft, .topRight = topRight, .current = topRight });
@@ -52,7 +54,7 @@ struct Rectangle {
     }
 
     constexpr size_t size() {
-        return (topRight.x - bottomLeft.x) * (topRight.y - bottomLeft.y);
+        return (1 + topRight.x - bottomLeft.x) * (1 + topRight.y - bottomLeft.y);
     }
 };
 
