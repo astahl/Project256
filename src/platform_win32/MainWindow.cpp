@@ -42,6 +42,10 @@ struct GameState {
     Chronometer frameTime{};
 };
 
+enum class Timers : UINT_PTR {
+    HighFrequency
+};
+
 
 MainWindow::MainWindow(HWND hwnd)
     : state(new GameState())
@@ -53,14 +57,17 @@ MainWindow::MainWindow(HWND hwnd)
     RECT rect{};
     GetWindowRect(hwnd, &rect);
     this->view = new Direct3D12View(hwnd, rect.right - rect.left, rect.bottom - rect.top);
+    SetTimer(hwnd, static_cast<UINT_PTR>(Timers::HighFrequency), 1, NULL);
 }
 
 MainWindow::~MainWindow()
 {
-
+    KillTimer(hwnd, static_cast<UINT_PTR>(Timers::HighFrequency));
 }
 
 void MainWindow::onTick() {
+
+    state->input.hasMouse = eTRUE;
 
     state->input.frameNumber = state->frameCount++;
     auto frameTime = state->frameTime.elapsed();
@@ -75,6 +82,7 @@ void MainWindow::onTick() {
         PostQuitMessage(0);
         return;
     }
+
 
     InvalidateRect(hwnd, NULL, FALSE);
 }
@@ -93,6 +101,33 @@ void MainWindow::onResize() {
     this->view->Resize(rect.right - rect.left, rect.bottom - rect.top);
 }
 
+void MainWindow::onClose() {
+    this->state->input.closeRequested = boole::eTRUE;
+}
+
+void MainWindow::onTimer(WPARAM timerId) {
+    switch (static_cast<Timers>(timerId)) {
+    case Timers::HighFrequency:
+        this->onTick();
+        break;
+    }
+}
+
+void MainWindow::onMouseMove(POINTS points) {
+    auto& mouse = this->state->input.mouse;
+    auto scale = this->view->currentScale();
+    RECT windowRect{};
+    GetWindowRect(hwnd, &windowRect);
+    const int width = windowRect.right - windowRect.left;
+    const int height = windowRect.top - windowRect.bottom; // nb: y-flip!
+    auto normalizedToWindow = Vec2f{ .x = static_cast<float>(points.x) / width, .y = static_cast<float>(points.y) / height };
+    auto relativeToCenter = Vec2f{ .x = normalizedToWindow.x * 2 - 1, .y = normalizedToWindow.y * 2 - 1 };
+    auto scaledPos = Vec2f{ .x = relativeToCenter.x * 0.5f / scale.x + 0.5f, .y = relativeToCenter.y * 0.5f / scale.y + 0.5f };
+    auto pixelPos = Vec2f{ .x = scaledPos.x * DrawBufferWidth, .y = scaledPos.y * DrawBufferHeight };
+ 
+    mouse.track[mouse.trackLength++] = pixelPos;
+}
+
 void MainWindow::doMainLoop() {
     MSG message = { };
 
@@ -106,8 +141,6 @@ void MainWindow::doMainLoop() {
 
             quitWasPosted |= message.message == WM_QUIT;
         }
-        Sleep(10);
-        onTick();
     }
 }
 
@@ -129,7 +162,13 @@ LRESULT CALLBACK MainWindow::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPA
         window->onPaint();
         break;
     case WM_CLOSE:
-        window->state->input.closeRequested = boole::eTRUE;
+        window->onClose();
+        break;
+    case WM_TIMER:
+        window->onTimer(wParam);
+        break;
+    case WM_MOUSEMOVE:
+        window->onMouseMove(MAKEPOINTS(lParam));
         break;
     case WM_DESTROY: {
         //delete window;

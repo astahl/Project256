@@ -576,6 +576,10 @@ void Direct3D12View::Draw()
 	MoveToNextFrame();
 }
 
+Vec2f Direct3D12View::currentScale() const {
+	return mConstantScale;
+}
+
 void Direct3D12View::WaitForGpu()
 {
 	// Schedule a Signal command in the queue.
