@@ -129,11 +129,11 @@ void MainWindow::onMouseMove(POINTS points) {
     RECT windowRect{};
     GetClientRect(hwnd, &windowRect);
     const int width = windowRect.right - windowRect.left;
-    const int height = windowRect.top - windowRect.bottom; // nb: y-flip!
+    const int height = windowRect.bottom - windowRect.top;
     auto normalizedToWindow = Vec2f{ .x = static_cast<float>(points.x) / width, .y = static_cast<float>(points.y) / height };
-    auto relativeToCenter = Vec2f{ .x = normalizedToWindow.x * 2 - 1, .y = normalizedToWindow.y * 2 - 1 };
-    auto scaledPos = Vec2f{ .x = relativeToCenter.x * 0.5f / scale.x + 0.5f, .y = relativeToCenter.y * 0.5f / scale.y + 0.5f };
-    if (scaledPos.x < 0.0f && scaledPos.x > 1.0f && scaledPos.y < 0.0f && scaledPos.x > 1.0f) {
+    auto relativeToCenter = Vec2f{ .x = (normalizedToWindow.x - 0.5f) * 2, .y = (normalizedToWindow.y  - 0.5f) * 2 };
+    auto scaledPos = Vec2f{ .x = relativeToCenter.x / scale.x * 0.5f + 0.5f, .y = relativeToCenter.y / scale.y * -0.5f  + 0.5f };
+    if (scaledPos.x < 0.0f || scaledPos.x > 1.0f || scaledPos.y < 0.0f || scaledPos.x > 1.0f) {
         // outside
         mouse.endedOver = eFALSE;
     } else {
