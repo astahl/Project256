@@ -18,22 +18,92 @@ struct Timer {
     }
 };
 
+template<typename Vec>
+constexpr Vec operator-(Vec left, Vec right)
+{
+    return Vec{left.x - right.x, left.y - right.y};
+}
+
+template<typename Vec>
+constexpr Vec operator+(Vec left, Vec right)
+{
+    return Vec{left.x + right.x, left.y + right.y};
+}
+
+template<typename Vec1, typename Vec2>
+constexpr bool operator<(Vec1 left, Vec2 right)
+{
+    return left.x < right.x && left.y < right.y;
+}
+
+template<typename Scalar, typename Vec>
+constexpr Vec operator*(Scalar left, Vec right)
+{
+    using dimType = typeof(Vec::x);
+    return Vec{
+        .x = static_cast<dimType>(left * right.x),
+        .y = static_cast<dimType>(left * right.y)};
+}
+
+template<typename Scalar, typename Vec>
+constexpr Vec operator/(Vec left, Scalar right)
+{
+    using dimType = typeof(Vec::x);
+    return Vec{
+        .x = static_cast<dimType>(left.x / right),
+        .y = static_cast<dimType>(left.y / right)};
+}
+
+constexpr Vec2i truncate(Vec2f vec) {
+    return Vec2i{static_cast<int>(vec.x), static_cast<int>(vec.y)};
+}
+
+constexpr Vec2f itof(Vec2i vec) {
+    return Vec2f{ static_cast<float>(vec.x), static_cast<float>(vec.y) };
+}
+
+//template<typename Vec>
+//constexpr Vec2f& operator=(Vec2f& left, Vec right)
+//{
+//    left.x = right.x;
+//    left.y = right.y;
+//    return left;
+//}
+
+constexpr Vec2i operator%(Vec2i left, Vec2i right) {
+    return Vec2i{left.x % right.x, left.y % right.y};
+}
+
+constexpr Vec2i operator%(Vec2i left, int right) {
+    return Vec2i{left.x % right, left.y % right};
+}
+
+Vec2i rand2d() {
+    return Vec2i{rand(), rand()};
+}
+
 template<typename T, typename U1, typename U2>
 constexpr T wrapAround(T a, U1 lowerBound, U2 upperBound) {
     auto width = upperBound - lowerBound;
-    while (a >= upperBound) {
-        a -= width;
+    while (!(a < upperBound)) {
+        a = a - width;
     }
-    while (a <= lowerBound) {
-        a += width;
+    while (!(lowerBound < a)) {
+        a = a + width;
     }
     return a;
 }
 
-template<typename Color, int Pitch = DrawBufferWidth>
-constexpr void put(uint8_t* drawBuffer, Vec2i position, Color color)
+template<typename Vec, typename U1, typename U2>
+constexpr Vec wrapAround2d(Vec a, U1 lowerBound, U2 upperBound) {
+    return Vec{ wrapAround(a.x, lowerBound.x, upperBound.x),
+        wrapAround(a.y, lowerBound.y, upperBound.y) };
+}
+
+template<typename Color, typename Vec2 = Vec2i, int Pitch = DrawBufferWidth>
+constexpr void put(uint8_t* drawBuffer, Vec2 position, Color color)
 {
-    drawBuffer[position.x + position.y * Pitch] = static_cast<uint8_t>(color);
+    drawBuffer[static_cast<int>(position.x) + static_cast<int>(position.y) * Pitch] = static_cast<uint8_t>(color);
 }
 
 enum class GameState {
@@ -92,50 +162,39 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
             memory.vram[i] = (i + input.frameNumber) % Palette::count;
 
         Palette::writeTo(memory.palette);
-        memory.dotPosition = Vec2f{DrawBufferWidth / 2, DrawBufferHeight / 2};
+        memory.dotPosition = 0.5 * Vec2f{DrawBufferWidth, DrawBufferHeight};
         for(int i = 0; i < DrawBufferWidth * DrawBufferHeight; ++i)
             memory.vram[i] = 0x4;
     }
 
-    for (auto p : Rectangle {.bottomLeft = {10,10}, .topRight = {DrawBufferWidth - 1,  DrawBufferHeight - 1}})
-        put(memory.vram, p, Palette::Color::green);
+
 
     const auto time = std::chrono::microseconds(input.upTime_microseconds);
     if (memory.directionChangeTimer.hasFired(time)) {
         memory.directionChangeTimer = Timer(time, std::chrono::seconds(1));
-        memory.dotDirection.x = static_cast<float>((rand() % 100) - 50) / 1.0f;
-        memory.dotDirection.y = static_cast<float>((rand() % 100) - 50) / 1.0f;
+        memory.dotDirection = itof((rand2d() % 100) - Vec2i{50, 50});
     }
 
     if (input.hasMouse) {
         if (input.mouse.trackLength) {
             Vec2f mousePosition = input.mouse.track[input.mouse.trackLength - 1];
 
-            Vec2i position{
-                .x = static_cast<int>(mousePosition.x),
-                .y = static_cast<int>(mousePosition.y),
-            };
+            Vec2i position = truncate(mousePosition);
 
-            if (position.x < DrawBufferWidth && position.x >= 0 &&
-                position.y < DrawBufferHeight && position.y >= 0)
-                memory.vram[position.x + position.y * DrawBufferWidth] = position.x % Palette::count;
+            for (auto p : Rectangle {.bottomLeft = position - Vec2i{0,8}, .topRight = position + Vec2i{4, 0}})
+                put(memory.vram, wrapAround2d(p, Vec2i{}, Vec2i{DrawBufferWidth, DrawBufferHeight}), Palette::Color::green);
 
         } else {
 
         }
     }
     // clear
-    memory.vram[static_cast<int>(memory.dotPosition.x) + static_cast<int>(memory.dotPosition.y) * DrawBufferWidth] = 0x0;
+    put(memory.vram, memory.dotPosition, 0x0);
     // update
-    memory.dotPosition.x += static_cast<float>(input.elapsedTime_s * memory.dotDirection.x);
-    memory.dotPosition.y += static_cast<float>(input.elapsedTime_s * memory.dotDirection.y);
-
-    memory.dotPosition.x = wrapAround(memory.dotPosition.x, 0, DrawBufferWidth);
-    memory.dotPosition.y = wrapAround(memory.dotPosition.y, 0, DrawBufferHeight);
-
+    memory.dotPosition = memory.dotPosition + input.elapsedTime_s * memory.dotDirection;
+    memory.dotPosition = wrapAround2d(memory.dotPosition, Vec2i{0,0}, Vec2i{DrawBufferWidth, DrawBufferHeight});
     // draw
-    memory.vram[static_cast<int>(memory.dotPosition.x) + static_cast<int>(memory.dotPosition.y) * DrawBufferWidth] = 0x1;
-
+    put(memory.vram, memory.dotPosition, Palette::Color::lightRed);
 
 	return GameOutput{
 		//.shouldQuit = input.closeRequested,
