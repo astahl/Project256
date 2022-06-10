@@ -24,6 +24,17 @@ struct Project256App: App {
     @StateObject var gameState = GameState()
     @State var letterboxColor = Color.black
 
+    func setCursorVisible(_ shouldShow: Bool)
+    {
+        if shouldShow && gameState.isMouseHidden {
+            CGDisplayShowCursor(CGMainDisplayID())
+            gameState.isMouseHidden = false
+        } else if !shouldShow && !gameState.isMouseHidden {
+            CGDisplayHideCursor(CGMainDisplayID())
+            gameState.isMouseHidden = true
+        }
+    }
+
     func gameTick() {
         gameState.input.frameNumber = gameState.frameNumber
         gameState.frameNumber += 1
@@ -42,16 +53,10 @@ struct Project256App: App {
     
         }
         #if os(macOS)
-        if output.shouldHideMouse.isTrue {
-            if !gameState.isMouseHidden {
-                CGDisplayHideCursor(CGMainDisplayID())
-                gameState.isMouseHidden = true
-            }
+        if gameState.input.mouse.endedOver.isTrue {
+            setCursorVisible(output.shouldShowSystemCursor.isTrue)
         } else {
-            if gameState.isMouseHidden {
-                CGDisplayShowCursor(CGMainDisplayID())
-                gameState.isMouseHidden = false
-            }
+            setCursorVisible(true)
         }
         #endif
         // todo can we move update tex to its own thread and just synchronize?
@@ -67,6 +72,25 @@ struct Project256App: App {
                 .mouseMove {
                     relative, position in
                     gameState.addInputMouseMovement(relative: relative, position: position)
+                }
+                .mouseClick {
+                    button, click, position in
+
+                    switch (button, click)
+                    {
+                    case (.Left, let upOrDown) where upOrDown == .Up || upOrDown == .Down:
+                        gameState.input.mouse.buttonLeft.transitionCount += 1
+                        gameState.input.mouse.buttonLeft.endedDown = upOrDown == .Down ? eTRUE : eFALSE
+                    case (.Right, let upOrDown) where upOrDown == .Up || upOrDown == .Down:
+                        gameState.input.mouse.buttonRight.transitionCount += 1
+                        gameState.input.mouse.buttonRight.endedDown = upOrDown == .Down ? eTRUE : eFALSE
+                    case (.Other, let upOrDown) where upOrDown == .Up || upOrDown == .Down:
+                        gameState.input.mouse.buttonMiddle.transitionCount += 1
+                        gameState.input.mouse.buttonMiddle.endedDown = upOrDown == .Down ? eTRUE : eFALSE
+                    default:
+                        break;
+                    }
+
                 }
                 .textInput {
                     text in

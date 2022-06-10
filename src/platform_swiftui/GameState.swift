@@ -120,18 +120,18 @@ class GameState : ObservableObject {
     }
 
     func clearInput() {
-        var oldMousePosition: Vec2f? = nil
-        if input.mouse.endedOver == eTRUE && input.mouse.trackLength > 0 {
-            oldMousePosition = withUnsafeElementPointer(firstElement: &input.mouse.track.0, offset: Int(input.mouse.trackLength - 1)) { $0.pointee }
-        }
+        var oldInputCopy = input
 
         input = GameInput()
         input.hasMouse = eTRUE
-        if let newMousePosition = oldMousePosition {
-            input.mouse.trackLength = 1
-            input.mouse.track.0 = newMousePosition
+        if oldInputCopy.mouse.endedOver == eTRUE && oldInputCopy.mouse.trackLength > 0 {
+            let oldMousePosition = withUnsafeElementPointer(firstElement: &oldInputCopy.mouse.track.0, offset: Int(oldInputCopy.mouse.trackLength - 1)) { $0.pointee }
             input.mouse.endedOver = eTRUE
+            input.mouse.track.0 = oldMousePosition
+            input.mouse.trackLength = 1
         }
-        
+        input.mouse.buttonLeft.endedDown = oldInputCopy.mouse.buttonLeft.endedDown
+        input.mouse.buttonRight.endedDown = oldInputCopy.mouse.buttonRight.endedDown
+        input.mouse.buttonMiddle.endedDown = oldInputCopy.mouse.buttonMiddle.endedDown
     }
 }

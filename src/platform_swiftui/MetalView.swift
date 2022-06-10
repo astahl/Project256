@@ -9,9 +9,6 @@ import SwiftUI
 import MetalKit
 
 
-enum MyMTKViewErrors : Error {
-    case InitError
-}
 extension Color {
     func clearColor() -> MTLClearColor? {
         if let srgb = CGColorSpace(name: CGColorSpace.sRGB),
@@ -22,9 +19,20 @@ extension Color {
         return nil
     }
 }
+enum MyMTKViewErrors : Error {
+    case InitError
+}
+enum MouseButton {
+    case Left, Right, Other
+}
+
+enum Click {
+    case Up, Down, Double
+}
 
 typealias TextInputHandler = (_ text: String) -> Void
 typealias MouseMoveHandler = (_ relative: CGPoint, _ position: CGPoint?) -> Void
+typealias MouseClickHandler = (_ mouseButton: MouseButton, _ click: Click, _ position: CGPoint?) -> Void
 typealias BeforeDrawHandler = () -> Void
 
 class MyMTKView : MTKView {
@@ -145,6 +153,7 @@ class MyMTKView : MTKView {
 
 #if os(macOS)
     var mouseMoveHandler: MouseMoveHandler?
+    var mouseClickHandler: MouseClickHandler?
 
     override var acceptsFirstResponder: Bool {
         return true
@@ -160,8 +169,8 @@ class MyMTKView : MTKView {
         }
     }
 
-    override func mouseMoved(with event: NSEvent) {
-        let normalizedPos = CGPoint(x: event.locationInWindow.x / self.frame.width, y: event.locationInWindow.y / self.frame.height)
+    func positionOnBuffer(locationInWindow: NSPoint) -> CGPoint? {
+        let normalizedPos = CGPoint(x: locationInWindow.x / self.frame.width, y: locationInWindow.y / self.frame.height)
         let scaleX = CGFloat(self.quadScaleXY[0])
         let scaleY = CGFloat(self.quadScaleXY[1])
         let pos = normalizedPos
@@ -169,13 +178,58 @@ class MyMTKView : MTKView {
 
         let scaled = pos.applying(CGAffineTransform.init(translationX: 0.5, y: 0.5).scaledBy(x: 0.5 / scaleX, y: 0.5 / scaleY))
 
-        if !CGRect.init(x: 0, y: 0, width: 1, height: 1).contains(scaled) {
-            self.mouseMoveHandler?(CGPoint(x: event.deltaX, y: event.deltaY), nil)
-        } else {
-            let pixelPosition = scaled.applying(CGAffineTransform.init(scaleX: CGFloat(drawBuffer?.width ?? 1), y: CGFloat(drawBuffer?.height ?? 1)))
-
-            self.mouseMoveHandler?(CGPoint(x: event.deltaX, y: event.deltaY), pixelPosition)
+        if CGRect.init(x: 0, y: 0, width: 1, height: 1).contains(scaled) {
+            return scaled.applying(CGAffineTransform.init(scaleX: CGFloat(drawBuffer?.width ?? 1), y: CGFloat(drawBuffer?.height ?? 1)))
         }
+        return nil
+    }
+
+    override func mouseMoved(with event: NSEvent) {
+        if let pixelPosition = positionOnBuffer(locationInWindow: event.locationInWindow) {
+            self.mouseMoveHandler?(CGPoint(x: event.deltaX, y: event.deltaY), pixelPosition)
+        } else {
+            self.mouseMoveHandler?(CGPoint(x: event.deltaX, y: event.deltaY), nil)
+        }
+    }
+
+    override func mouseDragged(with event: NSEvent) {
+        if let pixelPosition = positionOnBuffer(locationInWindow: event.locationInWindow) {
+            self.mouseMoveHandler?(CGPoint(x: event.deltaX, y: event.deltaY), pixelPosition)
+        } else {
+            self.mouseMoveHandler?(CGPoint(x: event.deltaX, y: event.deltaY), nil)
+        }
+    }
+
+    override func rightMouseDragged(with event: NSEvent) {
+        if let pixelPosition = positionOnBuffer(locationInWindow: event.locationInWindow) {
+            self.mouseMoveHandler?(CGPoint(x: event.deltaX, y: event.deltaY), pixelPosition)
+        } else {
+            self.mouseMoveHandler?(CGPoint(x: event.deltaX, y: event.deltaY), nil)
+        }
+    }
+    
+    override func mouseDown(with event: NSEvent) {
+        self.mouseClickHandler?(.Left, .Down, positionOnBuffer(locationInWindow: event.locationInWindow))
+    }
+
+    override func mouseUp(with event: NSEvent) {
+        self.mouseClickHandler?(.Left, .Up, positionOnBuffer(locationInWindow: event.locationInWindow))
+    }
+
+    override func rightMouseDown(with event: NSEvent) {
+        self.mouseClickHandler?(.Right, .Down, positionOnBuffer(locationInWindow: event.locationInWindow))
+    }
+
+    override func rightMouseUp(with event: NSEvent) {
+        self.mouseClickHandler?(.Right, .Up, positionOnBuffer(locationInWindow: event.locationInWindow))
+    }
+
+    override func otherMouseDown(with event: NSEvent) {
+        self.mouseClickHandler?(.Other, .Down, positionOnBuffer(locationInWindow: event.locationInWindow))
+    }
+
+    override func otherMouseUp(with event: NSEvent) {
+        self.mouseClickHandler?(.Other, .Up, positionOnBuffer(locationInWindow: event.locationInWindow))
     }
 #endif
 }
@@ -186,6 +240,7 @@ final class MetalView {
     private var textInputHandler: TextInputHandler?
     private var mouseMoveHandler: MouseMoveHandler?
     private var beforeDrawHandler: BeforeDrawHandler?
+    private var mouseClickHandler: MouseClickHandler?
 
 
     init(drawBuffer: DrawBuffer) {
@@ -205,6 +260,11 @@ final class MetalView {
 
     func mouseMove(_ handler: @escaping(MouseMoveHandler)) -> MetalView {
         self.mouseMoveHandler = handler
+        return self
+    }
+
+    func mouseClick(_ handler: @escaping(MouseClickHandler)) -> MetalView {
+        self.mouseClickHandler = handler
         return self
     }
 
@@ -228,6 +288,7 @@ extension MetalView : NSViewRepresentable {
         nsView.mouseMoveHandler = self.mouseMoveHandler
         nsView.beforeDrawHandler = self.beforeDrawHandler
         nsView.textInputHandler = self.textInputHandler
+        nsView.mouseClickHandler = self.mouseClickHandler
     }
 }
 #else
