@@ -42,7 +42,7 @@ class MyMTKView : MTKView {
     private var commandQueue: MTLCommandQueue?
     private var pipelineState: MTLRenderPipelineState?
     private var viewport = MTLViewport()
-    private var quadScaleXY: [Float32] = [0.0, 0.0]
+    private var scale = Vec2f()
     private var texture: MTLTexture?
 
     required init(coder: NSCoder) {
@@ -91,21 +91,16 @@ class MyMTKView : MTKView {
         }
     }
 
-    func update(withDrawableSize size: CGSize) {
+    func updateViewport(withDrawableSize size: CGSize) {
         self.viewport.height = size.height
         self.viewport.width = size.width
-
-        let scale = clipSpaceDrawBufferScale(UInt32(size.width), UInt32(size.height))
-        self.quadScaleXY[0] = scale.x
-        self.quadScaleXY[1] = scale.y
-
+        self.scale = clipSpaceDrawBufferScale(UInt32(size.width), UInt32(size.height))
     }
 
-    override func draw() {
-        super.draw()
+    override func draw(_ dirtyRect: NSRect) {
         self.beforeDrawHandler?()
 
-        update(withDrawableSize: drawableSize)
+        updateViewport(withDrawableSize: drawableSize)
 
         guard let drawBuffer = drawBuffer else {
             return
@@ -127,13 +122,13 @@ class MyMTKView : MTKView {
             return
         }
 
-
         encoder.label = "MyEncoder"
 
         encoder.setViewport(self.viewport)
         if let pipelineState = self.pipelineState {
             encoder.setRenderPipelineState(pipelineState)
-            quadScaleXY.withUnsafeBytes {
+
+            withUnsafeBytes(of: &self.scale) {
                 bytes in
                 encoder.setVertexBytes(bytes.baseAddress!, length: bytes.count, index: Int(IndexQuadScaleXY.rawValue))
             }
@@ -171,8 +166,8 @@ class MyMTKView : MTKView {
 
     func positionOnBuffer(locationInWindow: NSPoint) -> CGPoint? {
         let normalizedPos = CGPoint(x: locationInWindow.x / self.frame.width, y: locationInWindow.y / self.frame.height)
-        let scaleX = CGFloat(self.quadScaleXY[0])
-        let scaleY = CGFloat(self.quadScaleXY[1])
+        let scaleX = CGFloat(self.scale.x)
+        let scaleY = CGFloat(self.scale.y)
         let pos = normalizedPos
             .applying(CGAffineTransform.init(translationX: -1, y: -1).scaledBy(x: 2, y: 2))
 
@@ -207,7 +202,7 @@ class MyMTKView : MTKView {
             self.mouseMoveHandler?(CGPoint(x: event.deltaX, y: event.deltaY), nil)
         }
     }
-    
+
     override func mouseDown(with event: NSEvent) {
         self.mouseClickHandler?(.Left, .Down, positionOnBuffer(locationInWindow: event.locationInWindow))
     }

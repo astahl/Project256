@@ -36,6 +36,7 @@ struct Project256App: App {
     }
 
     func gameTick() {
+        let innerTimer = Chronometer()
         gameState.input.frameNumber = gameState.frameNumber
         gameState.frameNumber += 1
         let frameTime = gameState.frameTime.elapsed()
@@ -44,8 +45,9 @@ struct Project256App: App {
         gameState.input.upTime_microseconds =  gameState.upTime_microseconds
         gameState.input.elapsedTime_s = frameTime.seconds
         // TODO finalize inputs
+        let setupTime = innerTimer.elapsed()
         let output = doGameThings(&gameState.input, gameState.memory)
-
+        let doTime = innerTimer.elapsed()
         if output.shouldQuit.isTrue {
             exit(0)
         }
@@ -59,9 +61,14 @@ struct Project256App: App {
             setCursorVisible(true)
         }
         #endif
+        gameState.clearInput()
+        let postTime = innerTimer.elapsed()
         // todo can we move update tex to its own thread and just synchronize?
         writeDrawBuffer(gameState.memory, gameState.drawBuffer.data.baseAddress!)
-        gameState.clearInput()
+        let copyTime = innerTimer.elapsed()
+        if gameState.frameNumber % 100 == 0 {
+            print("setup: \(setupTime.microseconds) do: \(doTime.microseconds) post: \(postTime.microseconds) copy: \(copyTime.microseconds)")
+        }
     }
 
     var body: some Scene {
@@ -96,7 +103,9 @@ struct Project256App: App {
                     text in
                     gameState.addInputText(text: text)
                 }
-                .beforeDraw(self.gameTick)
+                .beforeDraw {
+                    self.gameTick()
+                }
 
             }
         }
