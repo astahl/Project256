@@ -87,8 +87,6 @@ class GameState : ObservableObject {
     var upTime_microseconds: Int64 = 0
     var drawBuffer = DrawBuffer(width: Int(DrawBufferWidth), height: Int(DrawBufferHeight))
 
-
-
     func addInputText(text: String) {
         let cString = text.utf8CString
         let offset = Int(input.textLength);

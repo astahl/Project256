@@ -81,7 +81,7 @@ class MyMTKView : MTKView {
 
         self.commandQueue = device.makeCommandQueue()
         self.viewport.zfar = 1.0
-        self.preferredFramesPerSecond = 60
+        self.preferredFramesPerSecond = 120
         self.isPaused = false
     }
 
@@ -98,21 +98,23 @@ class MyMTKView : MTKView {
     }
 
     override func draw(_ dirtyRect: NSRect) {
+
         self.beforeDrawHandler?()
 
+        let drawTimer = Chronometer()
         updateViewport(withDrawableSize: drawableSize)
 
         guard let drawBuffer = drawBuffer else {
             return
         }
 
-        let region = MTLRegion(origin: MTLOrigin(), size: MTLSize(width: drawBuffer.width, height: drawBuffer.height, depth: 1))
-
-        self.texture?.replace(region: region, mipmapLevel: 0, withBytes: drawBuffer.data.baseAddress!, bytesPerRow: drawBuffer.width * 4)
-
         guard let renderPassDescriptor = self.currentRenderPassDescriptor else {
             return
         }
+
+        let region = MTLRegion(origin: MTLOrigin(), size: MTLSize(width: drawBuffer.width, height: drawBuffer.height, depth: 1))
+
+        self.texture?.replace(region: region, mipmapLevel: 0, withBytes: drawBuffer.data.baseAddress!, bytesPerRow: drawBuffer.width * 4)
 
         guard let commandBuffer = self.commandQueue?.makeCommandBuffer() else {
             return
@@ -123,6 +125,7 @@ class MyMTKView : MTKView {
         }
 
         encoder.label = "MyEncoder"
+        Timings.global?.addTiming(for: .DrawWaitAndSetup, µs: drawTimer.elapsed().microseconds)
 
         encoder.setViewport(self.viewport)
         if let pipelineState = self.pipelineState {
@@ -137,8 +140,13 @@ class MyMTKView : MTKView {
             encoder.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
 
             encoder.endEncoding()
+            Timings.global?.addTiming(for: .DrawEncoding, µs: drawTimer.elapsed().microseconds)
         }
         if let drawable = self.currentDrawable {
+            drawable.addPresentedHandler() {
+                drawble in
+                Timings.global?.addTiming(for: .DrawPresent, µs: drawTimer.elapsed().microseconds)
+            }
             commandBuffer.present(drawable)
         }
         commandBuffer.commit()

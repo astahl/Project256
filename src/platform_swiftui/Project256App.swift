@@ -36,18 +36,19 @@ struct Project256App: App {
     }
 
     func gameTick() {
-        let innerTimer = Chronometer()
+        let tickTimer = Chronometer()
         gameState.input.frameNumber = gameState.frameNumber
         gameState.frameNumber += 1
         let frameTime = gameState.frameTime.elapsed()
+        Timings.global?.addTiming(for: .FrameToFrame, µs: frameTime.microseconds)
         gameState.upTime_microseconds += frameTime.microseconds
 
         gameState.input.upTime_microseconds =  gameState.upTime_microseconds
         gameState.input.elapsedTime_s = frameTime.seconds
         // TODO finalize inputs
-        let setupTime = innerTimer.elapsed()
+        Timings.global?.addTiming(for: .TickSetup, µs: tickTimer.elapsed().microseconds)
         let output = doGameThings(&gameState.input, gameState.memory)
-        let doTime = innerTimer.elapsed()
+        Timings.global?.addTiming(for: .TickDo, µs: tickTimer.elapsed().microseconds)
         if output.shouldQuit.isTrue {
             exit(0)
         }
@@ -62,12 +63,13 @@ struct Project256App: App {
         }
         #endif
         gameState.clearInput()
-        let postTime = innerTimer.elapsed()
+        Timings.global?.addTiming(for: .TickPost, µs: tickTimer.elapsed().microseconds)
         // todo can we move update tex to its own thread and just synchronize?
         writeDrawBuffer(gameState.memory, gameState.drawBuffer.data.baseAddress!)
-        let copyTime = innerTimer.elapsed()
+        Timings.global?.addTiming(for: .BufferCopy, µs: tickTimer.elapsed().microseconds)
         if gameState.frameNumber % 100 == 0 {
-            print("setup: \(setupTime.microseconds) do: \(doTime.microseconds) post: \(postTime.microseconds) copy: \(copyTime.microseconds)")
+            print(Timings.global?.description ?? "")
+            Timings.global?.clear()
         }
     }
 

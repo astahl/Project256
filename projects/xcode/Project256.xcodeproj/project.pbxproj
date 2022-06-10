@@ -25,6 +25,8 @@
 		689A250D284BE37D0086DD58 /* Palettes.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 689A250B284BE37D0086DD58 /* Palettes.cpp */; };
 		68D205CC28512A0000CB4213 /* Generators.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 68D205CB28512A0000CB4213 /* Generators.cpp */; };
 		68D205CD28512A0000CB4213 /* Generators.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 68D205CB28512A0000CB4213 /* Generators.cpp */; };
+		68D205CF2853D84B00CB4213 /* Timings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68D205CE2853D84B00CB4213 /* Timings.swift */; };
+		68D205D02853D84B00CB4213 /* Timings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68D205CE2853D84B00CB4213 /* Timings.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -43,6 +45,7 @@
 		685035D82842921900355252 /* DrawBuffer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawBuffer.swift; sourceTree = "<group>"; };
 		689A250B284BE37D0086DD58 /* Palettes.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = Palettes.cpp; path = ../../src/game/Drawing/Palettes.cpp; sourceTree = "<group>"; };
 		68D205CB28512A0000CB4213 /* Generators.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = Generators.cpp; path = ../../src/game/Drawing/Generators.cpp; sourceTree = "<group>"; };
+		68D205CE2853D84B00CB4213 /* Timings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Timings.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -74,6 +77,7 @@
 				6819ACC8283EE6CB00CCBFD5 /* BridgeHeader.h */,
 				685035D528428EE200355252 /* GameState.swift */,
 				685035D82842921900355252 /* DrawBuffer.swift */,
+				68D205CE2853D84B00CB4213 /* Timings.swift */,
 			);
 			name = Platform;
 			path = ../../src/platform_swiftui;
@@ -211,6 +215,7 @@
 				685035D92842921900355252 /* DrawBuffer.swift in Sources */,
 				685035D3283F9D4E00355252 /* Project256.cpp in Sources */,
 				685035D628428EE200355252 /* GameState.swift in Sources */,
+				68D205CF2853D84B00CB4213 /* Timings.swift in Sources */,
 				68D205CC28512A0000CB4213 /* Generators.cpp in Sources */,
 				6819ACC5283EDFFC00CCBFD5 /* MetalViewShader.metal in Sources */,
 				6845559E283D8044004AD3FB /* Project256App.swift in Sources */,
@@ -226,6 +231,7 @@
 				685035DA2842921900355252 /* DrawBuffer.swift in Sources */,
 				685035D4283F9D4F00355252 /* Project256.cpp in Sources */,
 				685035D728428EE200355252 /* GameState.swift in Sources */,
+				68D205D02853D84B00CB4213 /* Timings.swift in Sources */,
 				68D205CD28512A0000CB4213 /* Generators.cpp in Sources */,
 				6819ACC6283EDFFC00CCBFD5 /* MetalViewShader.metal in Sources */,
 				6845559F283D8044004AD3FB /* Project256App.swift in Sources */,
