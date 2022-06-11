@@ -33,7 +33,7 @@ struct Project256App: App {
         t.tolerance = 0.3
         return t
     }()
-
+    #if os(macOS)
     func setCursorVisible(_ shouldShow: Bool)
     {
         if shouldShow && gameState.isMouseHidden {
@@ -44,7 +44,7 @@ struct Project256App: App {
             gameState.isMouseHidden = true
         }
     }
-
+    #endif
     func gameTick() {
         profiling_time_interval(&GameState.timingData, eTimerFrameToFrame, eTimingFrameToFrame)
         profiling_time_set(&GameState.timingData, eTimerFrameToFrame)

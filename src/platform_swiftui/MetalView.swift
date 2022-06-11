@@ -97,7 +97,7 @@ class MyMTKView : MTKView {
         self.scale = clipSpaceDrawBufferScale(UInt32(size.width), UInt32(size.height))
     }
 
-    override func draw(_ dirtyRect: NSRect) {
+    override func draw(_ dirtyRect: CGRect) {
 
         self.beforeDrawHandler?()
 
@@ -146,11 +146,13 @@ class MyMTKView : MTKView {
             Timings.global?.addTiming(for: .DrawEncoding, µs: drawTimer.elapsed().microseconds)
         }
         if let drawable = self.currentDrawable {
+            #if os(macOS)
             drawable.addPresentedHandler() {
                 drawble in
                 profiling_time_interval(&GameState.timingData, eTimerDraw, eTimingDrawPresent)
                 Timings.global?.addTiming(for: .DrawPresent, µs: drawTimer.elapsed().microseconds)
             }
+            #endif
             commandBuffer.present(drawable)
         }
         commandBuffer.commit()

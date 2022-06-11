@@ -56,7 +56,8 @@ void profiling_time_print(TimingData* data)
 {
     for (int interval = 0; interval < TimingIntervalCount; ++interval)
     {
-        std::cout << sIntervalNames[interval] << ": " << data->intervals[interval] / data->intervalCount[interval] << " ";
+        auto count = data->intervalCount[interval];
+        std::cout << sIntervalNames[interval] << " ["<< count <<"]: " << (count != 0? data->intervals[interval] / count : 0LL) << " ";
     }
     std::cout << "\n";
 }
