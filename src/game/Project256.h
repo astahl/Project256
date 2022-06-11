@@ -1,10 +1,12 @@
 #ifndef PROJECT_256_H
 #define PROJECT_256_H
 
+#include "Profiling/Timings.h"
+
 const long MemorySize = 640 * 1024; // 640kbytes
 
-const unsigned DrawBufferWidth = 160;
-const unsigned DrawBufferHeight = 100;
+const unsigned DrawBufferWidth = 80;
+const unsigned DrawBufferHeight = 60;
 
 const unsigned DrawAspectH = 4;
 const unsigned DrawAspectV = 3;

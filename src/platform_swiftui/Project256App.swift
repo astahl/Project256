@@ -24,6 +24,16 @@ struct Project256App: App {
     @StateObject var gameState = GameState()
     @State var letterboxColor = Color.black
 
+    var profilingTimer: Timer = {
+        var t = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) {
+            _ in
+            profiling_time_print(&GameState.timingData)
+            profiling_time_clear(&GameState.timingData)
+        }
+        t.tolerance = 0.3
+        return t
+    }()
+
     func setCursorVisible(_ shouldShow: Bool)
     {
         if shouldShow && gameState.isMouseHidden {
@@ -36,19 +46,23 @@ struct Project256App: App {
     }
 
     func gameTick() {
-        let tickTimer = Chronometer()
+        profiling_time_interval(&GameState.timingData, eTimerFrameToFrame, eTimingFrameToFrame)
+        profiling_time_set(&GameState.timingData, eTimerFrameToFrame)
+        profiling_time_set(&GameState.timingData, eTimerTick)
+
         gameState.input.frameNumber = gameState.frameNumber
         gameState.frameNumber += 1
         let frameTime = gameState.frameTime.elapsed()
-        Timings.global?.addTiming(for: .FrameToFrame, µs: frameTime.microseconds)
         gameState.upTime_microseconds += frameTime.microseconds
 
         gameState.input.upTime_microseconds =  gameState.upTime_microseconds
         gameState.input.elapsedTime_s = frameTime.seconds
         // TODO finalize inputs
-        Timings.global?.addTiming(for: .TickSetup, µs: tickTimer.elapsed().microseconds)
+        profiling_time_interval(&GameState.timingData, eTimerTick, eTimingTickSetup)
+
         let output = doGameThings(&gameState.input, gameState.memory)
-        Timings.global?.addTiming(for: .TickDo, µs: tickTimer.elapsed().microseconds)
+        profiling_time_interval(&GameState.timingData, eTimerTick, eTimingTickDo)
+
         if output.shouldQuit.isTrue {
             exit(0)
         }
@@ -63,14 +77,13 @@ struct Project256App: App {
         }
         #endif
         gameState.clearInput()
-        Timings.global?.addTiming(for: .TickPost, µs: tickTimer.elapsed().microseconds)
+        profiling_time_interval(&GameState.timingData, eTimerTick, eTimingTickPost)
+
+        profiling_time_set(&GameState.timingData, eTimerBufferCopy)
         // todo can we move update tex to its own thread and just synchronize?
         writeDrawBuffer(gameState.memory, gameState.drawBuffer.data.baseAddress!)
-        Timings.global?.addTiming(for: .BufferCopy, µs: tickTimer.elapsed().microseconds)
-        if gameState.frameNumber % 100 == 0 {
-            print(Timings.global?.description ?? "")
-            Timings.global?.clear()
-        }
+        profiling_time_interval(&GameState.timingData, eTimerBufferCopy, eTimingBufferCopy)
+
     }
 
     var body: some Scene {

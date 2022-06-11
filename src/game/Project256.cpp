@@ -3,9 +3,12 @@
 #include <cstdint>
 #include "Drawing/Palettes.cpp"
 #include "Drawing/Generators.hpp"
+#include "Drawing/Sprites.hpp"
 #include "Math/Vec2Math.hpp"
+#include "FML/RangesAtHome.hpp"
 #include <iostream>
 #include <chrono>
+#include <algorithm>
 
 struct Timer {
     std::chrono::microseconds firesAt;
@@ -31,11 +34,18 @@ constexpr void put(uint8_t* drawBuffer, Vec2 position, Color color)
 struct GameMemory {
     uint8_t vram[DrawBufferWidth * DrawBufferHeight];
     uint32_t palette[16];
-    Vec2f dotPosition;
-    Vec2f dotDirection;
+    Vec2f birdPosition;
+    int birdSpeed;
+    Vec2i birdTarget;
     Timer directionChangeTimer;
+
+    SpritePicture<5, 2, 4> sprite;
+    Timer spriteAnimationTimer;
+    int currentSpriteFrame;
+
     Vec2i points[2];
     int currentPoint;
+
 };
 
 static_assert(sizeof(GameMemory) <= MemorySize, "MemorySize is too small to hold GameMemory struct");
@@ -69,7 +79,8 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
 {
     using Palette = PaletteC64;
     const auto clearColor = Palette::Color::black;
-    const auto center = Vec2i{ DrawBufferWidth / 2, DrawBufferHeight / 2};
+    const auto bufferSize = Vec2i{ DrawBufferWidth, DrawBufferHeight};
+    const auto center = bufferSize / 2;
     GameMemory& memory = *reinterpret_cast<GameMemory*>(pMemory);
     GameInput& input = *pInput;
     if (input.textLength)
@@ -77,13 +88,30 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
 
     if (input.frameNumber == 0) {
         Palette::writeTo(memory.palette);
-        memory.dotPosition = itof(center);
+        memory.birdPosition = itof(center);
+        memory.sprite.data = {
+            0, 0, 1, 0, 0,
+            1, 1, 0, 1, 1,
+            1, 1, 1, 1, 1,
+            0, 0, 0, 0, 0,
+            1, 1, 0, 1, 1,
+            0, 0, 1, 0, 0,
+            0, 0, 1, 0, 0,
+            1, 1, 1, 1, 1,
+        };
+        memory.currentSpriteFrame = 0;
+        memory.birdSpeed = 5;
     }
 
     const auto time = std::chrono::microseconds(input.upTime_microseconds);
-    if (memory.directionChangeTimer.hasFired(time)) {
-        memory.directionChangeTimer = Timer(time, std::chrono::seconds(2));
-        memory.dotDirection = itof((rand2d() % 100) - Vec2i{50, 50});
+    if (memory.directionChangeTimer.hasFired(time) || memory.birdTarget == round(memory.birdPosition)) {
+        memory.directionChangeTimer = Timer(time, std::chrono::seconds(100 / memory.birdSpeed++));
+        memory.birdTarget = (rand2d() % bufferSize);
+    }
+
+    if (memory.spriteAnimationTimer.hasFired(time)) {
+        memory.spriteAnimationTimer = Timer(time, std::chrono::milliseconds(1000 / memory.birdSpeed));
+        memory.currentSpriteFrame = (memory.currentSpriteFrame + 1) % decltype(memory.sprite)::frameCount;
     }
 
     std::memset(memory.vram, (uint8_t)clearColor, DrawBufferWidth * DrawBufferHeight);
@@ -106,9 +134,14 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
 
             }
 
-            for (auto p : Generators::Rectangle{ .bottomLeft = position - Vec2i{3,0}, .topRight = position + Vec2i{3, 0} })
+
+            using namespace ranges_at_home;
+            using namespace Generators;
+            auto offset = [&](Vec2i p) { return p + position; };
+
+            for (auto p : transform_view(Line{Vec2i{3, 0}, Vec2i{-3, 0}}, offset))
                 put(memory.vram, wrap(p), Palette::Color::white);
-            for (auto p : Generators::Rectangle{ .bottomLeft = position - Vec2i{0,3}, .topRight = position + Vec2i{0, 3} })
+            for (auto p : transform_view(Line{Vec2i{0, 3}, Vec2i{0, -3}}, offset))
                 put(memory.vram, wrap(p), Palette::Color::white);
         }
     }
@@ -117,11 +150,13 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
         put(memory.vram, p, Palette::Color::white);
 
     // update
-    memory.dotPosition = memory.dotPosition + static_cast<float>(input.elapsedTime_s) * memory.dotDirection;
-    memory.dotPosition = wrap(memory.dotPosition);
+    memory.birdPosition = memory.birdPosition + static_cast<float>(input.elapsedTime_s) * memory.birdSpeed * normalized(memory.birdTarget - memory.birdPosition);
+    memory.birdPosition = clamp(memory.birdPosition, Vec2f{}, Vec2f{DrawBufferWidth - 1, DrawBufferHeight - 1});
+
+    put(memory.vram, memory.birdTarget, Palette::Color::cyan);
 
     // draw
-    put(memory.vram, memory.dotPosition, Palette::Color::lightRed);
+    blitSprite(memory.sprite, memory.currentSpriteFrame, memory.vram, DrawBufferWidth, truncate(memory.birdPosition), Vec2i{}, Vec2i{DrawBufferWidth, DrawBufferHeight});
 
 	return GameOutput{
 		.shouldQuit = input.closeRequested,

@@ -43,6 +43,9 @@ struct Rectangle {
             return (current.x != other.current.x) || (current.y != other.current.y);
         }
     };
+
+    using iterator = Iterator;
+
     const Iterator mEnd = ++(Iterator{ .bottomLeft = bottomLeft, .topRight = topRight, .current = topRight });
 
     constexpr Iterator begin() {
@@ -62,7 +65,7 @@ struct Rectangle {
     }
 };
 
-class Line {
+struct Line {
 
     struct Iterator {
         const Line& mLine;
@@ -91,6 +94,7 @@ class Line {
         }
     };
 
+
     Vec2i mFrom;
     Vec2i mTo;
     Vec2i mD;
@@ -98,7 +102,8 @@ class Line {
     bool mSteep = false;
     Iterator mEnd = {*this, 0, 0};
 
-public:
+    using iterator = Iterator;
+
     Line(Vec2i from, Vec2i to)
     {
         Vec2i diff = to - from;

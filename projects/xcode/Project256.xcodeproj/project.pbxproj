@@ -29,6 +29,8 @@
 		68D205D02853D84B00CB4213 /* Timings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68D205CE2853D84B00CB4213 /* Timings.swift */; };
 		68D205D22854101100CB4213 /* Vec2Math.hpp in Sources */ = {isa = PBXBuildFile; fileRef = 68D205D12854101100CB4213 /* Vec2Math.hpp */; };
 		68D205D32854101100CB4213 /* Vec2Math.hpp in Sources */ = {isa = PBXBuildFile; fileRef = 68D205D12854101100CB4213 /* Vec2Math.hpp */; };
+		68D205D72854EE2F00CB4213 /* Timings.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 68D205D52854EE2F00CB4213 /* Timings.cpp */; };
+		68D205D82854EE2F00CB4213 /* Timings.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 68D205D52854EE2F00CB4213 /* Timings.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -49,6 +51,10 @@
 		68D205CB28512A0000CB4213 /* Generators.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = Generators.hpp; path = ../../src/game/Drawing/Generators.hpp; sourceTree = "<group>"; };
 		68D205CE2853D84B00CB4213 /* Timings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Timings.swift; sourceTree = "<group>"; };
 		68D205D12854101100CB4213 /* Vec2Math.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = Vec2Math.hpp; path = ../../src/game/Math/Vec2Math.hpp; sourceTree = "<group>"; };
+		68D205D42854DACF00CB4213 /* Sprites.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = Sprites.hpp; path = ../../src/game/Drawing/Sprites.hpp; sourceTree = "<group>"; };
+		68D205D52854EE2F00CB4213 /* Timings.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = Timings.cpp; path = ../../src/game/Profiling/Timings.cpp; sourceTree = "<group>"; };
+		68D205D62854EE2F00CB4213 /* Timings.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Timings.h; path = ../../src/game/Profiling/Timings.h; sourceTree = "<group>"; };
+		68D205D9285516A900CB4213 /* RangesAtHome.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = RangesAtHome.hpp; path = ../../src/game/FML/RangesAtHome.hpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -106,6 +112,10 @@
 		687B91AD283D7E95007604C7 = {
 			isa = PBXGroup;
 			children = (
+				68D205D9285516A900CB4213 /* RangesAtHome.hpp */,
+				68D205D52854EE2F00CB4213 /* Timings.cpp */,
+				68D205D62854EE2F00CB4213 /* Timings.h */,
+				68D205D42854DACF00CB4213 /* Sprites.hpp */,
 				68D205D12854101100CB4213 /* Vec2Math.hpp */,
 				68D205CB28512A0000CB4213 /* Generators.hpp */,
 				689A250B284BE37D0086DD58 /* Palettes.cpp */,
@@ -222,6 +232,7 @@
 				68D205CF2853D84B00CB4213 /* Timings.swift in Sources */,
 				68D205CC28512A0000CB4213 /* Generators.hpp in Sources */,
 				6819ACC5283EDFFC00CCBFD5 /* MetalViewShader.metal in Sources */,
+				68D205D72854EE2F00CB4213 /* Timings.cpp in Sources */,
 				6845559E283D8044004AD3FB /* Project256App.swift in Sources */,
 				689A250C284BE37D0086DD58 /* Palettes.cpp in Sources */,
 				68D205D22854101100CB4213 /* Vec2Math.hpp in Sources */,
@@ -239,6 +250,7 @@
 				68D205D02853D84B00CB4213 /* Timings.swift in Sources */,
 				68D205CD28512A0000CB4213 /* Generators.hpp in Sources */,
 				6819ACC6283EDFFC00CCBFD5 /* MetalViewShader.metal in Sources */,
+				68D205D82854EE2F00CB4213 /* Timings.cpp in Sources */,
 				6845559F283D8044004AD3FB /* Project256App.swift in Sources */,
 				689A250D284BE37D0086DD58 /* Palettes.cpp in Sources */,
 				68D205D32854101100CB4213 /* Vec2Math.hpp in Sources */,

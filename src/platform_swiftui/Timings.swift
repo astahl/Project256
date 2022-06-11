@@ -15,6 +15,7 @@ enum TimingInterval: CaseIterable {
 }
 
 class Timings {
+    var lock = NSLock()
     var timings: [TimingInterval: [Int64]] = [:]
     public static let global: Timings? = Timings(capacity: 100)
 
@@ -29,10 +30,14 @@ class Timings {
 
     func addTiming(for interval: TimingInterval, µs: Int64)
     {
+        lock.lock()
+        defer { lock.unlock() }
         timings[interval]?.append(µs)
     }
 
     func clear() {
+        lock.lock()
+        defer { lock.unlock() }
         for var (_, list) in timings {
             list.removeAll()
         }
@@ -40,7 +45,10 @@ class Timings {
 
     var description: String {
         get {
-            TimingInterval.allCases.compactMap() {
+            
+            lock.lock()
+            defer { lock.unlock() }
+            return TimingInterval.allCases.compactMap() {
                 interval in
                 let list = timings[interval]
                 if let list = list {

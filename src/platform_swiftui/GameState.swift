@@ -79,6 +79,7 @@ func withUnsafeMutableBuffer<T, Result>(start: inout T, end: inout T, body: @esc
 }
 
 class GameState : ObservableObject {
+    static var timingData = TimingData()
     let memory = UnsafeMutableRawPointer.allocate(byteCount: MemorySize, alignment: 128)
     var input = GameInput()
     let frameTime = Chronometer()
@@ -86,6 +87,16 @@ class GameState : ObservableObject {
     var frameNumber: UInt64 = 0
     var upTime_microseconds: Int64 = 0
     var drawBuffer = DrawBuffer(width: Int(DrawBufferWidth), height: Int(DrawBufferHeight))
+
+    init() {
+        GameState.timingData.getPlatformTimeMicroseconds = {
+            var time = timeval()
+            gettimeofday(&time, nil)
+            return Int64(time.tv_sec) * 1_000_000 + Int64(time.tv_usec)
+        }
+
+        profiling_time_initialise(&GameState.timingData)
+    }
 
     func addInputText(text: String) {
         let cString = text.utf8CString

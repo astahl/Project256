@@ -40,6 +40,18 @@ constexpr R dot(V left, W right) {
     return left.x * right.x + left.y * right.y;
 }
 
+template<typename V, typename = std::enable_if_t<is_vec2_v<V>{}>>
+constexpr float length(V vec) {
+    return sqrtf(dot(vec, vec));
+}
+
+template<typename V, typename = std::enable_if_t<is_vec2_v<V>{}>>
+constexpr V normalized(V vec) {
+    auto leng = length(vec);
+    if (leng == 0.0) return V{};
+    return vec / leng;
+}
+
 template<typename V, typename W, typename R = decltype(vec2_scalar_t<V>{} - vec2_scalar_t<W>{})>
 constexpr vec2_t<R> operator-(V left, W right) {
     return vec2_t<R>{left.x - right.x, left.y - right.y};
@@ -54,6 +66,12 @@ template<typename Vec1, typename Vec2>
 constexpr bool operator<(Vec1 left, Vec2 right)
 {
     return left.x < right.x && left.y < right.y;
+}
+
+template<typename Vec1, typename Vec2>
+constexpr bool operator==(Vec1 left, Vec2 right)
+{
+    return left.x == right.x && left.y == right.y;
 }
 
 template<typename Scalar, typename Vec, typename R = decltype(Scalar{} * vec2_scalar_t<Vec>{})>
@@ -72,10 +90,12 @@ constexpr vec2_t<R> operator/(Vec left, Scalar right)
         .y = left.y / right };
 }
 
-
-
 constexpr Vec2i truncate(Vec2f vec) {
     return Vec2i{static_cast<int>(vec.x), static_cast<int>(vec.y)};
+}
+
+constexpr Vec2i round(Vec2f vec) {
+    return Vec2i{static_cast<int>(lround(vec.x)), static_cast<int>(lround(vec.y))};
 }
 
 constexpr Vec2f itof(Vec2i vec) {
@@ -118,4 +138,9 @@ template<typename Vec, typename U1, typename U2>
 constexpr Vec wrapAround2d(Vec a, U1 lowerBound, U2 upperBound) {
     return Vec{ wrapAround(a.x, lowerBound.x, upperBound.x),
         wrapAround(a.y, lowerBound.y, upperBound.y) };
+}
+
+template<typename V>
+constexpr V clamp(V vec, V upper, V lower) {
+    return V { std::clamp(vec.x, upper.x, lower.x), std::clamp(vec.y, upper.y, lower.y)};
 }
