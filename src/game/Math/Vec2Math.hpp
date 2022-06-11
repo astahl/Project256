@@ -68,8 +68,8 @@ constexpr bool operator<(Vec1 left, Vec2 right)
     return left.x < right.x && left.y < right.y;
 }
 
-template<typename Vec1, typename Vec2>
-constexpr bool operator==(Vec1 left, Vec2 right)
+template<typename Vec1, typename Vec2, typename = std::enable_if_t<std::conjunction<is_vec2_v<Vec1>, is_vec2_v<Vec2> >::value>>
+constexpr bool operator==(Vec1 left, Vec2 right )
 {
     return left.x == right.x && left.y == right.y;
 }
@@ -94,9 +94,16 @@ constexpr Vec2i truncate(Vec2f vec) {
     return Vec2i{static_cast<int>(vec.x), static_cast<int>(vec.y)};
 }
 
+#ifndef _WIN64
 constexpr Vec2i round(Vec2f vec) {
     return Vec2i{static_cast<int>(lround(vec.x)), static_cast<int>(lround(vec.y))};
 }
+#else
+Vec2i round(Vec2f vec) {
+    return Vec2i{ static_cast<int>(lround(vec.x)), static_cast<int>(lround(vec.y)) };
+}
+#endif
+
 
 constexpr Vec2f itof(Vec2i vec) {
     return Vec2f{ static_cast<float>(vec.x), static_cast<float>(vec.y) };

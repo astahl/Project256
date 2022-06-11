@@ -59,7 +59,7 @@ void profiling_time_print(TimingData* data)
         auto count = data->intervalCount[interval];
         std::cout << sIntervalNames[interval] << " ["<< count <<"]: " << (count != 0? data->intervals[interval] / count : 0LL) << " ";
     }
-    std::cout << "\n";
+    std::cout << std::endl;
 }
 
 void profiling_time_clear(struct TimingData* data)
