@@ -40,11 +40,16 @@ class Timings {
 
     var description: String {
         get {
-            timings.compactMap() {
-                (key, list) in
-                if list.isEmpty { return nil }
-                let sum = list.reduce(into: Int64(0)) { $0 += $1 }
-                return "\(key): \(sum / Int64(list.count))"
+            TimingInterval.allCases.compactMap() {
+                interval in
+                let list = timings[interval]
+                if let list = list {
+                    if !list.isEmpty {
+                        let sum = list.reduce(into: Int64(0)) { $0 += $1 }
+                        return "\(interval): \(sum / Int64(list.count))"
+                    }
+                }
+                return nil
             }.joined(separator: ", ")
         }
     }

@@ -23,10 +23,12 @@
 		685035DA2842921900355252 /* DrawBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 685035D82842921900355252 /* DrawBuffer.swift */; };
 		689A250C284BE37D0086DD58 /* Palettes.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 689A250B284BE37D0086DD58 /* Palettes.cpp */; };
 		689A250D284BE37D0086DD58 /* Palettes.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 689A250B284BE37D0086DD58 /* Palettes.cpp */; };
-		68D205CC28512A0000CB4213 /* Generators.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 68D205CB28512A0000CB4213 /* Generators.cpp */; };
-		68D205CD28512A0000CB4213 /* Generators.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 68D205CB28512A0000CB4213 /* Generators.cpp */; };
+		68D205CC28512A0000CB4213 /* Generators.hpp in Sources */ = {isa = PBXBuildFile; fileRef = 68D205CB28512A0000CB4213 /* Generators.hpp */; };
+		68D205CD28512A0000CB4213 /* Generators.hpp in Sources */ = {isa = PBXBuildFile; fileRef = 68D205CB28512A0000CB4213 /* Generators.hpp */; };
 		68D205CF2853D84B00CB4213 /* Timings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68D205CE2853D84B00CB4213 /* Timings.swift */; };
 		68D205D02853D84B00CB4213 /* Timings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68D205CE2853D84B00CB4213 /* Timings.swift */; };
+		68D205D22854101100CB4213 /* Vec2Math.hpp in Sources */ = {isa = PBXBuildFile; fileRef = 68D205D12854101100CB4213 /* Vec2Math.hpp */; };
+		68D205D32854101100CB4213 /* Vec2Math.hpp in Sources */ = {isa = PBXBuildFile; fileRef = 68D205D12854101100CB4213 /* Vec2Math.hpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -44,8 +46,9 @@
 		685035D528428EE200355252 /* GameState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameState.swift; sourceTree = "<group>"; };
 		685035D82842921900355252 /* DrawBuffer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawBuffer.swift; sourceTree = "<group>"; };
 		689A250B284BE37D0086DD58 /* Palettes.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = Palettes.cpp; path = ../../src/game/Drawing/Palettes.cpp; sourceTree = "<group>"; };
-		68D205CB28512A0000CB4213 /* Generators.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = Generators.cpp; path = ../../src/game/Drawing/Generators.cpp; sourceTree = "<group>"; };
+		68D205CB28512A0000CB4213 /* Generators.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = Generators.hpp; path = ../../src/game/Drawing/Generators.hpp; sourceTree = "<group>"; };
 		68D205CE2853D84B00CB4213 /* Timings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Timings.swift; sourceTree = "<group>"; };
+		68D205D12854101100CB4213 /* Vec2Math.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = Vec2Math.hpp; path = ../../src/game/Math/Vec2Math.hpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -103,7 +106,8 @@
 		687B91AD283D7E95007604C7 = {
 			isa = PBXGroup;
 			children = (
-				68D205CB28512A0000CB4213 /* Generators.cpp */,
+				68D205D12854101100CB4213 /* Vec2Math.hpp */,
+				68D205CB28512A0000CB4213 /* Generators.hpp */,
 				689A250B284BE37D0086DD58 /* Palettes.cpp */,
 				6845558B283D7F22004AD3FB /* Platform */,
 				68455589283D7F08004AD3FB /* Project256.cpp */,
@@ -216,10 +220,11 @@
 				685035D3283F9D4E00355252 /* Project256.cpp in Sources */,
 				685035D628428EE200355252 /* GameState.swift in Sources */,
 				68D205CF2853D84B00CB4213 /* Timings.swift in Sources */,
-				68D205CC28512A0000CB4213 /* Generators.cpp in Sources */,
+				68D205CC28512A0000CB4213 /* Generators.hpp in Sources */,
 				6819ACC5283EDFFC00CCBFD5 /* MetalViewShader.metal in Sources */,
 				6845559E283D8044004AD3FB /* Project256App.swift in Sources */,
 				689A250C284BE37D0086DD58 /* Palettes.cpp in Sources */,
+				68D205D22854101100CB4213 /* Vec2Math.hpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -232,10 +237,11 @@
 				685035D4283F9D4F00355252 /* Project256.cpp in Sources */,
 				685035D728428EE200355252 /* GameState.swift in Sources */,
 				68D205D02853D84B00CB4213 /* Timings.swift in Sources */,
-				68D205CD28512A0000CB4213 /* Generators.cpp in Sources */,
+				68D205CD28512A0000CB4213 /* Generators.hpp in Sources */,
 				6819ACC6283EDFFC00CCBFD5 /* MetalViewShader.metal in Sources */,
 				6845559F283D8044004AD3FB /* Project256App.swift in Sources */,
 				689A250D284BE37D0086DD58 /* Palettes.cpp in Sources */,
+				68D205D32854101100CB4213 /* Vec2Math.hpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -551,7 +557,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_ADDRESS_SANITIZER_CONTAINER_OVERFLOW = YES;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_CXX_LANGUAGE_STANDARD = "c++20";
 				CLANG_ENABLE_CPP_STATIC_DESTRUCTORS = NO;
 				CLANG_TIDY_BUGPRONE_REDUNDANT_BRANCH_CONDITION = YES;
 				CLANG_TIDY_MISC_REDUNDANT_EXPRESSION = YES;
@@ -571,7 +577,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_ADDRESS_SANITIZER_CONTAINER_OVERFLOW = YES;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_CXX_LANGUAGE_STANDARD = "c++20";
 				CLANG_ENABLE_CPP_STATIC_DESTRUCTORS = NO;
 				CLANG_TIDY_BUGPRONE_REDUNDANT_BRANCH_CONDITION = YES;
 				CLANG_TIDY_MISC_REDUNDANT_EXPRESSION = YES;
