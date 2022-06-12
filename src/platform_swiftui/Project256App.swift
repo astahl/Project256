@@ -68,8 +68,7 @@ struct Project256App: App {
         var highfrequency: AnyCancellable? = nil
     }
 
-    @State var letterboxColor = Color.mint
-
+    @State var profilingString: String = "Hello"
     var gameState: GameState
 
     var profilingBuffer = UnsafeMutableBufferPointer<CChar>.allocate(capacity: 1000)
@@ -87,6 +86,7 @@ struct Project256App: App {
     var body: some Scene {
         WindowGroup {
             ZStack {
+
             MetalView()
                 .mouseMove(gameState.addInputMouseMovement(relative:position:))
                 .mouseClick {
@@ -124,10 +124,8 @@ struct Project256App: App {
                         .sink {
                             date in
                             let length = profiling_time_print(&GameState.timingData, profilingBuffer.baseAddress!, Int32(profilingBuffer.count))
-                            let profiling = String.init(bytesNoCopy: profilingBuffer.baseAddress!, length: Int(length), encoding: .ascii, freeWhenDone: false)
+                            profilingString = String.init(bytesNoCopy: profilingBuffer.baseAddress!, length: Int(length), encoding: .ascii, freeWhenDone: false)!
 
-                            print(date)
-                            print(profiling!)
                             profiling_time_clear(&GameState.timingData)
                         }
                 }
@@ -137,12 +135,21 @@ struct Project256App: App {
                 }
                 .background(.linearGradient(.init(colors: [Color.cyan, Color.purple]), startPoint: .topLeading, endPoint: .bottomTrailing))
                 .overlay(Ellipse().foregroundColor(.gray).opacity(0.3).blur(radius: 100))
+
+                HStack {
+                    Text(profilingString)
+                        .font(.body.monospaced())
+                        .multilineTextAlignment(.leading)
+                        .shadow(radius: 5)
+                        .padding()
+                    Spacer()
+                }
             }
         }
         #if os(macOS)
         Settings {
             VStack {
-                ColorPicker("Letterbox", selection: $letterboxColor)
+
             }.padding()
         }
         #endif
