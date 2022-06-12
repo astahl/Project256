@@ -4,48 +4,11 @@
 #define CXX
 #include "../game/Project256.h"
 
-
-class Chronometer {
-    LARGE_INTEGER frequency = {};
-    int lastTimeIndex = 0;
-    LARGE_INTEGER timevalues[2] = {};
-public:
-    struct Time {
-        INT64 microseconds;
-        double seconds;
-    };
-
-    Time elapsed() {
-        int nextTimeIndex = (this->lastTimeIndex == 0 ? 1 : 0);
-        QueryPerformanceCounter(&timevalues[nextTimeIndex]);
-        auto t0 = timevalues[lastTimeIndex];
-        auto t1 = timevalues[nextTimeIndex];
-        this->lastTimeIndex = nextTimeIndex;
-        LARGE_INTEGER elapsedMicroseconds{};
-        elapsedMicroseconds.QuadPart = ((t1.QuadPart - t0.QuadPart) * 1'000'000) / frequency.QuadPart;
-        return Time{
-        .microseconds = elapsedMicroseconds.QuadPart,
-        .seconds = double(elapsedMicroseconds.QuadPart) / 1'000'000
-        };
-    }
-
-    Chronometer() {
-        QueryPerformanceFrequency(&frequency);
-        QueryPerformanceCounter(&timevalues[lastTimeIndex]);
-    }
-};
-
-struct GameState {
-    uint64_t frameCount;
-    int64_t upTime{};
-    GameInput input;
-    Chronometer frameTime{};
-    bool forceCursor;
-    Vec2i lastCursorPosition;
-};
+#include "GameState.h"
 
 enum class Timers : UINT_PTR {
-    HighFrequency
+    HighFrequency,
+    LowFrequency,
 };
 
 static void setCursorVisible(bool shouldShow) {
@@ -68,11 +31,11 @@ MainWindow::MainWindow(HWND hwnd)
 {
     this->memory = reinterpret_cast<byte*>(VirtualAlloc(NULL, MemorySize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
     this->drawBuffer = reinterpret_cast<byte*>(VirtualAlloc(0, 4 * DrawBufferHeight * DrawBufferWidth, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
-
     RECT rect{};
     GetWindowRect(hwnd, &rect);
     this->view = new Direct3D12View(hwnd, rect.right - rect.left, rect.bottom - rect.top);
     SetTimer(hwnd, static_cast<UINT_PTR>(Timers::HighFrequency), 1, NULL);
+    SetTimer(hwnd, static_cast<UINT_PTR>(Timers::LowFrequency), 1000, NULL);
 }
 
 MainWindow::~MainWindow()
@@ -81,6 +44,7 @@ MainWindow::~MainWindow()
 }
 
 void MainWindow::onTick() {
+    profiling_time_set(&GameState::timingData, eTimerTick);
     state->input.hasMouse = eTRUE;
 
     state->input.frameNumber = state->frameCount++;
@@ -92,7 +56,10 @@ void MainWindow::onTick() {
     GameInput inputCopy = state->input;
     state->input = {};
     GameOutput output{};
+
+    profiling_time_interval(&GameState::timingData, eTimerTick, eTimingTickSetup);
     output = doGameThings(&inputCopy, memory);
+    profiling_time_interval(&GameState::timingData, eTimerTick, eTimingTickDo);
   
     if (output.shouldQuit) {
         PostQuitMessage(0);
@@ -121,11 +88,15 @@ void MainWindow::onTick() {
     state->input.mouse.buttonRight.endedDown = inputCopy.mouse.buttonRight.endedDown;
     state->input.mouse.buttonMiddle.endedDown = inputCopy.mouse.buttonMiddle.endedDown;
     InvalidateRect(hwnd, NULL, FALSE);
+
+    profiling_time_interval(&GameState::timingData, eTimerTick, eTimingTickPost);
 }
 
 void MainWindow::onPaint() {
+    profiling_time_set(&GameState::timingData, eTimerBufferCopy);
     writeDrawBuffer(memory, drawBuffer);
     this->view->SetDrawBuffer(drawBuffer);
+    profiling_time_interval(&GameState::timingData, eTimerBufferCopy, eTimingBufferCopy);
     this->view->Draw();
     ValidateRect(hwnd, NULL);
 }
@@ -145,6 +116,10 @@ void MainWindow::onTimer(WPARAM timerId) {
     switch (static_cast<Timers>(timerId)) {
     case Timers::HighFrequency:
         this->onTick();
+        break;
+    case Timers::LowFrequency:
+        profiling_time_print(&GameState::timingData);
+        profiling_time_clear(&GameState::timingData);
         break;
     }
 }

@@ -2,6 +2,7 @@
 #include <dxgi1_6.h>
 #include <d3dcompiler.h>
 #include <string>
+#include "GameState.h"
 #ifdef _DEBUG
 #include <dxgidebug.h>
 #endif
@@ -490,8 +491,12 @@ void Direct3D12View::Resize(UINT width, UINT height)
 
 void Direct3D12View::Draw()
 {
+	profiling_time_set(&GameState::timingData, eTimerDraw);
+
 	ExitOnFail(mCommandAllocator[mFrameIndex]->Reset());
 	ExitOnFail(mCommandList->Reset(mCommandAllocator[mFrameIndex].Get(), mPipelineState.Get()));
+
+	profiling_time_interval(&GameState::timingData, eTimerDraw, eTimingDrawWaitAndSetup);
 
 	if (mNeedsUpload) {
 		mNeedsUpload = false;
@@ -568,6 +573,7 @@ void Direct3D12View::Draw()
 	mCommandList->ResourceBarrier(1, &barrierRenderTargetTransition);
 	ExitOnFail(mCommandList->Close());
 
+	profiling_time_interval(&GameState::timingData, eTimerDraw, eTimingDrawEncoding);
 	ID3D12CommandList* cmdListPtrArray[] = {mCommandList.Get()};
 
 	mCommandQueue->ExecuteCommandLists(1, cmdListPtrArray);
