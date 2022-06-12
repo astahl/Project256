@@ -64,6 +64,7 @@ func tick(gameState: GameState) {
 @main
 struct Project256App: App {
     class AppSubscriptions {
+        var profiling: AnyCancellable? = nil
         var highfrequency: AnyCancellable? = nil
     }
 
@@ -130,7 +131,9 @@ struct Project256App: App {
                         .sink(receiveValue: self.doTick)
                 }
 
-
+                Canvas(opaque: false, colorMode: .linear, rendersAsynchronously: true) { graphicsContext, size in
+                    graphicsContext.draw(Text("Hallo"), in: CGRect(origin: CGPoint.zero, size: size))
+                }
             }
         }
         #if os(macOS)

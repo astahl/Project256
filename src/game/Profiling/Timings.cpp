@@ -27,6 +27,7 @@ static const std::array<std::string, TimingIntervalCount> sIntervalNames {
     "TickDo",
     "TickPost",
     "BufferCopy",
+    "DrawBefore",
     "DrawWaitAndSetup",
     "DrawEncoding",
     "DrawPresent"

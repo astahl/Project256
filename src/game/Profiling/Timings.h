@@ -26,6 +26,7 @@ enum TimingInterval {
     eTimingTickDo,
     eTimingTickPost,
     eTimingBufferCopy,
+    eTimingDrawBefore,
     eTimingDrawWaitAndSetup,
     eTimingDrawEncoding,
     eTimingDrawPresent,

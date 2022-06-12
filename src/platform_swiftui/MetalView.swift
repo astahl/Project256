@@ -99,9 +99,9 @@ class MyMTKView : MTKView {
 
     override func draw(_ dirtyRect: CGRect) {
 
-        self.beforeDrawHandler?(self.drawBuffer)
-
         profiling_time_set(&GameState.timingData, eTimerDraw)
+        self.beforeDrawHandler?(self.drawBuffer)
+        profiling_time_interval(&GameState.timingData, eTimerDraw, eTimingDrawBefore)
         updateViewport(withDrawableSize: drawableSize)
 
         guard let renderPassDescriptor = self.currentRenderPassDescriptor else {
