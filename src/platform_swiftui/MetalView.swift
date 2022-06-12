@@ -102,7 +102,6 @@ class MyMTKView : MTKView {
         self.beforeDrawHandler?()
 
         profiling_time_set(&GameState.timingData, eTimerDraw)
-        let drawTimer = Chronometer()
         updateViewport(withDrawableSize: drawableSize)
 
         guard let drawBuffer = drawBuffer else {
@@ -127,7 +126,6 @@ class MyMTKView : MTKView {
 
         encoder.label = "MyEncoder"
         profiling_time_interval(&GameState.timingData, eTimerDraw, eTimingDrawWaitAndSetup)
-        Timings.global?.addTiming(for: .DrawWaitAndSetup, µs: drawTimer.elapsed().microseconds)
 
         encoder.setViewport(self.viewport)
         if let pipelineState = self.pipelineState {
@@ -143,14 +141,12 @@ class MyMTKView : MTKView {
 
             encoder.endEncoding()
             profiling_time_interval(&GameState.timingData, eTimerDraw, eTimingDrawEncoding)
-            Timings.global?.addTiming(for: .DrawEncoding, µs: drawTimer.elapsed().microseconds)
         }
         if let drawable = self.currentDrawable {
             #if os(macOS)
             drawable.addPresentedHandler() {
                 drawble in
                 profiling_time_interval(&GameState.timingData, eTimerDraw, eTimingDrawPresent)
-                Timings.global?.addTiming(for: .DrawPresent, µs: drawTimer.elapsed().microseconds)
             }
             #endif
             commandBuffer.present(drawable)

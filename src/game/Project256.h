@@ -17,7 +17,7 @@ const unsigned InputMaxControllers = 5;
 const unsigned InputMaxTaps = 20;
 const unsigned InputMaxTextLength = 256;
 
-#ifdef CXX
+#ifdef __cplusplus
 #include <cstdint>
 
 extern "C" {
@@ -107,7 +107,7 @@ struct Vec2f clipSpaceDrawBufferScale(unsigned int viewportWidth, unsigned int v
 struct GameOutput doGameThings(struct GameInput* input, void* memory);
 void writeDrawBuffer(void* memory, void* buffer);
 
-#ifdef CXX
+#ifdef __cplusplus
 }
 #endif
 

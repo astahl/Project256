@@ -7,7 +7,6 @@
 
 import SwiftUI
 
-
 extension boole {
     var isTrue: Bool {
         return self == eTRUE

@@ -21,11 +21,6 @@ struct transform_view {
     : base(base), func(func) {
     }
 
-    constexpr transform_view(Func&& func)
-    : base{}, func(func) {
-
-    }
-
     struct iterator {
         InputIterator inputIterator;
         const Func& func;

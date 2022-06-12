@@ -1,4 +1,3 @@
-#define CXX
 #include "Project256.h"
 #include <cstdint>
 #include "Drawing/Palettes.cpp"

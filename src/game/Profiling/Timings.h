@@ -39,7 +39,7 @@ struct TimingData {
 };
 
 
-#ifdef CXX
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -50,7 +50,7 @@ void profiling_time_print(struct TimingData* data);
 void profiling_time_clear(struct TimingData* data);
 
 
-#ifdef CXX
+#ifdef __cplusplus
 }
 #endif
 
