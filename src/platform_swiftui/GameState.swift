@@ -98,7 +98,7 @@ class GameState : ObservableObject {
         profiling_time_initialise(&GameState.timingData)
     }
 
-    func addInputText(text: String) {
+    func addInputText(_ text: String) {
         let cString = text.utf8CString
         let offset = Int(input.textLength);
         let count = min(Int(InputMaxTextLength) - offset, Int(cString.count - 1))

@@ -11,6 +11,7 @@
 #include "stdint.h"
 
 enum TimingTimer {
+    eTimerTickToTick,
     eTimerFrameToFrame,
     eTimerTick,
     eTimerBufferCopy,
@@ -19,6 +20,7 @@ enum TimingTimer {
 };
 
 enum TimingInterval {
+    eTimingTickToTick,
     eTimingFrameToFrame,
     eTimingTickSetup,
     eTimingTickDo,

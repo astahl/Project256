@@ -21,6 +21,7 @@ extern "C" {
 #ifdef PROFILING
 
 static const std::array<std::string, TimingIntervalCount> sIntervalNames {
+    "TickToTick",
     "FrameToFrame",
     "TickSetup",
     "TickDo",

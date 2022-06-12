@@ -33,12 +33,12 @@ enum Click {
 typealias TextInputHandler = (_ text: String) -> Void
 typealias MouseMoveHandler = (_ relative: CGPoint, _ position: CGPoint?) -> Void
 typealias MouseClickHandler = (_ mouseButton: MouseButton, _ click: Click, _ position: CGPoint?) -> Void
-typealias BeforeDrawHandler = () -> Void
+typealias BeforeDrawHandler = (_ buffer: DrawBuffer) -> Void
 
 class MyMTKView : MTKView {
     var textInputHandler: TextInputHandler?
     var beforeDrawHandler: BeforeDrawHandler?
-    private var drawBuffer: DrawBuffer? = nil
+    private let drawBuffer = DrawBuffer()
     private var commandQueue: MTLCommandQueue?
     private var pipelineState: MTLRenderPipelineState?
     private var viewport = MTLViewport()
@@ -49,12 +49,11 @@ class MyMTKView : MTKView {
         super.init(coder: coder)
     }
 
-    init(drawBuffer: DrawBuffer, letterboxColor: Color?) throws {
+    init( letterboxColor: Color?) throws {
 
         #if os(iOS)
 //        addGestureRecognizer(UILongPressGestureRecognizer)
         #endif
-        self.drawBuffer = drawBuffer
 
         guard let device = MTLCreateSystemDefaultDevice() else {
             throw MyMTKViewErrors.InitError
@@ -81,8 +80,9 @@ class MyMTKView : MTKView {
 
         self.commandQueue = device.makeCommandQueue()
         self.viewport.zfar = 1.0
-        self.preferredFramesPerSecond = 120
-        self.isPaused = false
+        self.preferredFramesPerSecond = 60
+        //self.isPaused = true
+        //self.enableSetNeedsDisplay = true
     }
 
     func setLetterboxColor(_ color: Color) {
@@ -99,14 +99,10 @@ class MyMTKView : MTKView {
 
     override func draw(_ dirtyRect: CGRect) {
 
-        self.beforeDrawHandler?()
+        self.beforeDrawHandler?(self.drawBuffer)
 
         profiling_time_set(&GameState.timingData, eTimerDraw)
         updateViewport(withDrawableSize: drawableSize)
-
-        guard let drawBuffer = drawBuffer else {
-            return
-        }
 
         guard let renderPassDescriptor = self.currentRenderPassDescriptor else {
             return
@@ -146,6 +142,9 @@ class MyMTKView : MTKView {
             #if os(macOS)
             drawable.addPresentedHandler() {
                 drawble in
+                profiling_time_interval(&GameState.timingData, eTimerFrameToFrame, eTimingFrameToFrame)
+
+                profiling_time_set(&GameState.timingData, eTimerFrameToFrame)
                 profiling_time_interval(&GameState.timingData, eTimerDraw, eTimingDrawPresent)
             }
             #endif
@@ -184,7 +183,7 @@ class MyMTKView : MTKView {
         let scaled = pos.applying(CGAffineTransform.init(translationX: 0.5, y: 0.5).scaledBy(x: 0.5 / scaleX, y: 0.5 / scaleY))
 
         if CGRect.init(x: 0, y: 0, width: 1, height: 1).contains(scaled) {
-            return scaled.applying(CGAffineTransform.init(scaleX: CGFloat(drawBuffer?.width ?? 1), y: CGFloat(drawBuffer?.height ?? 1)))
+            return scaled.applying(CGAffineTransform.init(scaleX: CGFloat(drawBuffer.width), y: CGFloat(drawBuffer.height)))
         }
         return nil
     }
@@ -240,17 +239,17 @@ class MyMTKView : MTKView {
 }
 
 final class MetalView {
-    private var drawBuffer: DrawBuffer
     private var letterboxColor: Color
+    private var needsDisplay: Bool
     private var textInputHandler: TextInputHandler?
     private var mouseMoveHandler: MouseMoveHandler?
     private var beforeDrawHandler: BeforeDrawHandler?
     private var mouseClickHandler: MouseClickHandler?
 
 
-    init(drawBuffer: DrawBuffer) {
-        self.drawBuffer = drawBuffer
+    init() {
         self.letterboxColor = Color.black
+        self.needsDisplay = false
     }
 
     func letterboxColor(_ color: Color) -> MetalView {
@@ -285,7 +284,7 @@ extension MetalView : NSViewRepresentable {
     typealias NSViewType = MyMTKView
     
     func makeNSView(context: Context) -> MyMTKView {
-        return (try? MyMTKView(drawBuffer: self.drawBuffer, letterboxColor: self.letterboxColor))!
+        return (try? MyMTKView(letterboxColor: self.letterboxColor))!
     }
     
     func updateNSView(_ nsView: MyMTKView, context: Context) {
@@ -294,6 +293,7 @@ extension MetalView : NSViewRepresentable {
         nsView.beforeDrawHandler = self.beforeDrawHandler
         nsView.textInputHandler = self.textInputHandler
         nsView.mouseClickHandler = self.mouseClickHandler
+        nsView.needsDisplay = self.needsDisplay
     }
 }
 #else
@@ -301,11 +301,13 @@ extension MetalView : UIViewRepresentable {
     typealias UIViewType = MyMTKView
     
     func makeUIView(context: Context) -> MyMTKView {
-        return (try? MyMTKView(drawBuffer: self.drawBuffer, letterboxColor: self.letterboxColor))!
+        return (try? MyMTKView(letterboxColor: self.letterboxColor))!
     }
     
     func updateUIView(_ uiView: MyMTKView, context: Context) {
+        uiView.setLetterboxColor(self.letterboxColor)
         uiView.beforeDrawHandler = self.beforeDrawHandler
+        uiView.needsDisplay = self.needsDisplay
     }
     
 }

@@ -6,84 +6,97 @@
 //
 
 import SwiftUI
+import Combine
+
+
+#if os(macOS)
+func setCursorVisible(_ shouldShow: Bool, currentlyHidden: Bool) -> Bool
+{
+    if shouldShow && currentlyHidden {
+        CGDisplayShowCursor(CGMainDisplayID())
+        return false
+    } else if !shouldShow && !currentlyHidden {
+        CGDisplayHideCursor(CGMainDisplayID())
+        return true
+    }
+    return currentlyHidden
+}
+#endif
+
+
+func tick(gameState: GameState) {
+    profiling_time_interval(&GameState.timingData, eTimerTickToTick, eTimingTickToTick)
+    profiling_time_set(&GameState.timingData, eTimerTickToTick)
+    profiling_time_set(&GameState.timingData, eTimerTick)
+
+    gameState.input.frameNumber = gameState.frameNumber
+    gameState.frameNumber += 1
+    let frameTime = gameState.frameTime.elapsed()
+    gameState.upTime_microseconds += frameTime.microseconds
+
+    gameState.input.upTime_microseconds =  gameState.upTime_microseconds
+    gameState.input.elapsedTime_s = frameTime.seconds
+    // TODO finalize inputs
+    profiling_time_interval(&GameState.timingData, eTimerTick, eTimingTickSetup)
+
+    let output = doGameThings(&gameState.input, gameState.memory)
+    profiling_time_interval(&GameState.timingData, eTimerTick, eTimingTickDo)
+
+    if output.shouldQuit {
+        exit(0)
+    }
+    if output.needTextInput {
+
+    }
+    #if os(macOS)
+    if gameState.input.mouse.endedOver {
+        gameState.isMouseHidden =
+        setCursorVisible(output.shouldShowSystemCursor, currentlyHidden: gameState.isMouseHidden)
+    } else {
+        gameState.isMouseHidden = setCursorVisible(true, currentlyHidden: gameState.isMouseHidden)
+    }
+    #endif
+    gameState.clearInput()
+    profiling_time_interval(&GameState.timingData, eTimerTick, eTimingTickPost)
+}
 
 
 @main
 struct Project256App: App {
-    @StateObject var gameState = GameState()
+    class AppSubscriptions {
+        var highfrequency: AnyCancellable? = nil
+    }
+
     @State var letterboxColor = Color.black
 
-    var profilingTimer: Timer = {
-        var t = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) {
+    var gameState: GameState
+
+    var profilingTimer: Timer
+
+    var subscriptions: AppSubscriptions
+
+    init() {
+        profilingTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) {
             _ in
             profiling_time_print(&GameState.timingData)
             profiling_time_clear(&GameState.timingData)
         }
-        t.tolerance = 0.3
-        return t
-    }()
-    #if os(macOS)
-    func setCursorVisible(_ shouldShow: Bool)
-    {
-        if shouldShow && gameState.isMouseHidden {
-            CGDisplayShowCursor(CGMainDisplayID())
-            gameState.isMouseHidden = false
-        } else if !shouldShow && !gameState.isMouseHidden {
-            CGDisplayHideCursor(CGMainDisplayID())
-            gameState.isMouseHidden = true
-        }
+        profilingTimer.tolerance = 0.3
+
+        gameState = GameState()
+        subscriptions = AppSubscriptions()
     }
-    #endif
-    func gameTick() {
-        profiling_time_interval(&GameState.timingData, eTimerFrameToFrame, eTimingFrameToFrame)
-        profiling_time_set(&GameState.timingData, eTimerFrameToFrame)
-        profiling_time_set(&GameState.timingData, eTimerTick)
 
-        gameState.input.frameNumber = gameState.frameNumber
-        gameState.frameNumber += 1
-        let frameTime = gameState.frameTime.elapsed()
-        gameState.upTime_microseconds += frameTime.microseconds
-
-        gameState.input.upTime_microseconds =  gameState.upTime_microseconds
-        gameState.input.elapsedTime_s = frameTime.seconds
-        // TODO finalize inputs
-        profiling_time_interval(&GameState.timingData, eTimerTick, eTimingTickSetup)
-
-        let output = doGameThings(&gameState.input, gameState.memory)
-        profiling_time_interval(&GameState.timingData, eTimerTick, eTimingTickDo)
-
-        if output.shouldQuit {
-            exit(0)
-        }
-        if output.needTextInput {
-    
-        }
-        #if os(macOS)
-        if gameState.input.mouse.endedOver {
-            setCursorVisible(output.shouldShowSystemCursor)
-        } else {
-            setCursorVisible(true)
-        }
-        #endif
-        gameState.clearInput()
-        profiling_time_interval(&GameState.timingData, eTimerTick, eTimingTickPost)
-
-        profiling_time_set(&GameState.timingData, eTimerBufferCopy)
-        // todo can we move update tex to its own thread and just synchronize?
-        writeDrawBuffer(gameState.memory, gameState.drawBuffer.data.baseAddress!)
-        profiling_time_interval(&GameState.timingData, eTimerBufferCopy, eTimingBufferCopy)
-
+    func doTick(_ _: Date) {
+        tick(gameState: gameState)
     }
 
     var body: some Scene {
         WindowGroup {
             ZStack {
-            MetalView(drawBuffer: gameState.drawBuffer)
+            MetalView()
                 .letterboxColor(self.letterboxColor)
-                .mouseMove {
-                    relative, position in
-                    gameState.addInputMouseMovement(relative: relative, position: position)
-                }
+                .mouseMove(gameState.addInputMouseMovement(relative:position:))
                 .mouseClick {
                     button, click, position in
 
@@ -103,13 +116,20 @@ struct Project256App: App {
                     }
 
                 }
-                .textInput {
-                    text in
-                    gameState.addInputText(text: text)
-                }
+                .textInput (gameState.addInputText)
                 .beforeDraw {
-                    self.gameTick()
+                    drawBuffer in
+                    profiling_time_set(&GameState.timingData, eTimerBufferCopy)
+                    // todo can we move update tex to its own thread and just synchronize?
+                    writeDrawBuffer(gameState.memory, drawBuffer.data.baseAddress!)
+                    profiling_time_interval(&GameState.timingData, eTimerBufferCopy, eTimingBufferCopy)
                 }
+                .onAppear() {
+                    self.subscriptions.highfrequency = Timer.publish(every: 0.01, on: .main, in: .default)
+                        .autoconnect()
+                        .sink(receiveValue: self.doTick)
+                }
+
 
             }
         }
