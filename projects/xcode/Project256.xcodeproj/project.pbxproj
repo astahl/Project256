@@ -15,8 +15,6 @@
 		684555AC283D86C9004AD3FB /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 684555AA283D86C9004AD3FB /* Assets.xcassets */; };
 		685035D3283F9D4E00355252 /* Project256.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 68455589283D7F08004AD3FB /* Project256.cpp */; };
 		685035D4283F9D4F00355252 /* Project256.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 68455589283D7F08004AD3FB /* Project256.cpp */; };
-		685035D628428EE200355252 /* GameState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 685035D528428EE200355252 /* GameState.swift */; };
-		685035D728428EE200355252 /* GameState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 685035D528428EE200355252 /* GameState.swift */; };
 		685035D92842921900355252 /* DrawBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 685035D82842921900355252 /* DrawBuffer.swift */; };
 		685035DA2842921900355252 /* DrawBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 685035D82842921900355252 /* DrawBuffer.swift */; };
 		689A250C284BE37D0086DD58 /* Palettes.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 689A250B284BE37D0086DD58 /* Palettes.cpp */; };
@@ -29,6 +27,8 @@
 		68D205D82854EE2F00CB4213 /* Timings.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 68D205D52854EE2F00CB4213 /* Timings.cpp */; };
 		68D205DC2855EAAF00CB4213 /* MetalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6819ACC1283ECD8E00CCBFD5 /* MetalView.swift */; };
 		68D205DD2855EAB000CB4213 /* MetalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6819ACC1283ECD8E00CCBFD5 /* MetalView.swift */; };
+		68D205DE2855EE3700CB4213 /* GameState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 685035D528428EE200355252 /* GameState.swift */; };
+		68D205DF2855EE3800CB4213 /* GameState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 685035D528428EE200355252 /* GameState.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -224,11 +224,11 @@
 				685035D92842921900355252 /* DrawBuffer.swift in Sources */,
 				685035D3283F9D4E00355252 /* Project256.cpp in Sources */,
 				68D205DC2855EAAF00CB4213 /* MetalView.swift in Sources */,
-				685035D628428EE200355252 /* GameState.swift in Sources */,
 				68D205CC28512A0000CB4213 /* Generators.hpp in Sources */,
 				6819ACC5283EDFFC00CCBFD5 /* MetalViewShader.metal in Sources */,
 				68D205D72854EE2F00CB4213 /* Timings.cpp in Sources */,
 				6845559E283D8044004AD3FB /* Project256App.swift in Sources */,
+				68D205DF2855EE3800CB4213 /* GameState.swift in Sources */,
 				689A250C284BE37D0086DD58 /* Palettes.cpp in Sources */,
 				68D205D22854101100CB4213 /* Vec2Math.hpp in Sources */,
 			);
@@ -241,11 +241,11 @@
 				685035DA2842921900355252 /* DrawBuffer.swift in Sources */,
 				685035D4283F9D4F00355252 /* Project256.cpp in Sources */,
 				68D205DD2855EAB000CB4213 /* MetalView.swift in Sources */,
-				685035D728428EE200355252 /* GameState.swift in Sources */,
 				68D205CD28512A0000CB4213 /* Generators.hpp in Sources */,
 				6819ACC6283EDFFC00CCBFD5 /* MetalViewShader.metal in Sources */,
 				68D205D82854EE2F00CB4213 /* Timings.cpp in Sources */,
 				6845559F283D8044004AD3FB /* Project256App.swift in Sources */,
+				68D205DE2855EE3700CB4213 /* GameState.swift in Sources */,
 				689A250D284BE37D0086DD58 /* Palettes.cpp in Sources */,
 				68D205D32854101100CB4213 /* Vec2Math.hpp in Sources */,
 			);
@@ -571,6 +571,9 @@
 				GCC_ENABLE_CPP_EXCEPTIONS = NO;
 				GCC_ENABLE_CPP_RTTI = NO;
 				GCC_FAST_MATH = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
+				GCC_THREADSAFE_STATICS = NO;
 				GCC_UNROLL_LOOPS = YES;
 				SWIFT_COMPILATION_MODE = singlefile;
 				SWIFT_ENFORCE_EXCLUSIVE_ACCESS = "debug-only";
@@ -591,6 +594,10 @@
 				GCC_ENABLE_CPP_EXCEPTIONS = NO;
 				GCC_ENABLE_CPP_RTTI = NO;
 				GCC_FAST_MATH = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
+				GCC_THREADSAFE_STATICS = NO;
 				GCC_UNROLL_LOOPS = YES;
 				SWIFT_COMPILATION_MODE = singlefile;
 				SWIFT_ENFORCE_EXCLUSIVE_ACCESS = "debug-only";

@@ -86,7 +86,7 @@ class GameState : ObservableObject {
     var isMouseHidden = false
     var frameNumber: UInt64 = 0
     var upTime_microseconds: Int64 = 0
-    var drawBuffer = DrawBuffer(width: Int(DrawBufferWidth), height: Int(DrawBufferHeight))
+    var drawBuffer = DrawBuffer()
 
     init() {
         GameState.timingData.getPlatformTimeMicroseconds = {
@@ -116,7 +116,7 @@ class GameState : ObservableObject {
     {
         input.mouse.relativeMovement = Vec2f(x: Float(relative.x), y: Float(relative.y))
         if let pos = position {
-            input.mouse.endedOver = eTRUE
+            input.mouse.endedOver = true
             let offset = min(Int(input.mouse.trackLength), Int(InputMouseMaxTrackLength - 1))
             withUnsafeMutableElementPointer(firstElement: &input.mouse.track.0, offset: offset) {
                 ptr in
@@ -124,7 +124,7 @@ class GameState : ObservableObject {
             }
             input.mouse.trackLength += 1
         } else {
-            input.mouse.endedOver = eFALSE
+            input.mouse.endedOver = false
         }
     }
 
@@ -132,10 +132,10 @@ class GameState : ObservableObject {
         var oldInputCopy = input
 
         input = GameInput()
-        input.hasMouse = eTRUE
-        if oldInputCopy.mouse.endedOver == eTRUE && oldInputCopy.mouse.trackLength > 0 {
+        input.hasMouse = true
+        if oldInputCopy.mouse.endedOver == true && oldInputCopy.mouse.trackLength > 0 {
             let oldMousePosition = withUnsafeElementPointer(firstElement: &oldInputCopy.mouse.track.0, offset: Int(oldInputCopy.mouse.trackLength - 1)) { $0.pointee }
-            input.mouse.endedOver = eTRUE
+            input.mouse.endedOver = true
             input.mouse.track.0 = oldMousePosition
             input.mouse.trackLength = 1
         }

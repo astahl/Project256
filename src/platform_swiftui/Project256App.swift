@@ -7,16 +7,6 @@
 
 import SwiftUI
 
-extension boole {
-    var isTrue: Bool {
-        return self == eTRUE
-    }
-
-    var isFalse: Bool {
-        return self == eFALSE
-    }
-}
-
 
 @main
 struct Project256App: App {
@@ -62,15 +52,15 @@ struct Project256App: App {
         let output = doGameThings(&gameState.input, gameState.memory)
         profiling_time_interval(&GameState.timingData, eTimerTick, eTimingTickDo)
 
-        if output.shouldQuit.isTrue {
+        if output.shouldQuit {
             exit(0)
         }
-        if output.needTextInput.isTrue {
+        if output.needTextInput {
     
         }
         #if os(macOS)
-        if gameState.input.mouse.endedOver.isTrue {
-            setCursorVisible(output.shouldShowSystemCursor.isTrue)
+        if gameState.input.mouse.endedOver {
+            setCursorVisible(output.shouldShowSystemCursor)
         } else {
             setCursorVisible(true)
         }
@@ -101,13 +91,13 @@ struct Project256App: App {
                     {
                     case (.Left, let upOrDown) where upOrDown == .Up || upOrDown == .Down:
                         gameState.input.mouse.buttonLeft.transitionCount += 1
-                        gameState.input.mouse.buttonLeft.endedDown = upOrDown == .Down ? eTRUE : eFALSE
+                        gameState.input.mouse.buttonLeft.endedDown = upOrDown == .Down
                     case (.Right, let upOrDown) where upOrDown == .Up || upOrDown == .Down:
                         gameState.input.mouse.buttonRight.transitionCount += 1
-                        gameState.input.mouse.buttonRight.endedDown = upOrDown == .Down ? eTRUE : eFALSE
+                        gameState.input.mouse.buttonRight.endedDown = upOrDown == .Down
                     case (.Other, let upOrDown) where upOrDown == .Up || upOrDown == .Down:
                         gameState.input.mouse.buttonMiddle.transitionCount += 1
-                        gameState.input.mouse.buttonMiddle.endedDown = upOrDown == .Down ? eTRUE : eFALSE
+                        gameState.input.mouse.buttonMiddle.endedDown = upOrDown == .Down
                     default:
                         break;
                     }

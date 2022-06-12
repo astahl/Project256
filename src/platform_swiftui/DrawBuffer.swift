@@ -13,14 +13,10 @@ class DrawBuffer {
     let aspectRatio: Float
     let data: UnsafeMutableBufferPointer<UInt32>
 
-    convenience init(width: Int, height: Int) {
-        self.init(width: width, height: height, aspectHorizontal: width, aspectVertical: height)
-    }
-
-    init(width: Int, height: Int, aspectHorizontal: Int, aspectVertical: Int) {
-        self.aspectRatio = Float(aspectHorizontal) / Float(aspectVertical)
-        self.width = width
-        self.height = height
+    init() {
+        self.aspectRatio = Float(DrawAspectH) / Float(DrawAspectV)
+        self.width = Int(DrawBufferWidth)
+        self.height = Int(DrawBufferHeight)
         data = UnsafeMutableBufferPointer<UInt32>.allocate(capacity: width * height)
     }
 }

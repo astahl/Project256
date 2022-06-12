@@ -1,38 +1,33 @@
 #ifndef PROJECT_256_H
 #define PROJECT_256_H
 
+#define constant static const
+
 #include "Profiling/Timings.h"
 
-const long MemorySize = 640 * 1024; // 640kbytes
+// global static constants
 
-const unsigned DrawBufferWidth = 80;
-const unsigned DrawBufferHeight = 60;
+constant long MemorySize = 640 * 1024; // 640kbytes
 
-const unsigned DrawAspectH = 4;
-const unsigned DrawAspectV = 3;
+constant unsigned DrawBufferWidth = 80;
+constant unsigned DrawBufferHeight = 60;
 
-const unsigned InputMouseMaxTrackLength = 32;
+constant unsigned DrawAspectH = 4;
+constant unsigned DrawAspectV = 3;
 
-const unsigned InputMaxControllers = 5;
-const unsigned InputMaxTaps = 20;
-const unsigned InputMaxTextLength = 256;
+constant unsigned InputMouseMaxTrackLength = 32;
+
+constant unsigned InputMaxControllers = 5;
+constant unsigned InputMaxTaps = 20;
+constant unsigned InputMaxTextLength = 256;
 
 #ifdef __cplusplus
 #include <cstdint>
-
+#define _Bool bool
 extern "C" {
-#endif
-
-enum boole {
-    eFALSE = 0,
-#ifdef __UINT32_MAX__
-    eTRUE = __UINT32_MAX__ 
 #else
-	eTRUE = UINT32_MAX
+#include "stdint.h"
 #endif
-};
-
-#define BOOLEAN_ENUM enum boole
 
 struct Vec2f {
 	float x, y;
@@ -44,7 +39,7 @@ struct Vec2i {
 
 struct Button {
 	int transitionCount;
-    BOOLEAN_ENUM endedDown;
+    _Bool endedDown;
 };
 
 struct Axis2 {
@@ -65,7 +60,7 @@ struct Mouse {
 	struct Button buttonLeft, buttonRight, buttonMiddle;
 	struct Vec2f track[InputMouseMaxTrackLength];
     unsigned trackLength;
-    BOOLEAN_ENUM endedOver;
+    _Bool endedOver;
 	struct Vec2f relativeMovement;
 	struct Axis2 scroll;
 };
@@ -85,20 +80,20 @@ struct GameInput {
 	struct Tap taps[InputMaxTaps];
 	unsigned tapCount;
 
-    BOOLEAN_ENUM hasMouse;
+    _Bool hasMouse;
 	struct Mouse mouse;
 
 	char text_utf8[InputMaxTextLength];
 	unsigned textLength;
 
-    BOOLEAN_ENUM closeRequested;
+    _Bool closeRequested;
 };
 
 struct GameOutput {
-    BOOLEAN_ENUM shouldQuit;
-    BOOLEAN_ENUM needTextInput;
-    BOOLEAN_ENUM shouldPinMouse;
-    BOOLEAN_ENUM shouldShowSystemCursor;
+    _Bool shouldQuit;
+    _Bool needTextInput;
+    _Bool shouldPinMouse;
+    _Bool shouldShowSystemCursor;
 	struct Rumble rumble[InputMaxControllers];
 };
 
