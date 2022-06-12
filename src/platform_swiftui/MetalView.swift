@@ -49,33 +49,35 @@ class MyMTKView : MTKView {
         super.init(coder: coder)
     }
 
-    init( letterboxColor: Color?) throws {
+    init() {
 
         #if os(iOS)
 //        addGestureRecognizer(UILongPressGestureRecognizer)
         #endif
 
         guard let device = MTLCreateSystemDefaultDevice() else {
-            throw MyMTKViewErrors.InitError
+            fatalError("Metal Device could not be created")
         }
 
-        super.init(frame: CGRect.zero, device: device)
+        super.init(frame: .zero, device: device)
 
         guard let defaultLibrary = device.makeDefaultLibrary(),
                 let vertexFunction = defaultLibrary.makeFunction(name: "vertexShader"),
                 let fragmentFunction = defaultLibrary.makeFunction(name: "fragmentShader") else {
-            throw MyMTKViewErrors.InitError
+            fatalError("Shaders could not be compiled")
         }
 
         let pipelineDescriptor = MTLRenderPipelineDescriptor.init()
         pipelineDescriptor.fragmentFunction = fragmentFunction
         pipelineDescriptor.vertexFunction = vertexFunction
         pipelineDescriptor.label = "SimplePipeline"
+        self.layer?.isOpaque = false
         pipelineDescriptor.colorAttachments[0].pixelFormat = super.colorPixelFormat
         pipelineDescriptor.rasterSampleCount = super.sampleCount
 
         try? self.pipelineState = device.makeRenderPipelineState(descriptor: pipelineDescriptor)
-        super.clearColor = letterboxColor?.clearColor() ?? MTLClearColor()
+        super.clearColor = .init(red: 1, green: 1, blue: 0, alpha: 0)
+
         self.texture = device.makeTexture(descriptor: MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .bgra8Unorm, width: drawBuffer.width, height: drawBuffer.height, mipmapped: false))
 
         self.commandQueue = device.makeCommandQueue()
@@ -83,12 +85,6 @@ class MyMTKView : MTKView {
         self.preferredFramesPerSecond = 60
         //self.isPaused = true
         //self.enableSetNeedsDisplay = true
-    }
-
-    func setLetterboxColor(_ color: Color) {
-        if let clearColor = color.clearColor() {
-            self.clearColor = clearColor
-        }
     }
 
     func updateViewport(withDrawableSize size: CGSize) {
@@ -126,7 +122,6 @@ class MyMTKView : MTKView {
         encoder.setViewport(self.viewport)
         if let pipelineState = self.pipelineState {
             encoder.setRenderPipelineState(pipelineState)
-
             withUnsafeBytes(of: &self.scale) {
                 bytes in
                 encoder.setVertexBytes(bytes.baseAddress!, length: bytes.count, index: Int(IndexQuadScaleXY.rawValue))
@@ -239,23 +234,10 @@ class MyMTKView : MTKView {
 }
 
 final class MetalView {
-    private var letterboxColor: Color
-    private var needsDisplay: Bool
     private var textInputHandler: TextInputHandler?
     private var mouseMoveHandler: MouseMoveHandler?
     private var beforeDrawHandler: BeforeDrawHandler?
     private var mouseClickHandler: MouseClickHandler?
-
-
-    init() {
-        self.letterboxColor = Color.black
-        self.needsDisplay = false
-    }
-
-    func letterboxColor(_ color: Color) -> MetalView {
-        self.letterboxColor = color
-        return self
-    }
 
     func textInput(_ handler: @escaping(TextInputHandler)) -> MetalView {
         self.textInputHandler = handler
@@ -284,16 +266,14 @@ extension MetalView : NSViewRepresentable {
     typealias NSViewType = MyMTKView
     
     func makeNSView(context: Context) -> MyMTKView {
-        return (try? MyMTKView(letterboxColor: self.letterboxColor))!
+        return MyMTKView()
     }
     
     func updateNSView(_ nsView: MyMTKView, context: Context) {
-        nsView.setLetterboxColor(self.letterboxColor)
         nsView.mouseMoveHandler = self.mouseMoveHandler
         nsView.beforeDrawHandler = self.beforeDrawHandler
         nsView.textInputHandler = self.textInputHandler
         nsView.mouseClickHandler = self.mouseClickHandler
-        nsView.needsDisplay = self.needsDisplay
     }
 }
 #else
@@ -301,13 +281,11 @@ extension MetalView : UIViewRepresentable {
     typealias UIViewType = MyMTKView
     
     func makeUIView(context: Context) -> MyMTKView {
-        return (try? MyMTKView(letterboxColor: self.letterboxColor))!
+        return MyMTKView()
     }
     
     func updateUIView(_ uiView: MyMTKView, context: Context) {
-        uiView.setLetterboxColor(self.letterboxColor)
         uiView.beforeDrawHandler = self.beforeDrawHandler
-        uiView.needsDisplay = self.needsDisplay
     }
     
 }

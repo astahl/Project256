@@ -68,22 +68,14 @@ struct Project256App: App {
         var highfrequency: AnyCancellable? = nil
     }
 
-    @State var letterboxColor = Color.black
+    @State var letterboxColor = Color.mint
 
     var gameState: GameState
 
-    var profilingTimer: Timer
-
+    var profilingBuffer = UnsafeMutableBufferPointer<CChar>.allocate(capacity: 1000)
     var subscriptions: AppSubscriptions
 
     init() {
-        profilingTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) {
-            _ in
-            profiling_time_print(&GameState.timingData)
-            profiling_time_clear(&GameState.timingData)
-        }
-        profilingTimer.tolerance = 0.3
-
         gameState = GameState()
         subscriptions = AppSubscriptions()
     }
@@ -96,7 +88,6 @@ struct Project256App: App {
         WindowGroup {
             ZStack {
             MetalView()
-                .letterboxColor(self.letterboxColor)
                 .mouseMove(gameState.addInputMouseMovement(relative:position:))
                 .mouseClick {
                     button, click, position in
@@ -121,15 +112,31 @@ struct Project256App: App {
                 .beforeDraw {
                     drawBuffer in
                     profiling_time_set(&GameState.timingData, eTimerBufferCopy)
-                    // todo can we move update tex to its own thread and just synchronize?
                     writeDrawBuffer(gameState.memory, drawBuffer.data.baseAddress!)
                     profiling_time_interval(&GameState.timingData, eTimerBufferCopy, eTimingBufferCopy)
                 }
-                .onAppear() {
+                .onAppear {
                     self.subscriptions.highfrequency = Timer.publish(every: 0.01, on: .main, in: .default)
                         .autoconnect()
                         .sink(receiveValue: self.doTick)
+                    self.subscriptions.profiling = Timer.publish(every: 1.0, on: .main, in: .default)
+                        .autoconnect()
+                        .sink {
+                            date in
+                            let length = profiling_time_print(&GameState.timingData, profilingBuffer.baseAddress!, Int32(profilingBuffer.count))
+                            let profiling = String.init(bytesNoCopy: profilingBuffer.baseAddress!, length: Int(length), encoding: .ascii, freeWhenDone: false)
+
+                            print(date)
+                            print(profiling!)
+                            profiling_time_clear(&GameState.timingData)
+                        }
                 }
+                .onDisappear {
+                    self.subscriptions.profiling?.cancel()
+                    self.subscriptions.highfrequency?.cancel()
+                }
+                .background(.linearGradient(.init(colors: [Color.cyan, Color.purple]), startPoint: .topLeading, endPoint: .bottomTrailing))
+                .overlay(Ellipse().foregroundColor(.gray).opacity(0.3).blur(radius: 100))
             }
         }
         #if os(macOS)

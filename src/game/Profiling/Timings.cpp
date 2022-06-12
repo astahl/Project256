@@ -9,7 +9,7 @@
 #ifdef PROFILING
 
 #include "Timings.h"
-#include <iostream>
+#include <cstdio>
 #include <array>
 #include <string>
 
@@ -19,7 +19,7 @@ extern "C" {
 
 #ifdef PROFILING
 
-static const std::array<std::string, TimingIntervalCount> sIntervalNames {
+static const std::array<std::array<char, 16>, TimingIntervalCount> sIntervalNames {
     "TickToTick",
     "FrameToFrame",
     "TickSetup",
@@ -27,16 +27,13 @@ static const std::array<std::string, TimingIntervalCount> sIntervalNames {
     "TickPost",
     "BufferCopy",
     "DrawBefore",
-    "DrawWaitAndSetup",
+    "DrawWaitSetup",
     "DrawEncoding",
     "DrawPresent"
 };
 
 void profiling_time_initialise(TimingData* data) {
     data->zero = data->getPlatformTimeMicroseconds();
-    std::cout << "Started at: " << data->zero << "\n";
-    auto printDelay = data->getPlatformTimeMicroseconds() - data->zero;
-    std::cout << "Printing that took: " << printDelay << " microseconds\n";
 }
 
 void profiling_time_set(TimingData* data, TimingTimer timer)
@@ -53,14 +50,18 @@ void profiling_time_interval(TimingData* data, TimingTimer timer, TimingInterval
     data->intervalCount[interval]++;
 }
 
-void profiling_time_print(TimingData* data)
+int profiling_time_print(TimingData* data, char* buffer, int bufferSize)
 {
+    int writtenTotal = 0;
     for (int interval = 0; interval < TimingIntervalCount; ++interval)
     {
-        auto count = data->intervalCount[interval];
-        std::cout << sIntervalNames[interval] << " ["<< count <<"]: " << (count != 0? data->intervals[interval] / count : 0LL) << " ";
+        int count = data->intervalCount[interval];
+        int written = std::snprintf(buffer, bufferSize, "%-16s %-5d %lld\n", sIntervalNames[interval].data(), count, (count != 0? data->intervals[interval] / count : 0LL));
+        buffer += written;
+        bufferSize -= written;
+        writtenTotal += written;
     }
-    std::cout << std::endl;
+    return writtenTotal;
 }
 
 void profiling_time_clear(struct TimingData* data)

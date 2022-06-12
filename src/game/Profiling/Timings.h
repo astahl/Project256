@@ -49,7 +49,7 @@ extern "C" {
 void profiling_time_initialise(struct TimingData* data);
 void profiling_time_set(struct TimingData* data, enum TimingTimer timer);
 void profiling_time_interval(struct TimingData* data, enum TimingTimer timer, enum TimingInterval interval);
-void profiling_time_print(struct TimingData* data);
+int profiling_time_print(struct TimingData* data, char* buffer, int bufferSize);
 void profiling_time_clear(struct TimingData* data);
 
 
