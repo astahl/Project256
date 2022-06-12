@@ -130,10 +130,6 @@ struct Project256App: App {
                         .autoconnect()
                         .sink(receiveValue: self.doTick)
                 }
-
-                Canvas(opaque: false, colorMode: .linear, rendersAsynchronously: true) { graphicsContext, size in
-                    graphicsContext.draw(Text("Hallo"), in: CGRect(origin: CGPoint.zero, size: size))
-                }
             }
         }
         #if os(macOS)
