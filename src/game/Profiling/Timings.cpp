@@ -4,7 +4,6 @@
 //
 //  Created by Andreas Stahl on 11.06.22.
 //
-#define CXX
 #define PROFILING 1
 
 #ifdef PROFILING

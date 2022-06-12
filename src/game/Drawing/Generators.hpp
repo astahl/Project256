@@ -6,7 +6,6 @@
 //
 #pragma once
 
-#define CXX
 #include <algorithm>
 
 #include "../Project256.h"
