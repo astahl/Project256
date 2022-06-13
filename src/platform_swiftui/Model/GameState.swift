@@ -87,6 +87,7 @@ class GameState : ObservableObject {
     var frameNumber: UInt64 = 0
     var upTime_microseconds: Int64 = 0
     var drawBuffer = DrawBuffer()
+    @Published var tickScale: Double = 1.0
 
     init() {
         GameState.timingData.getPlatformTimeMicroseconds = {
@@ -142,5 +143,42 @@ class GameState : ObservableObject {
         input.mouse.buttonLeft.endedDown = oldInputCopy.mouse.buttonLeft.endedDown
         input.mouse.buttonRight.endedDown = oldInputCopy.mouse.buttonRight.endedDown
         input.mouse.buttonMiddle.endedDown = oldInputCopy.mouse.buttonMiddle.endedDown
+    }
+
+
+    func tick() {
+        profiling_time_interval(&GameState.timingData, eTimerTickToTick, eTimingTickToTick)
+        profiling_time_set(&GameState.timingData, eTimerTickToTick)
+        profiling_time_set(&GameState.timingData, eTimerTick)
+
+        self.input.frameNumber = self.frameNumber
+        self.frameNumber += 1
+        let frameTime = self.frameTime.elapsed()
+        self.upTime_microseconds += Int64(Double(frameTime.microseconds) * tickScale)
+
+        self.input.upTime_microseconds =  self.upTime_microseconds
+        self.input.elapsedTime_s = frameTime.seconds * tickScale
+        // TODO finalize inputs
+        profiling_time_interval(&GameState.timingData, eTimerTick, eTimingTickSetup)
+
+        let output = doGameThings(&self.input, self.memory)
+        profiling_time_interval(&GameState.timingData, eTimerTick, eTimingTickDo)
+
+        if output.shouldQuit {
+            exit(0)
+        }
+        if output.needTextInput {
+
+        }
+        #if os(macOS)
+        if self.input.mouse.endedOver {
+            self.isMouseHidden =
+            setCursorVisible(output.shouldShowSystemCursor, currentlyHidden: self.isMouseHidden)
+        } else {
+            self.isMouseHidden = setCursorVisible(true, currentlyHidden: self.isMouseHidden)
+        }
+        #endif
+        self.clearInput()
+        profiling_time_interval(&GameState.timingData, eTimerTick, eTimingTickPost)
     }
 }

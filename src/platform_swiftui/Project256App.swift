@@ -24,43 +24,6 @@ func setCursorVisible(_ shouldShow: Bool, currentlyHidden: Bool) -> Bool
 #endif
 
 
-func tick(gameState: GameState) {
-    profiling_time_interval(&GameState.timingData, eTimerTickToTick, eTimingTickToTick)
-    profiling_time_set(&GameState.timingData, eTimerTickToTick)
-    profiling_time_set(&GameState.timingData, eTimerTick)
-
-    gameState.input.frameNumber = gameState.frameNumber
-    gameState.frameNumber += 1
-    let frameTime = gameState.frameTime.elapsed()
-    gameState.upTime_microseconds += frameTime.microseconds
-
-    gameState.input.upTime_microseconds =  gameState.upTime_microseconds
-    gameState.input.elapsedTime_s = frameTime.seconds
-    // TODO finalize inputs
-    profiling_time_interval(&GameState.timingData, eTimerTick, eTimingTickSetup)
-
-    let output = doGameThings(&gameState.input, gameState.memory)
-    profiling_time_interval(&GameState.timingData, eTimerTick, eTimingTickDo)
-
-    if output.shouldQuit {
-        exit(0)
-    }
-    if output.needTextInput {
-
-    }
-    #if os(macOS)
-    if gameState.input.mouse.endedOver {
-        gameState.isMouseHidden =
-        setCursorVisible(output.shouldShowSystemCursor, currentlyHidden: gameState.isMouseHidden)
-    } else {
-        gameState.isMouseHidden = setCursorVisible(true, currentlyHidden: gameState.isMouseHidden)
-    }
-    #endif
-    gameState.clearInput()
-    profiling_time_interval(&GameState.timingData, eTimerTick, eTimingTickPost)
-}
-
-
 @main
 struct Project256App: App {
     class AppSubscriptions {
@@ -69,7 +32,7 @@ struct Project256App: App {
     }
 
     @State var profilingString: String = .init()
-    var gameState: GameState
+    @State var gameState: GameState
 
     var profilingBuffer = UnsafeMutableBufferPointer<CChar>.allocate(capacity: 1000)
     var subscriptions: AppSubscriptions
@@ -80,42 +43,13 @@ struct Project256App: App {
     }
 
     func doTick(_ _: Date) {
-        tick(gameState: gameState)
+        gameState.tick()
     }
 
     var body: some Scene {
         WindowGroup {
             ZStack {
                 GameView(gameState: gameState)
-//            MetalView()
-//                .mouseMove(gameState.addInputMouseMovement(relative:position:))
-//                .mouseClick {
-//                    button, click, position in
-//
-//                    switch (button, click)
-//                    {
-//                    case (.Left, let upOrDown) where upOrDown == .Up || upOrDown == .Down:
-//                        gameState.input.mouse.buttonLeft.transitionCount += 1
-//                        gameState.input.mouse.buttonLeft.endedDown = upOrDown == .Down
-//                    case (.Right, let upOrDown) where upOrDown == .Up || upOrDown == .Down:
-//                        gameState.input.mouse.buttonRight.transitionCount += 1
-//                        gameState.input.mouse.buttonRight.endedDown = upOrDown == .Down
-//                    case (.Other, let upOrDown) where upOrDown == .Up || upOrDown == .Down:
-//                        gameState.input.mouse.buttonMiddle.transitionCount += 1
-//                        gameState.input.mouse.buttonMiddle.endedDown = upOrDown == .Down
-//                    default:
-//                        break;
-//                    }
-//
-//                }
-//                .textInput (gameState.addInputText)
-//                .beforeDraw {
-//                    drawBuffer in
-//                    profiling_time_set(&GameState.timingData, eTimerBufferCopy)
-//                    writeDrawBuffer(gameState.memory, drawBuffer.data.baseAddress!)
-//                    profiling_time_interval(&GameState.timingData, eTimerBufferCopy, eTimingBufferCopy)
-//                    return nil
-//                }
                 .onAppear {
                     self.subscriptions.highfrequency = Timer.publish(every: 0.01, on: .main, in: .common)
                         .autoconnect()
@@ -134,23 +68,23 @@ struct Project256App: App {
                     self.subscriptions.profiling?.cancel()
                     self.subscriptions.highfrequency?.cancel()
                 }
-//                .background(.linearGradient(.init(colors: [Color.cyan, Color.purple]), startPoint: .topLeading, endPoint: .bottomTrailing))
-//                .overlay(Ellipse().foregroundColor(.gray).opacity(0.3).blur(radius: 100))
-//
-//                HStack {
-//                    Text(profilingString)
-//                        .font(.body.monospaced())
-//                        .multilineTextAlignment(.leading)
-//                        .shadow(radius: 5)
-//                        .padding()
-//                    Spacer()
-//                }
+                .background(.linearGradient(.init(colors: [Color.cyan, Color.purple]), startPoint: .topLeading, endPoint: .bottomTrailing))
+                .overlay(Ellipse().foregroundColor(.gray).opacity(0.3).blur(radius: 100))
+
+                HStack {
+                    Text(profilingString)
+                        .font(.body.monospaced())
+                        .multilineTextAlignment(.leading)
+                        .shadow(radius: 5)
+                        .padding()
+                    Spacer()
+                }
             }
         }
         #if os(macOS)
         Settings {
             VStack {
-
+                Slider(value: $gameState.tickScale, in: 0...3)
             }.padding()
         }
         #endif
