@@ -67,7 +67,7 @@ int profiling_time_print(TimingData* data, char* buffer, int bufferSize)
 void profiling_time_clear(struct TimingData* data)
 {
     std::memset(data->intervals, 0, TimingIntervalCount * sizeof(int64_t));
-    std::memset(data->intervalCount, 0, TimingIntervalCount * sizeof(int64_t));
+    std::memset(data->intervalCount, 0, TimingIntervalCount * sizeof(int));
 }
 
 #else
