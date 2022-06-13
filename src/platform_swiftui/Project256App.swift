@@ -116,7 +116,7 @@ struct Project256App: App {
                     profiling_time_interval(&GameState.timingData, eTimerBufferCopy, eTimingBufferCopy)
                 }
                 .onAppear {
-                    self.subscriptions.highfrequency = Timer.publish(every: 0.01, on: .main, in: .default)
+                    self.subscriptions.highfrequency = Timer.publish(every: 0.01, on: .main, in: .common)
                         .autoconnect()
                         .sink(receiveValue: self.doTick)
                     self.subscriptions.profiling = Timer.publish(every: 1.0, on: .main, in: .default)
