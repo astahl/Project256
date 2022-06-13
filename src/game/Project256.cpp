@@ -187,17 +187,36 @@ void writeDrawBuffer(void* pMemory, void* buffer)
         constexpr int count = DrawBufferWidth * DrawBufferHeight;
         uint64_t* src = reinterpret_cast<uint64_t*>(vram);
         uint64_t* dst = reinterpret_cast<uint64_t*>(buffer);
+        const uint32_t* palette = memory.palette;
         for (int i = 0; i < count; i += 8) {
             const uint64_t sourcePixel8 = *src++;
             
-            *dst = static_cast<uint64_t>(memory.palette[sourcePixel8 >> 0 & 0xff]) | 
-                static_cast<uint64_t>(memory.palette[sourcePixel8 >> 8 & 0xff]) << 32;
-            *(dst + 1) = static_cast<uint64_t>(memory.palette[sourcePixel8 >> 16 & 0xff]) |
-                static_cast<uint64_t>(memory.palette[sourcePixel8 >> 24 & 0xff]) << 32;
-            *(dst + 2) = static_cast<uint64_t>(memory.palette[sourcePixel8 >> 32 & 0xff]) |
-                static_cast<uint64_t>(memory.palette[sourcePixel8 >> 40 & 0xff]) << 32;
-            *(dst + 3) = static_cast<uint64_t>(memory.palette[sourcePixel8 >> 48 & 0xff]) |
-                static_cast<uint64_t>(memory.palette[sourcePixel8 >> 56 & 0xff]) << 32;
+            *dst = static_cast<uint64_t>(palette[sourcePixel8 >> 0 & 0xff]) | 
+                static_cast<uint64_t>(palette[sourcePixel8 >> 8 & 0xff]) << 32;
+            *(dst + 1) = static_cast<uint64_t>(palette[sourcePixel8 >> 16 & 0xff]) |
+                static_cast<uint64_t>(palette[sourcePixel8 >> 24 & 0xff]) << 32;
+            *(dst + 2) = static_cast<uint64_t>(palette[sourcePixel8 >> 32 & 0xff]) |
+                static_cast<uint64_t>(palette[sourcePixel8 >> 40 & 0xff]) << 32;
+            *(dst + 3) = static_cast<uint64_t>(palette[sourcePixel8 >> 48 & 0xff]) |
+                static_cast<uint64_t>(palette[sourcePixel8 >> 56 & 0xff]) << 32;
+            dst += 4;
+        }
+    }
+    else if (false) {
+        // why is this slower?!??!
+        constexpr int count = DrawBufferWidth * DrawBufferHeight;
+        struct bytes_v8 { uint8_t a, b, c, d, e, f, g, h; };
+        struct uint32_v2 { uint32_t a, b; };
+        bytes_v8* src = reinterpret_cast<bytes_v8*>(vram);
+        uint32_v2* dst = reinterpret_cast<uint32_v2*>(buffer);
+        const uint32_t* palette = memory.palette;
+        for (int i = 0; i < count; i += 8) {
+            auto src8 = *src++;
+
+            *dst = { palette[src8.a], palette[src8.b] };
+            *(dst + 1) = { palette[src8.c], palette[src8.d] };
+            *(dst + 2) = { palette[src8.e], palette[src8.f] };
+            *(dst + 3) = { palette[src8.g], palette[src8.h] };
             dst += 4;
         }
     }
