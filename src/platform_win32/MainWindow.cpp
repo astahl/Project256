@@ -44,6 +44,10 @@ MainWindow::~MainWindow()
 }
 
 void MainWindow::onTick() {
+
+    profiling_time_interval(&GameState::timingData, eTimerTickToTick, eTimingTickToTick);
+    profiling_time_set(&GameState::timingData, eTimerTickToTick);
+
     profiling_time_set(&GameState::timingData, eTimerTick);
     state->input.hasMouse = true;
 
@@ -94,10 +98,12 @@ void MainWindow::onTick() {
 }
 
 void MainWindow::onPaint() {
+    profiling_time_set(&GameState::timingData, eTimerDraw);
     profiling_time_set(&GameState::timingData, eTimerBufferCopy);
     writeDrawBuffer(memory, drawBuffer);
-    this->view->SetDrawBuffer(drawBuffer);
     profiling_time_interval(&GameState::timingData, eTimerBufferCopy, eTimingBufferCopy);
+    this->view->SetDrawBuffer(drawBuffer);
+    profiling_time_interval(&GameState::timingData, eTimerDraw, eTimingDrawBefore);
     this->view->Draw();
     ValidateRect(hwnd, NULL);
 }
@@ -178,7 +184,7 @@ void MainWindow::doMainLoop() {
     bool quitWasPosted = false;
     while (!quitWasPosted)
     {
-        while (PeekMessage(&message, NULL, 0, 0, PM_REMOVE))
+        while (PeekMessage(&message, hwnd, 0, 0, PM_REMOVE))
         {
             TranslateMessage(&message);
             DispatchMessage(&message);

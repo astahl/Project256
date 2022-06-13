@@ -88,6 +88,7 @@ Direct3D12View::Direct3D12View(HWND hwnd, UINT width, UINT height)
 		.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT,
 		.BufferCount = FrameCount,
 		.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD,
+		.Flags = DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT
 	};
 
 	{
@@ -424,6 +425,25 @@ Direct3D12View::Direct3D12View(HWND hwnd, UINT width, UINT height)
 		}
 	}
 	WaitForGpu();
+
+	// create profiling thread
+	mPresentProfilingThread = std::jthread{ [](std::stop_token stop, HANDLE waitable) {
+		DWORD waitResult = WAIT_TIMEOUT; 
+		while (true) {
+			do {
+				if (stop.stop_requested()) {
+					return;
+				}
+				waitResult = WaitForSingleObjectEx(waitable, 200, FALSE);
+			} while (waitResult == WAIT_TIMEOUT);
+			
+			if (waitResult == WAIT_OBJECT_0){
+				profiling_time_interval(&GameState::timingData, eTimerDraw, eTimingDrawPresent);
+				profiling_time_interval(&GameState::timingData, eTimerFrameToFrame, eTimingFrameToFrame);
+				profiling_time_set(&GameState::timingData, eTimerFrameToFrame);
+			}
+		}
+	}, mSwapChain->GetFrameLatencyWaitableObject() };
 }
 
 Direct3D12View::~Direct3D12View()
@@ -482,8 +502,9 @@ void Direct3D12View::Resize(UINT width, UINT height)
 		mRenderTargets[i].Reset();
 		mFenceValues[i] = mFenceValues[mFrameIndex];
 	}
-
-	ExitOnFail(mSwapChain->ResizeBuffers(FrameCount, mWidth, mHeight, DXGI_FORMAT_UNKNOWN, 0));
+	DXGI_SWAP_CHAIN_DESC1 desc{};
+	mSwapChain->GetDesc1(&desc);
+	ExitOnFail(mSwapChain->ResizeBuffers(desc.BufferCount, mWidth, mHeight, desc.Format, desc.Flags));
 	mFrameIndex = mSwapChain->GetCurrentBackBufferIndex();
 	
 	this->CreateRenderTargetViews();
@@ -578,6 +599,7 @@ void Direct3D12View::Draw()
 
 	mCommandQueue->ExecuteCommandLists(1, cmdListPtrArray);
 	ExitOnFail(mSwapChain->Present(1, 0));
+	
 
 	MoveToNextFrame();
 }
