@@ -182,10 +182,30 @@ void writeDrawBuffer(void* pMemory, void* buffer)
 
     GameMemory& memory = *reinterpret_cast<GameMemory*>(pMemory);
     uint8_t* vram = memory.vram;
-    
-    for (unsigned y = 0; y < DrawBufferHeight; ++y)
-    for (unsigned x = 0; x < DrawBufferWidth; ++x)
-        *pixel++ = memory.palette[*vram++];
+    if constexpr (DrawBufferWidth % 8 == 0)
+    {
+        constexpr int count = DrawBufferWidth * DrawBufferHeight;
+        uint64_t* src = reinterpret_cast<uint64_t*>(vram);
+        uint64_t* dst = reinterpret_cast<uint64_t*>(buffer);
+        for (int i = 0; i < count; i += 8) {
+            const uint64_t sourcePixel8 = *src++;
+            
+            *dst = static_cast<uint64_t>(memory.palette[sourcePixel8 >> 0 & 0xff]) | 
+                static_cast<uint64_t>(memory.palette[sourcePixel8 >> 8 & 0xff]) << 32;
+            *(dst + 1) = static_cast<uint64_t>(memory.palette[sourcePixel8 >> 16 & 0xff]) |
+                static_cast<uint64_t>(memory.palette[sourcePixel8 >> 24 & 0xff]) << 32;
+            *(dst + 2) = static_cast<uint64_t>(memory.palette[sourcePixel8 >> 32 & 0xff]) |
+                static_cast<uint64_t>(memory.palette[sourcePixel8 >> 40 & 0xff]) << 32;
+            *(dst + 3) = static_cast<uint64_t>(memory.palette[sourcePixel8 >> 48 & 0xff]) |
+                static_cast<uint64_t>(memory.palette[sourcePixel8 >> 56 & 0xff]) << 32;
+            dst += 4;
+        }
+    }
+    else {
+        for (unsigned y = 0; y < DrawBufferHeight; ++y)
+        for (unsigned x = 0; x < DrawBufferWidth; ++x)
+            *pixel++ = memory.palette[*vram++];
+    }
 }
 
 }
