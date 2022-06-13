@@ -68,7 +68,7 @@ struct Project256App: App {
         var highfrequency: AnyCancellable? = nil
     }
 
-    @State var profilingString: String = "Hello"
+    @State var profilingString: String = .init()
     var gameState: GameState
 
     var profilingBuffer = UnsafeMutableBufferPointer<CChar>.allocate(capacity: 1000)
@@ -86,35 +86,36 @@ struct Project256App: App {
     var body: some Scene {
         WindowGroup {
             ZStack {
-
-            MetalView()
-                .mouseMove(gameState.addInputMouseMovement(relative:position:))
-                .mouseClick {
-                    button, click, position in
-
-                    switch (button, click)
-                    {
-                    case (.Left, let upOrDown) where upOrDown == .Up || upOrDown == .Down:
-                        gameState.input.mouse.buttonLeft.transitionCount += 1
-                        gameState.input.mouse.buttonLeft.endedDown = upOrDown == .Down
-                    case (.Right, let upOrDown) where upOrDown == .Up || upOrDown == .Down:
-                        gameState.input.mouse.buttonRight.transitionCount += 1
-                        gameState.input.mouse.buttonRight.endedDown = upOrDown == .Down
-                    case (.Other, let upOrDown) where upOrDown == .Up || upOrDown == .Down:
-                        gameState.input.mouse.buttonMiddle.transitionCount += 1
-                        gameState.input.mouse.buttonMiddle.endedDown = upOrDown == .Down
-                    default:
-                        break;
-                    }
-
-                }
-                .textInput (gameState.addInputText)
-                .beforeDraw {
-                    drawBuffer in
-                    profiling_time_set(&GameState.timingData, eTimerBufferCopy)
-                    writeDrawBuffer(gameState.memory, drawBuffer.data.baseAddress!)
-                    profiling_time_interval(&GameState.timingData, eTimerBufferCopy, eTimingBufferCopy)
-                }
+                GameView(gameState: gameState)
+//            MetalView()
+//                .mouseMove(gameState.addInputMouseMovement(relative:position:))
+//                .mouseClick {
+//                    button, click, position in
+//
+//                    switch (button, click)
+//                    {
+//                    case (.Left, let upOrDown) where upOrDown == .Up || upOrDown == .Down:
+//                        gameState.input.mouse.buttonLeft.transitionCount += 1
+//                        gameState.input.mouse.buttonLeft.endedDown = upOrDown == .Down
+//                    case (.Right, let upOrDown) where upOrDown == .Up || upOrDown == .Down:
+//                        gameState.input.mouse.buttonRight.transitionCount += 1
+//                        gameState.input.mouse.buttonRight.endedDown = upOrDown == .Down
+//                    case (.Other, let upOrDown) where upOrDown == .Up || upOrDown == .Down:
+//                        gameState.input.mouse.buttonMiddle.transitionCount += 1
+//                        gameState.input.mouse.buttonMiddle.endedDown = upOrDown == .Down
+//                    default:
+//                        break;
+//                    }
+//
+//                }
+//                .textInput (gameState.addInputText)
+//                .beforeDraw {
+//                    drawBuffer in
+//                    profiling_time_set(&GameState.timingData, eTimerBufferCopy)
+//                    writeDrawBuffer(gameState.memory, drawBuffer.data.baseAddress!)
+//                    profiling_time_interval(&GameState.timingData, eTimerBufferCopy, eTimingBufferCopy)
+//                    return nil
+//                }
                 .onAppear {
                     self.subscriptions.highfrequency = Timer.publish(every: 0.01, on: .main, in: .common)
                         .autoconnect()
@@ -133,17 +134,17 @@ struct Project256App: App {
                     self.subscriptions.profiling?.cancel()
                     self.subscriptions.highfrequency?.cancel()
                 }
-                .background(.linearGradient(.init(colors: [Color.cyan, Color.purple]), startPoint: .topLeading, endPoint: .bottomTrailing))
-                .overlay(Ellipse().foregroundColor(.gray).opacity(0.3).blur(radius: 100))
-
-                HStack {
-                    Text(profilingString)
-                        .font(.body.monospaced())
-                        .multilineTextAlignment(.leading)
-                        .shadow(radius: 5)
-                        .padding()
-                    Spacer()
-                }
+//                .background(.linearGradient(.init(colors: [Color.cyan, Color.purple]), startPoint: .topLeading, endPoint: .bottomTrailing))
+//                .overlay(Ellipse().foregroundColor(.gray).opacity(0.3).blur(radius: 100))
+//
+//                HStack {
+//                    Text(profilingString)
+//                        .font(.body.monospaced())
+//                        .multilineTextAlignment(.leading)
+//                        .shadow(radius: 5)
+//                        .padding()
+//                    Spacer()
+//                }
             }
         }
         #if os(macOS)

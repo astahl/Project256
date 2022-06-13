@@ -19,26 +19,14 @@ extension Color {
         return nil
     }
 }
-enum MyMTKViewErrors : Error {
-    case InitError
-}
-enum MouseButton {
-    case Left, Right, Other
-}
 
-enum Click {
-    case Up, Down, Double
-}
+typealias BeforeDrawHandler = (_ buffer: DrawBuffer) -> DrawBuffer?
+typealias PointConversion = (_ point: CGPoint) -> CGPoint?
 
-typealias TextInputHandler = (_ text: String) -> Void
-typealias MouseMoveHandler = (_ relative: CGPoint, _ position: CGPoint?) -> Void
-typealias MouseClickHandler = (_ mouseButton: MouseButton, _ click: Click, _ position: CGPoint?) -> Void
-typealias BeforeDrawHandler = (_ buffer: DrawBuffer) -> Void
 
 class MyMTKView : MTKView {
-    var textInputHandler: TextInputHandler?
     var beforeDrawHandler: BeforeDrawHandler?
-    private let drawBuffer = DrawBuffer()
+    private var drawBuffer: DrawBuffer
     private var commandQueue: MTLCommandQueue?
     private var pipelineState: MTLRenderPipelineState?
     private var viewport = MTLViewport()
@@ -46,11 +34,12 @@ class MyMTKView : MTKView {
     private var texture: MTLTexture?
 
     required init(coder: NSCoder) {
+        self.drawBuffer = DrawBuffer()
         super.init(coder: coder)
     }
 
-    init() {
-
+    init(drawBuffer: DrawBuffer?) {
+        self.drawBuffer = drawBuffer ?? DrawBuffer()
         #if os(iOS)
 //        addGestureRecognizer(UILongPressGestureRecognizer)
         #endif
@@ -78,7 +67,7 @@ class MyMTKView : MTKView {
         try? self.pipelineState = device.makeRenderPipelineState(descriptor: pipelineDescriptor)
         super.clearColor = .init(red: 1, green: 1, blue: 0, alpha: 0)
 
-        self.texture = device.makeTexture(descriptor: MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .bgra8Unorm, width: drawBuffer.width, height: drawBuffer.height, mipmapped: false))
+        self.texture = device.makeTexture(descriptor: MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .bgra8Unorm, width: self.drawBuffer.width, height: self.drawBuffer.height, mipmapped: false))
 
         self.commandQueue = device.makeCommandQueue()
         self.viewport.zfar = 1.0
@@ -96,7 +85,9 @@ class MyMTKView : MTKView {
     override func draw(_ dirtyRect: CGRect) {
 
         profiling_time_set(&GameState.timingData, eTimerDraw)
-        self.beforeDrawHandler?(self.drawBuffer)
+        if let newDrawBuffer = self.beforeDrawHandler?(self.drawBuffer) {
+            self.drawBuffer = newDrawBuffer
+        }
         profiling_time_interval(&GameState.timingData, eTimerDraw, eTimingDrawBefore)
         updateViewport(withDrawableSize: drawableSize)
 
@@ -148,28 +139,8 @@ class MyMTKView : MTKView {
         commandBuffer.commit()
     }
 
-
-
-#if os(macOS)
-    var mouseMoveHandler: MouseMoveHandler?
-    var mouseClickHandler: MouseClickHandler?
-
-    override var acceptsFirstResponder: Bool {
-        return true
-    }
-
-    override func viewDidMoveToWindow() {
-        self.window?.acceptsMouseMovedEvents = true
-    }
-
-    override func keyDown(with event: NSEvent) {
-        if let characters = event.characters {
-            self.textInputHandler?(characters)
-        }
-    }
-
-    func positionOnBuffer(locationInWindow: NSPoint) -> CGPoint? {
-        let normalizedPos = CGPoint(x: locationInWindow.x / self.frame.width, y: locationInWindow.y / self.frame.height)
+    func positionOnBuffer(locationInView: CGPoint) -> CGPoint? {
+        let normalizedPos = CGPoint(x: locationInView.x / self.frame.width, y: locationInView.y / self.frame.height)
         let scaleX = CGFloat(self.scale.x)
         let scaleY = CGFloat(self.scale.y)
         let pos = normalizedPos
@@ -182,98 +153,37 @@ class MyMTKView : MTKView {
         }
         return nil
     }
-
-    override func mouseMoved(with event: NSEvent) {
-        if let pixelPosition = positionOnBuffer(locationInWindow: event.locationInWindow) {
-            self.mouseMoveHandler?(CGPoint(x: event.deltaX, y: event.deltaY), pixelPosition)
-        } else {
-            self.mouseMoveHandler?(CGPoint(x: event.deltaX, y: event.deltaY), nil)
-        }
-    }
-
-    override func mouseDragged(with event: NSEvent) {
-        if let pixelPosition = positionOnBuffer(locationInWindow: event.locationInWindow) {
-            self.mouseMoveHandler?(CGPoint(x: event.deltaX, y: event.deltaY), pixelPosition)
-        } else {
-            self.mouseMoveHandler?(CGPoint(x: event.deltaX, y: event.deltaY), nil)
-        }
-    }
-
-    override func rightMouseDragged(with event: NSEvent) {
-        if let pixelPosition = positionOnBuffer(locationInWindow: event.locationInWindow) {
-            self.mouseMoveHandler?(CGPoint(x: event.deltaX, y: event.deltaY), pixelPosition)
-        } else {
-            self.mouseMoveHandler?(CGPoint(x: event.deltaX, y: event.deltaY), nil)
-        }
-    }
-
-    override func mouseDown(with event: NSEvent) {
-        self.mouseClickHandler?(.Left, .Down, positionOnBuffer(locationInWindow: event.locationInWindow))
-    }
-
-    override func mouseUp(with event: NSEvent) {
-        self.mouseClickHandler?(.Left, .Up, positionOnBuffer(locationInWindow: event.locationInWindow))
-    }
-
-    override func rightMouseDown(with event: NSEvent) {
-        self.mouseClickHandler?(.Right, .Down, positionOnBuffer(locationInWindow: event.locationInWindow))
-    }
-
-    override func rightMouseUp(with event: NSEvent) {
-        self.mouseClickHandler?(.Right, .Up, positionOnBuffer(locationInWindow: event.locationInWindow))
-    }
-
-    override func otherMouseDown(with event: NSEvent) {
-        self.mouseClickHandler?(.Other, .Down, positionOnBuffer(locationInWindow: event.locationInWindow))
-    }
-
-    override func otherMouseUp(with event: NSEvent) {
-        self.mouseClickHandler?(.Other, .Up, positionOnBuffer(locationInWindow: event.locationInWindow))
-    }
-#endif
 }
 
 final class MetalView {
-    private var textInputHandler: TextInputHandler?
-    private var mouseMoveHandler: MouseMoveHandler?
     private var beforeDrawHandler: BeforeDrawHandler?
-    private var mouseClickHandler: MouseClickHandler?
+    var pixelPosition: PointConversion?
+    var drawBuffer: DrawBuffer?
 
-    func textInput(_ handler: @escaping(TextInputHandler)) -> MetalView {
-        self.textInputHandler = handler
-        return self
-    }
-
-    func mouseMove(_ handler: @escaping(MouseMoveHandler)) -> MetalView {
-        self.mouseMoveHandler = handler
-        return self
-    }
-
-    func mouseClick(_ handler: @escaping(MouseClickHandler)) -> MetalView {
-        self.mouseClickHandler = handler
-        return self
+    init(drawBuffer: DrawBuffer?)
+    {
+        self.drawBuffer = drawBuffer
     }
 
     func beforeDraw(_ handler: @escaping(BeforeDrawHandler)) -> MetalView {
         self.beforeDrawHandler = handler
         return self
     }
+
 }
 
 #if os(macOS)
-
 extension MetalView : NSViewRepresentable {
     typealias NSViewType = MyMTKView
     
     func makeNSView(context: Context) -> MyMTKView {
-        return MyMTKView()
+        return MyMTKView(drawBuffer: drawBuffer)
     }
     
     func updateNSView(_ nsView: MyMTKView, context: Context) {
-        nsView.mouseMoveHandler = self.mouseMoveHandler
         nsView.beforeDrawHandler = self.beforeDrawHandler
-        nsView.textInputHandler = self.textInputHandler
-        nsView.mouseClickHandler = self.mouseClickHandler
+        pixelPosition = nsView.positionOnBuffer(locationInView:)
+
     }
 }
 #else
@@ -281,12 +191,12 @@ extension MetalView : UIViewRepresentable {
     typealias UIViewType = MyMTKView
     
     func makeUIView(context: Context) -> MyMTKView {
-        return MyMTKView()
+        return MyMTKView(drawBuffer: drawBuffer)
     }
     
     func updateUIView(_ uiView: MyMTKView, context: Context) {
         uiView.beforeDrawHandler = self.beforeDrawHandler
+        pixelPosition = nsView.positionOnBuffer(locationInView:)
     }
-    
 }
 #endif

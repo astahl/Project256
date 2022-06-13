@@ -19,6 +19,12 @@
 		685035DA2842921900355252 /* DrawBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 685035D82842921900355252 /* DrawBuffer.swift */; };
 		689A250C284BE37D0086DD58 /* Palettes.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 689A250B284BE37D0086DD58 /* Palettes.cpp */; };
 		689A250D284BE37D0086DD58 /* Palettes.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 689A250B284BE37D0086DD58 /* Palettes.cpp */; };
+		689E03232857A61D00DF8738 /* GameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 689E03222857A61D00DF8738 /* GameView.swift */; };
+		689E03242857A61D00DF8738 /* GameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 689E03222857A61D00DF8738 /* GameView.swift */; };
+		689E03262857A67600DF8738 /* DrawBufferView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 689E03252857A67600DF8738 /* DrawBufferView.swift */; };
+		689E03272857A67600DF8738 /* DrawBufferView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 689E03252857A67600DF8738 /* DrawBufferView.swift */; };
+		689E03292857BEF300DF8738 /* KeyboardMouseModifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 689E03282857BEF300DF8738 /* KeyboardMouseModifiers.swift */; };
+		689E032A2857BEF300DF8738 /* KeyboardMouseModifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 689E03282857BEF300DF8738 /* KeyboardMouseModifiers.swift */; };
 		68D205CC28512A0000CB4213 /* Generators.hpp in Sources */ = {isa = PBXBuildFile; fileRef = 68D205CB28512A0000CB4213 /* Generators.hpp */; };
 		68D205CD28512A0000CB4213 /* Generators.hpp in Sources */ = {isa = PBXBuildFile; fileRef = 68D205CB28512A0000CB4213 /* Generators.hpp */; };
 		68D205D22854101100CB4213 /* Vec2Math.hpp in Sources */ = {isa = PBXBuildFile; fileRef = 68D205D12854101100CB4213 /* Vec2Math.hpp */; };
@@ -46,6 +52,9 @@
 		685035D528428EE200355252 /* GameState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameState.swift; sourceTree = "<group>"; };
 		685035D82842921900355252 /* DrawBuffer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawBuffer.swift; sourceTree = "<group>"; };
 		689A250B284BE37D0086DD58 /* Palettes.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = Palettes.cpp; path = ../../src/game/Drawing/Palettes.cpp; sourceTree = "<group>"; };
+		689E03222857A61D00DF8738 /* GameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameView.swift; sourceTree = "<group>"; };
+		689E03252857A67600DF8738 /* DrawBufferView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawBufferView.swift; sourceTree = "<group>"; };
+		689E03282857BEF300DF8738 /* KeyboardMouseModifiers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardMouseModifiers.swift; sourceTree = "<group>"; };
 		68D205CB28512A0000CB4213 /* Generators.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = Generators.hpp; path = ../../src/game/Drawing/Generators.hpp; sourceTree = "<group>"; };
 		68D205D12854101100CB4213 /* Vec2Math.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = Vec2Math.hpp; path = ../../src/game/Math/Vec2Math.hpp; sourceTree = "<group>"; };
 		68D205D42854DACF00CB4213 /* Sprites.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = Sprites.hpp; path = ../../src/game/Drawing/Sprites.hpp; sourceTree = "<group>"; };
@@ -75,14 +84,11 @@
 		6845558B283D7F22004AD3FB /* Platform */ = {
 			isa = PBXGroup;
 			children = (
+				689E03212857A5F100DF8738 /* Model */,
+				689E03202857A5E300DF8738 /* Views */,
 				684555AA283D86C9004AD3FB /* Assets.xcassets */,
 				6845558E283D8043004AD3FB /* Project256App.swift */,
-				6819ACC1283ECD8E00CCBFD5 /* MetalView.swift */,
-				6819ACC4283EDFFC00CCBFD5 /* MetalViewShader.metal */,
-				6819ACC7283EE19500CCBFD5 /* MetalViewShaderTypes.h */,
 				6819ACC8283EE6CB00CCBFD5 /* BridgeHeader.h */,
-				685035D528428EE200355252 /* GameState.swift */,
-				685035D82842921900355252 /* DrawBuffer.swift */,
 			);
 			name = Platform;
 			path = ../../src/platform_swiftui;
@@ -121,6 +127,28 @@
 				6845559C283D8044004AD3FB /* macOS */,
 				68455596283D8044004AD3FB /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		689E03202857A5E300DF8738 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				6819ACC1283ECD8E00CCBFD5 /* MetalView.swift */,
+				6819ACC7283EE19500CCBFD5 /* MetalViewShaderTypes.h */,
+				6819ACC4283EDFFC00CCBFD5 /* MetalViewShader.metal */,
+				689E03222857A61D00DF8738 /* GameView.swift */,
+				689E03252857A67600DF8738 /* DrawBufferView.swift */,
+				689E03282857BEF300DF8738 /* KeyboardMouseModifiers.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		689E03212857A5F100DF8738 /* Model */ = {
+			isa = PBXGroup;
+			children = (
+				685035D528428EE200355252 /* GameState.swift */,
+				685035D82842921900355252 /* DrawBuffer.swift */,
+			);
+			path = Model;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -226,10 +254,13 @@
 				68D205DC2855EAAF00CB4213 /* MetalView.swift in Sources */,
 				68D205CC28512A0000CB4213 /* Generators.hpp in Sources */,
 				6819ACC5283EDFFC00CCBFD5 /* MetalViewShader.metal in Sources */,
+				689E03232857A61D00DF8738 /* GameView.swift in Sources */,
 				68D205D72854EE2F00CB4213 /* Timings.cpp in Sources */,
 				6845559E283D8044004AD3FB /* Project256App.swift in Sources */,
 				68D205DF2855EE3800CB4213 /* GameState.swift in Sources */,
 				689A250C284BE37D0086DD58 /* Palettes.cpp in Sources */,
+				689E03262857A67600DF8738 /* DrawBufferView.swift in Sources */,
+				689E03292857BEF300DF8738 /* KeyboardMouseModifiers.swift in Sources */,
 				68D205D22854101100CB4213 /* Vec2Math.hpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -243,10 +274,13 @@
 				68D205DD2855EAB000CB4213 /* MetalView.swift in Sources */,
 				68D205CD28512A0000CB4213 /* Generators.hpp in Sources */,
 				6819ACC6283EDFFC00CCBFD5 /* MetalViewShader.metal in Sources */,
+				689E03242857A61D00DF8738 /* GameView.swift in Sources */,
 				68D205D82854EE2F00CB4213 /* Timings.cpp in Sources */,
 				6845559F283D8044004AD3FB /* Project256App.swift in Sources */,
 				68D205DE2855EE3700CB4213 /* GameState.swift in Sources */,
 				689A250D284BE37D0086DD58 /* Palettes.cpp in Sources */,
+				689E03272857A67600DF8738 /* DrawBufferView.swift in Sources */,
+				689E032A2857BEF300DF8738 /* KeyboardMouseModifiers.swift in Sources */,
 				68D205D32854101100CB4213 /* Vec2Math.hpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
