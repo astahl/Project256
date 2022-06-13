@@ -3,6 +3,7 @@
 #include <d3d12.h>
 #include <dxgi1_6.h>
 #include <wrl.h>
+#include <thread>
 #define CXX
 #include "../game/Project256.h"
 
@@ -19,6 +20,8 @@ class Direct3D12View {
 	ComPtr<ID3D12CommandQueue> mCommandQueue;
 	ComPtr<IDXGISwapChain4> mSwapChain;
 	UINT mFrameIndex;
+
+    std::jthread mPresentProfilingThread;
 
     D3D12_VIEWPORT mViewport;
     D3D12_RECT mScissorRect;
