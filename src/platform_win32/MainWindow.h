@@ -12,11 +12,13 @@ enum class MouseButtonClick { Down, Up, DoubleClick };
 
 class MainWindow
 {
+    const static int PROFILING_STR_BUFFER_LENGTH = 1000;
     GameState* state;
     HWND hwnd;
     Direct3D12View* view;
     byte* memory;
     byte* drawBuffer;
+    char profilingStringBuffer[PROFILING_STR_BUFFER_LENGTH];
 
     void onPaint();
     void onResize();

@@ -45,7 +45,7 @@ MainWindow::~MainWindow()
 
 void MainWindow::onTick() {
     profiling_time_set(&GameState::timingData, eTimerTick);
-    state->input.hasMouse = eTRUE;
+    state->input.hasMouse = true;
 
     state->input.frameNumber = state->frameCount++;
     auto frameTime = state->frameTime.elapsed();
@@ -62,12 +62,13 @@ void MainWindow::onTick() {
     profiling_time_interval(&GameState::timingData, eTimerTick, eTimingTickDo);
   
     if (output.shouldQuit) {
+        OutputDebugStringA("Should Quit");
         PostQuitMessage(0);
         return;
     }
 
-    if ((output.shouldShowSystemCursor == eTRUE) != state->forceCursor) {
-        state->forceCursor = output.shouldShowSystemCursor == eTRUE;
+    if ((output.shouldShowSystemCursor) != state->forceCursor) {
+        state->forceCursor = output.shouldShowSystemCursor;
         setCursorVisible(state->forceCursor);
     }
 
@@ -82,7 +83,7 @@ void MainWindow::onTick() {
     if (inputCopy.mouse.trackLength && inputCopy.mouse.endedOver) {
         state->input.mouse.track[0] = inputCopy.mouse.track[inputCopy.mouse.trackLength - 1];
         state->input.mouse.trackLength += 1;
-        state->input.mouse.endedOver = eTRUE;
+        state->input.mouse.endedOver = true;
     }
     state->input.mouse.buttonLeft.endedDown = inputCopy.mouse.buttonLeft.endedDown;
     state->input.mouse.buttonRight.endedDown = inputCopy.mouse.buttonRight.endedDown;
@@ -109,7 +110,7 @@ void MainWindow::onResize() {
 }
 
 void MainWindow::onClose() {
-    this->state->input.closeRequested = boole::eTRUE;
+    this->state->input.closeRequested = true;
 }
 
 void MainWindow::onTimer(WPARAM timerId) {
@@ -118,8 +119,9 @@ void MainWindow::onTimer(WPARAM timerId) {
         this->onTick();
         break;
     case Timers::LowFrequency:
-        profiling_time_print(&GameState::timingData);
+        profiling_time_print(&GameState::timingData, this->profilingStringBuffer, PROFILING_STR_BUFFER_LENGTH);
         profiling_time_clear(&GameState::timingData);
+        OutputDebugStringA(this->profilingStringBuffer);
         break;
     }
 }
@@ -137,12 +139,12 @@ void MainWindow::onMouseMove(POINTS points) {
     if (scaledPos.x < 0.0f || scaledPos.x >= 1.0f || scaledPos.y < 0.0f || scaledPos.y >= 1.0f) {
         // outside
         setCursorVisible(TRUE);
-        mouse.endedOver = eFALSE;
+        mouse.endedOver = false;
     } else {
         setCursorVisible(state->forceCursor);
         auto pixelPos = Vec2f{ .x = scaledPos.x * DrawBufferWidth, .y = scaledPos.y * DrawBufferHeight };
         mouse.track[mouse.trackLength++] = pixelPos;
-        mouse.endedOver = eTRUE;
+        mouse.endedOver = true;
     }
     mouse.relativeMovement.x += static_cast<float>(points.x - this->state->lastCursorPosition.x) / scale.x;
     mouse.relativeMovement.y -= static_cast<float>(points.y - this->state->lastCursorPosition.y) / scale.y;
@@ -159,11 +161,11 @@ void MainWindow::onMouseButton(MouseButtons button, MouseButtonClick click) {
     switch (click) {
     case MouseButtonClick::Down:
         btn.transitionCount++;
-        btn.endedDown = eTRUE;
+        btn.endedDown = true;
         break;
     case MouseButtonClick::Up:
         btn.transitionCount++;
-        btn.endedDown = eFALSE;
+        btn.endedDown = false;
         break;
     case MouseButtonClick::DoubleClick:
         break;
@@ -204,8 +206,9 @@ LRESULT CALLBACK MainWindow::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPA
         window->onPaint();
         break;
     case WM_CLOSE:
+        OutputDebugStringA("Close");
         window->onClose();
-        break;
+        return 0; 
     case WM_TIMER:
         window->onTimer(wParam);
         break;
@@ -242,9 +245,6 @@ LRESULT CALLBACK MainWindow::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPA
     case WM_MOUSELEAVE:
         window->onMouseLeave();
         break;
-    case WM_DESTROY: {
-        //delete window;
-    } break;
     }
 
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
