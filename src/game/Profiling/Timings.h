@@ -8,6 +8,7 @@
 #ifndef timings_hpp
 #define timings_hpp
 
+#include "defines.h"
 #include "stdint.h"
 
 enum TimingTimer {

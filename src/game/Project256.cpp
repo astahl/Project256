@@ -1,6 +1,6 @@
 #include "Project256.h"
 #include <cstdint>
-#include "Drawing/Palettes.cpp"
+#include "Drawing/Palettes.hpp"
 #include "Drawing/Generators.hpp"
 #include "Drawing/Sprites.hpp"
 #include "Math/Vec2Math.hpp"

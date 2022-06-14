@@ -4,13 +4,16 @@
 //
 //  Created by Andreas Stahl on 04.06.22.
 //
+#pragma once
 
 #include <cstdint>
 #include <array>
 #include <algorithm>
 
+#include "../defines.h"
+
 // uses SMPTE 240M conversion
-constexpr uint32_t YCbCrToARGB(double Y, double Cb, double Cr) {
+compiletime uint32_t YCbCrToARGB(double Y, double Cb, double Cr) {
     double KB = 0.087;
     double KR = 0.212;
     double KG = 1 - KB - KR;
@@ -28,14 +31,14 @@ constexpr uint32_t YCbCrToARGB(double Y, double Cb, double Cr) {
 
 struct PaletteAppleII {
 
-    constexpr static size_t count = 16;
+    compiletime size_t count = 16;
 
     enum class Color : uint8_t {
         black, magenta, darkBlue, purple, darkGreen, grey1, mediumBlue,
         lightBlue, brown, orange, grey2, pink, green, yellow, aqua, white
     };
 
-    constexpr static std::array<uint32_t,16> colors = {
+    compiletime std::array<uint32_t,16> colors = {
         YCbCrToARGB(0, 0, 0),
         YCbCrToARGB(0.25, 0, 0.5),
         YCbCrToARGB(0.25, 0.5, 0),
@@ -54,7 +57,7 @@ struct PaletteAppleII {
         YCbCrToARGB(1, 0, 0),
     };
 
-    static void writeTo(uint32_t* destination) {
+    compiletime void writeTo(uint32_t* destination) {
         for (size_t i = 0; i < count; ++i) {
             destination[i] = colors[i];
         }
@@ -77,9 +80,9 @@ struct PaletteCGA {
         Mode5HighIntensity,
     };
 
-    constexpr static size_t count = 4;
+    compiletime size_t count = 4;
 
-    constexpr static std::array<uint32_t,16> colors = {
+    compiletime std::array<uint32_t,16> colors = {
         0xFF'00'00'00,
         0xFF'00'00'AA,
         0xFF'00'AA'00,
@@ -98,8 +101,8 @@ struct PaletteCGA {
         0xFF'FF'FF'FF,
     };
 
-    static void writeTo(uint32_t* destination, Mode mode = Mode::Mode4Palette0LowIntensity, Color background = Color::black) {
-        std::array<Color, 4> colorNames;
+    compiletime void writeTo(uint32_t* destination, Mode mode = Mode::Mode4Palette0LowIntensity, Color background = Color::black) {
+        std::array<Color, 4> colorNames{};
         switch (mode) {
             case Mode::Mode4Palette0LowIntensity:
                 colorNames = { background, Color::green, Color::red, Color::brown };
@@ -129,9 +132,9 @@ struct PaletteCGA {
 
 struct PaletteC64 {
 
-    constexpr static size_t count = 16;
+    compiletime size_t count = 16;
 
-    constexpr static std::array<uint32_t,16> colors = {
+    compiletime std::array<uint32_t,16> colors = {
         0xFF'00'00'00,
         0xFF'FF'FF'FF,
         0xFF'67'37'2B,
@@ -155,7 +158,7 @@ struct PaletteC64 {
         orange, brown, lightRed, darkGray, gray, lightGreen, lightBlue, lightGray
     };
 
-    static void writeTo(uint32_t* destination) {
+    compiletime void writeTo(uint32_t* destination) {
         for (size_t i = 0; i < count; ++i) {
             destination[i] = colors[i];
         }

@@ -1,15 +1,7 @@
 #ifndef PROJECT_256_H
 #define PROJECT_256_H
 
-#define constant static const
-
-
-
-#ifdef __APPLE__
-#include "CoreFoundation/CFBase.h"
-#else
-#define CF_SWIFT_NAME(a)
-#endif
+#include "defines.h"
 
 #include "Profiling/Timings.h"
 
@@ -19,7 +11,6 @@ constant long MemorySize = 640 * 1024; // 640kbytes
 
 constant unsigned DrawBufferWidth = 320;
 constant unsigned DrawBufferHeight = 200;
-
 
 constant unsigned DrawAspectH = 4;
 constant unsigned DrawAspectV = 3;
@@ -98,7 +89,6 @@ struct GameInput {
 struct Rumble {
 	float left, right;
 };
-
 
 struct GameOutput {
     _Bool shouldQuit;
