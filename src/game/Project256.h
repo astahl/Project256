@@ -3,11 +3,13 @@
 
 #define constant static const
 
-#ifndef _WIN32
+
+
+#ifdef __APPLE__
 #include "CoreFoundation/CFBase.h"
 #else
 #define CF_SWIFT_NAME(a)
-#endif // !_WIN32
+#endif
 
 #include "Profiling/Timings.h"
 
@@ -47,7 +49,7 @@ struct Vec2i {
 struct Button {
 	int transitionCount;
     _Bool endedDown;
-};
+} CF_SWIFT_NAME(GameButton);
 
 struct Axis2 {
 	struct Vec2f value;

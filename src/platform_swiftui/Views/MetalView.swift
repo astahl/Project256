@@ -40,10 +40,6 @@ class MyMTKView : MTKView {
 
     init(frame: CGRect, drawBuffer: DrawBuffer?) {
         self.drawBuffer = drawBuffer ?? DrawBuffer()
-        #if os(iOS)
-//        addGestureRecognizer(UILongPressGestureRecognizer)
-        #endif
-
         guard let device = MTLCreateSystemDefaultDevice() else {
             fatalError("Metal Device could not be created")
         }

@@ -42,8 +42,8 @@
 		6819ACC4283EDFFC00CCBFD5 /* MetalViewShader.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = MetalViewShader.metal; sourceTree = "<group>"; };
 		6819ACC7283EE19500CCBFD5 /* MetalViewShaderTypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MetalViewShaderTypes.h; sourceTree = "<group>"; };
 		6819ACC8283EE6CB00CCBFD5 /* BridgeHeader.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BridgeHeader.h; sourceTree = "<group>"; };
-		68455589283D7F08004AD3FB /* Project256.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = Project256.cpp; path = ../../src/game/Project256.cpp; sourceTree = "<group>"; };
-		6845558A283D7F08004AD3FB /* Project256.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Project256.h; path = ../../src/game/Project256.h; sourceTree = "<group>"; };
+		68455589283D7F08004AD3FB /* Project256.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Project256.cpp; sourceTree = "<group>"; };
+		6845558A283D7F08004AD3FB /* Project256.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Project256.h; sourceTree = "<group>"; };
 		6845558E283D8043004AD3FB /* Project256App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Project256App.swift; sourceTree = "<group>"; };
 		68455595283D8044004AD3FB /* Project256.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Project256.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		6845559B283D8044004AD3FB /* Project256.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Project256.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -51,16 +51,16 @@
 		684555AA283D86C9004AD3FB /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		685035D528428EE200355252 /* GameState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameState.swift; sourceTree = "<group>"; };
 		685035D82842921900355252 /* DrawBuffer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawBuffer.swift; sourceTree = "<group>"; };
-		689A250B284BE37D0086DD58 /* Palettes.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = Palettes.cpp; path = ../../src/game/Drawing/Palettes.cpp; sourceTree = "<group>"; };
+		689A250B284BE37D0086DD58 /* Palettes.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Palettes.cpp; sourceTree = "<group>"; };
 		689E03222857A61D00DF8738 /* GameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameView.swift; sourceTree = "<group>"; };
 		689E03252857A67600DF8738 /* DrawBufferView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawBufferView.swift; sourceTree = "<group>"; };
 		689E03282857BEF300DF8738 /* KeyboardMouseModifiers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardMouseModifiers.swift; sourceTree = "<group>"; };
-		68D205CB28512A0000CB4213 /* Generators.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = Generators.hpp; path = ../../src/game/Drawing/Generators.hpp; sourceTree = "<group>"; };
-		68D205D12854101100CB4213 /* Vec2Math.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = Vec2Math.hpp; path = ../../src/game/Math/Vec2Math.hpp; sourceTree = "<group>"; };
-		68D205D42854DACF00CB4213 /* Sprites.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = Sprites.hpp; path = ../../src/game/Drawing/Sprites.hpp; sourceTree = "<group>"; };
-		68D205D52854EE2F00CB4213 /* Timings.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = Timings.cpp; path = ../../src/game/Profiling/Timings.cpp; sourceTree = "<group>"; };
-		68D205D62854EE2F00CB4213 /* Timings.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Timings.h; path = ../../src/game/Profiling/Timings.h; sourceTree = "<group>"; };
-		68D205D9285516A900CB4213 /* RangesAtHome.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = RangesAtHome.hpp; path = ../../src/game/FML/RangesAtHome.hpp; sourceTree = "<group>"; };
+		68D205CB28512A0000CB4213 /* Generators.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Generators.hpp; sourceTree = "<group>"; };
+		68D205D12854101100CB4213 /* Vec2Math.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Vec2Math.hpp; sourceTree = "<group>"; };
+		68D205D42854DACF00CB4213 /* Sprites.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Sprites.hpp; sourceTree = "<group>"; };
+		68D205D52854EE2F00CB4213 /* Timings.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Timings.cpp; sourceTree = "<group>"; };
+		68D205D62854EE2F00CB4213 /* Timings.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Timings.h; sourceTree = "<group>"; };
+		68D205D9285516A900CB4213 /* RangesAtHome.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = RangesAtHome.hpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -81,6 +81,55 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		6821D85B28591C01008D4128 /* Game */ = {
+			isa = PBXGroup;
+			children = (
+				6821D85F28591D14008D4128 /* Math */,
+				6821D85E28591CDE008D4128 /* Profiling */,
+				6821D85D28591CC7008D4128 /* FML */,
+				6821D85C28591C5E008D4128 /* Drawing */,
+				68455589283D7F08004AD3FB /* Project256.cpp */,
+				6845558A283D7F08004AD3FB /* Project256.h */,
+			);
+			name = Game;
+			path = ../../src/game;
+			sourceTree = "<group>";
+		};
+		6821D85C28591C5E008D4128 /* Drawing */ = {
+			isa = PBXGroup;
+			children = (
+				689A250B284BE37D0086DD58 /* Palettes.cpp */,
+				68D205CB28512A0000CB4213 /* Generators.hpp */,
+				68D205D42854DACF00CB4213 /* Sprites.hpp */,
+			);
+			path = Drawing;
+			sourceTree = "<group>";
+		};
+		6821D85D28591CC7008D4128 /* FML */ = {
+			isa = PBXGroup;
+			children = (
+				68D205D9285516A900CB4213 /* RangesAtHome.hpp */,
+			);
+			path = FML;
+			sourceTree = "<group>";
+		};
+		6821D85E28591CDE008D4128 /* Profiling */ = {
+			isa = PBXGroup;
+			children = (
+				68D205D52854EE2F00CB4213 /* Timings.cpp */,
+				68D205D62854EE2F00CB4213 /* Timings.h */,
+			);
+			path = Profiling;
+			sourceTree = "<group>";
+		};
+		6821D85F28591D14008D4128 /* Math */ = {
+			isa = PBXGroup;
+			children = (
+				68D205D12854101100CB4213 /* Vec2Math.hpp */,
+			);
+			path = Math;
+			sourceTree = "<group>";
+		};
 		6845558B283D7F22004AD3FB /* Platform */ = {
 			isa = PBXGroup;
 			children = (
@@ -114,16 +163,8 @@
 		687B91AD283D7E95007604C7 = {
 			isa = PBXGroup;
 			children = (
-				68D205D9285516A900CB4213 /* RangesAtHome.hpp */,
-				68D205D52854EE2F00CB4213 /* Timings.cpp */,
-				68D205D62854EE2F00CB4213 /* Timings.h */,
-				68D205D42854DACF00CB4213 /* Sprites.hpp */,
-				68D205D12854101100CB4213 /* Vec2Math.hpp */,
-				68D205CB28512A0000CB4213 /* Generators.hpp */,
-				689A250B284BE37D0086DD58 /* Palettes.cpp */,
+				6821D85B28591C01008D4128 /* Game */,
 				6845558B283D7F22004AD3FB /* Platform */,
-				68455589283D7F08004AD3FB /* Project256.cpp */,
-				6845558A283D7F08004AD3FB /* Project256.h */,
 				6845559C283D8044004AD3FB /* macOS */,
 				68455596283D8044004AD3FB /* Products */,
 			);

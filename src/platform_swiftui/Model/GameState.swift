@@ -8,6 +8,18 @@
 import Foundation
 import SwiftUI
 
+extension GameButton {
+    mutating func down() {
+        self.transitionCount += 1
+        self.endedDown = true
+    }
+
+    mutating func up() {
+        self.transitionCount += 1
+        self.endedDown = false
+    }
+}
+
 class Chronometer {
     var lastTimeIndex = 0
     var timevalues = UnsafeMutableBufferPointer<timeval>.allocate(capacity: 2)

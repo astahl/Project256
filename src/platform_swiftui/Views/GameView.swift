@@ -26,17 +26,15 @@ struct GameView: View {
     var body: some View {
         drawBufferView
         #if os(macOS)
-            .keyboardAndMouse(keyboard: { event in
-                switch event {
+            .keyboardAndMouse(keyboard: {
+                switch $0 {
                 case .Down(_, let characters?):
                     gameState.addInputText(characters)
-                case .Down(_,_):
-                    break
-                case .Up(_,_):
+                default:
                     break
                 }
-            }, move: { move in
-                switch move {
+            }, move: {
+                switch $0 {
                 case .Move(let locationInView, let relative):
                     let position = drawBufferView.pixelPosition(locationInView)
                     gameState.addInputMouseMovement(relative: relative, position: position)
@@ -46,26 +44,20 @@ struct GameView: View {
                 case .Scroll(_):
                     break
                 }
-            }, click: { click in
-                switch click {
+            }, click: {
+                switch $0 {
                 case .Down(.Left, _):
-                    gameState.input.mouse.buttonLeft.transitionCount += 1
-                    gameState.input.mouse.buttonLeft.endedDown = true
+                    gameState.input.mouse.buttonLeft.down()
                 case .Down(.Right, _):
-                    gameState.input.mouse.buttonRight.transitionCount += 1
-                    gameState.input.mouse.buttonRight.endedDown = true
+                    gameState.input.mouse.buttonRight.down()
                 case .Down(.Other, _):
-                    gameState.input.mouse.buttonMiddle.transitionCount += 1
-                    gameState.input.mouse.buttonMiddle.endedDown = true
+                    gameState.input.mouse.buttonMiddle.down()
                 case .Up(.Left, _):
-                    gameState.input.mouse.buttonLeft.transitionCount += 1
-                    gameState.input.mouse.buttonLeft.endedDown = false
+                    gameState.input.mouse.buttonLeft.down()
                 case .Up(.Right, _):
-                    gameState.input.mouse.buttonRight.transitionCount += 1
-                    gameState.input.mouse.buttonRight.endedDown = false
+                    gameState.input.mouse.buttonRight.down()
                 case .Up(.Other, _):
-                    gameState.input.mouse.buttonMiddle.transitionCount += 1
-                    gameState.input.mouse.buttonMiddle.endedDown = false
+                    gameState.input.mouse.buttonMiddle.down()
 
                 }
             })
