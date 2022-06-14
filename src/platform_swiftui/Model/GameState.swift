@@ -209,6 +209,9 @@ class GameState : ObservableObject {
                 if mouseInput.mouseMovedHandler == nil {
                     mouseInput.mouseMovedHandler = mouseMoved(mouse:deltaX:deltaY:)
                 }
+                mouseInput.leftButton.valueChangedHandler = { self.input.controllers.0.buttonA.pressed($2) }
+                mouseInput.rightButton?.valueChangedHandler = { self.input.controllers.0.buttonB.pressed($2) }
+                mouseInput.middleButton?.valueChangedHandler = { self.input.controllers.0.buttonStickRight.pressed($2) }
             }
         }
     }
