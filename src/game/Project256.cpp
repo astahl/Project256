@@ -77,7 +77,10 @@ Vec2f clipSpaceDrawBufferScale(unsigned int viewportWidth, unsigned int viewport
 GameOutput doGameThings(GameInput* pInput, void* pMemory)
 {
     using Palette = PaletteC64;
-    const auto clearColor = Palette::Color::black;
+    auto clearColor = Palette::Color::black;
+    if (pInput->closeRequested) {
+        clearColor = Palette::Color::lightRed;
+    }
     const auto bufferSize = Vec2i{ DrawBufferWidth, DrawBufferHeight};
     const auto center = bufferSize / 2;
     GameMemory& memory = *reinterpret_cast<GameMemory*>(pMemory);

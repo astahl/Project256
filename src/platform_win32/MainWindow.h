@@ -16,8 +16,6 @@ class MainWindow
     GameState* state;
     HWND hwnd;
     Direct3D12View* view;
-    byte* memory;
-    byte* drawBuffer;
     char profilingStringBuffer[PROFILING_STR_BUFFER_LENGTH];
 
     void onPaint();
@@ -34,6 +32,6 @@ public:
     MainWindow(HWND hwnd);
     ~MainWindow();
 
-    void doMainLoop();
+    int doMainLoop();
 };
 

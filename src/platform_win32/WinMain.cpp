@@ -46,7 +46,5 @@ int WINAPI wWinMain(_In_ HINSTANCE instanceHandle,
         return 0;
     
     ShowWindow(windowHandle, nCmdShow);
-    windowPtr->doMainLoop();
-
-    return 0;
+    return windowPtr->doMainLoop();
 }

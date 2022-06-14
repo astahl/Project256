@@ -34,13 +34,17 @@ public:
 };
 
 
-
 struct GameState {
     static TimingData timingData;
-    uint64_t frameCount;
+    byte* memory;
+    byte* drawBuffer;
+    uint64_t frameCount{};
     int64_t upTime{};
-    GameInput input;
+    GameInput input{};
     Chronometer frameTime{};
-    bool forceCursor;
-    Vec2i lastCursorPosition;
+    bool forceCursor{};
+    Vec2i lastCursorPosition{};
+
+    GameState();
+    GameOutput tick();
 };

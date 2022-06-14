@@ -28,8 +28,6 @@ MainWindow::MainWindow(HWND hwnd)
     : state(new GameState())
     , hwnd(hwnd)
 {
-    this->memory = reinterpret_cast<byte*>(VirtualAlloc(NULL, MemorySize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
-    this->drawBuffer = reinterpret_cast<byte*>(VirtualAlloc(0, 4 * DrawBufferHeight * DrawBufferWidth, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
     RECT rect{};
     GetWindowRect(hwnd, &rect);
     this->view = new Direct3D12View(hwnd, rect.right - rect.left, rect.bottom - rect.top);
@@ -43,31 +41,10 @@ MainWindow::~MainWindow()
 }
 
 void MainWindow::onTick() {
-
-    profiling_time_interval(&GameState::timingData, eTimerTickToTick, eTimingTickToTick);
-    profiling_time_set(&GameState::timingData, eTimerTickToTick);
-
-    profiling_time_set(&GameState::timingData, eTimerTick);
-    state->input.hasMouse = true;
-
-    state->input.frameNumber = state->frameCount++;
-    auto frameTime = state->frameTime.elapsed();
-    state->upTime += frameTime.microseconds;
-    state->input.elapsedTime_s = frameTime.seconds;
-    state->input.upTime_microseconds = state->upTime;;
-
-    GameInput inputCopy = state->input;
-    state->input = {};
-    GameOutput output{};
-
-    profiling_time_interval(&GameState::timingData, eTimerTick, eTimingTickSetup);
-    output = doGameThings(&inputCopy, memory);
-    profiling_time_interval(&GameState::timingData, eTimerTick, eTimingTickDo);
-  
+    const auto output = state->tick();
     if (output.shouldQuit) {
         OutputDebugStringA("Should Quit");
-        PostQuitMessage(0);
-        return;
+        DestroyWindow(hwnd);
     }
 
     if ((output.shouldShowSystemCursor) != state->forceCursor) {
@@ -83,14 +60,6 @@ void MainWindow::onTick() {
         SetCursorPos(center.x, center.y);
     }
 
-    if (inputCopy.mouse.trackLength && inputCopy.mouse.endedOver) {
-        state->input.mouse.track[0] = inputCopy.mouse.track[inputCopy.mouse.trackLength - 1];
-        state->input.mouse.trackLength += 1;
-        state->input.mouse.endedOver = true;
-    }
-    state->input.mouse.buttonLeft.endedDown = inputCopy.mouse.buttonLeft.endedDown;
-    state->input.mouse.buttonRight.endedDown = inputCopy.mouse.buttonRight.endedDown;
-    state->input.mouse.buttonMiddle.endedDown = inputCopy.mouse.buttonMiddle.endedDown;
     InvalidateRect(hwnd, NULL, FALSE);
 
     profiling_time_interval(&GameState::timingData, eTimerTick, eTimingTickPost);
@@ -99,9 +68,9 @@ void MainWindow::onTick() {
 void MainWindow::onPaint() {
     profiling_time_set(&GameState::timingData, eTimerDraw);
     profiling_time_set(&GameState::timingData, eTimerBufferCopy);
-    writeDrawBuffer(memory, drawBuffer);
+    writeDrawBuffer(state->memory, state->drawBuffer);
     profiling_time_interval(&GameState::timingData, eTimerBufferCopy, eTimingBufferCopy);
-    this->view->SetDrawBuffer(drawBuffer);
+    this->view->SetDrawBuffer(state->drawBuffer);
     profiling_time_interval(&GameState::timingData, eTimerDraw, eTimingDrawBefore);
     this->view->Draw();
     ValidateRect(hwnd, NULL);
@@ -177,20 +146,25 @@ void MainWindow::onMouseButton(MouseButtons button, MouseButtonClick click) {
     }
 }
 
-void MainWindow::doMainLoop() {
-    MSG message = { };
+int MainWindow::doMainLoop() {
+    MSG msg = { };
 
-    bool quitWasPosted = false;
-    while (!quitWasPosted)
+    BOOL bRet;
+
+    while ((bRet = GetMessage(&msg, hwnd, 0, 0)) != 0)
     {
-        while (PeekMessage(&message, hwnd, 0, 0, PM_REMOVE))
+        if (bRet == -1)
         {
-            TranslateMessage(&message);
-            DispatchMessage(&message);
-
-            quitWasPosted |= message.message == WM_QUIT;
+            // handle the error and possibly exit
+            return GetLastError();
+        }
+        else
+        {
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
         }
     }
+    return static_cast<int>(msg.wParam);
 }
 
 LRESULT CALLBACK MainWindow::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -214,6 +188,10 @@ LRESULT CALLBACK MainWindow::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPA
         OutputDebugStringA("Close");
         window->onClose();
         return 0; 
+    case WM_DESTROY:
+        OutputDebugStringA("Destroy");
+        PostQuitMessage(0);
+        return 0;
     case WM_TIMER:
         window->onTimer(wParam);
         break;
