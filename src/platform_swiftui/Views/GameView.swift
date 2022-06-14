@@ -25,6 +25,7 @@ struct GameView: View {
 
     var body: some View {
         drawBufferView
+        #if os(macOS)
             .keyboardAndMouse(keyboard: { event in
                 switch event {
                 case .Down(_, let characters?):
@@ -68,11 +69,13 @@ struct GameView: View {
 
                 }
             })
+        #endif
     }
 }
 
 struct GameView_Previews: PreviewProvider {
     static var previews: some View {
         GameView(gameState: GameState.init())
+            .previewInterfaceOrientation(.portrait)
     }
 }

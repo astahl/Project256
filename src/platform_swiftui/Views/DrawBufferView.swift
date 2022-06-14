@@ -47,6 +47,7 @@ struct DrawBufferView: View {
 struct DrawBufferView_Previews: PreviewProvider {
     static var previews: some View {
         DrawBufferView(
-            drawBuffer: .init(withTestPattern: .Checkerboard(.black, .init(red: 1.0, green: 0, blue: 0, alpha: 1), size: 10)))
+            drawBuffer: .init(withTestPattern: .Checkerboard(.init(gray: 0.0, alpha: 1.0), .init(red: 1.0, green: 0, blue: 0, alpha: 1), size: 10)))
+        .background(.gray)
     }
 }

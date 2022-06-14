@@ -3,6 +3,8 @@
 
 #define constant static const
 
+#include "CoreFoundation/CFBase.h"
+
 #include "Profiling/Timings.h"
 
 // global static constants
@@ -11,6 +13,7 @@ constant long MemorySize = 640 * 1024; // 640kbytes
 
 constant unsigned DrawBufferWidth = 320;
 constant unsigned DrawBufferHeight = 200;
+
 
 constant unsigned DrawAspectH = 4;
 constant unsigned DrawAspectV = 3;
@@ -62,32 +65,34 @@ struct Mouse {
     unsigned trackLength;
     _Bool endedOver;
 	struct Vec2f relativeMovement;
-	struct Axis2 scroll;
+	struct Vec2f scroll;
+};
+
+
+struct GameInput {
+    double elapsedTime_s;
+    long long upTime_microseconds;
+    long long unsigned frameNumber;
+
+    struct Controller controllers[InputMaxControllers];
+    unsigned controllerCount;
+
+    struct Tap taps[InputMaxTaps];
+    unsigned tapCount;
+
+    _Bool hasMouse;
+    struct Mouse mouse;
+
+    char text_utf8[InputMaxTextLength];
+    unsigned textLength;
+
+    _Bool closeRequested;
 };
 
 struct Rumble {
 	float left, right;
 };
 
-struct GameInput {
-	double elapsedTime_s;
-	long long upTime_microseconds;
-	long long unsigned frameNumber;
-
-	struct Controller controllers[InputMaxControllers];
-	unsigned controllerCount;
-
-	struct Tap taps[InputMaxTaps];
-	unsigned tapCount;
-
-    _Bool hasMouse;
-	struct Mouse mouse;
-
-	char text_utf8[InputMaxTextLength];
-	unsigned textLength;
-
-    _Bool closeRequested;
-};
 
 struct GameOutput {
     _Bool shouldQuit;

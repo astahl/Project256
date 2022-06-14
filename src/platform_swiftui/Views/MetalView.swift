@@ -38,7 +38,7 @@ class MyMTKView : MTKView {
         super.init(coder: coder)
     }
 
-    init(drawBuffer: DrawBuffer?) {
+    init(frame: CGRect, drawBuffer: DrawBuffer?) {
         self.drawBuffer = drawBuffer ?? DrawBuffer()
         #if os(iOS)
 //        addGestureRecognizer(UILongPressGestureRecognizer)
@@ -48,7 +48,7 @@ class MyMTKView : MTKView {
             fatalError("Metal Device could not be created")
         }
 
-        super.init(frame: .zero, device: device)
+        super.init(frame: frame, device: device)
 
         guard let defaultLibrary = device.makeDefaultLibrary(),
                 let vertexFunction = defaultLibrary.makeFunction(name: "vertexShader"),
@@ -60,12 +60,16 @@ class MyMTKView : MTKView {
         pipelineDescriptor.fragmentFunction = fragmentFunction
         pipelineDescriptor.vertexFunction = vertexFunction
         pipelineDescriptor.label = "SimplePipeline"
+        #if os(macOS)
         self.layer?.isOpaque = false
+        #else
+        self.layer.isOpaque = false
+        #endif
         pipelineDescriptor.colorAttachments[0].pixelFormat = super.colorPixelFormat
         pipelineDescriptor.rasterSampleCount = super.sampleCount
 
         try? self.pipelineState = device.makeRenderPipelineState(descriptor: pipelineDescriptor)
-        super.clearColor = .init(red: 1, green: 1, blue: 0, alpha: 0)
+        super.clearColor = .init(red: 0, green: 0, blue: 0, alpha: 0)
 
         self.texture = device.makeTexture(descriptor: MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .bgra8Unorm, width: self.drawBuffer.width, height: self.drawBuffer.height, mipmapped: false))
 
@@ -191,12 +195,21 @@ extension MetalView : UIViewRepresentable {
     typealias UIViewType = MyMTKView
     
     func makeUIView(context: Context) -> MyMTKView {
-        return MyMTKView(drawBuffer: drawBuffer)
+        return MyMTKView(frame: .zero, drawBuffer: drawBuffer)
     }
     
     func updateUIView(_ uiView: MyMTKView, context: Context) {
         uiView.beforeDrawHandler = self.beforeDrawHandler
-        pixelPosition = nsView.positionOnBuffer(locationInView:)
+        pixelPosition = uiView.positionOnBuffer(locationInView:)
     }
 }
 #endif
+
+
+struct MetalView_Previews: PreviewProvider {
+    static var previews: some View {
+        MetalView(
+            drawBuffer: .init(withTestPattern: .Checkerboard(.init(gray: 0.0, alpha: 0.0), .init(red: 1.0, green: 0, blue: 0, alpha: 1), size: 10)))
+        .background(.blue)
+    }
+}

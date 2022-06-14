@@ -8,7 +8,7 @@
 import Foundation
 import SwiftUI
 
-
+#if os(macOS)
 extension NSPoint {
     var cgPoint: CGPoint { get { .init(x: self.x, y: self.y) }}
 }
@@ -171,3 +171,7 @@ extension View {
         modifier(KeyboardAndMouseModifier(keyboard: keyboard, move: move, click: click))
     }
 }
+
+#else
+
+#endif
