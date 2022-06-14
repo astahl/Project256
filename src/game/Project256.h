@@ -3,7 +3,11 @@
 
 #define constant static const
 
+#ifndef _WIN32
 #include "CoreFoundation/CFBase.h"
+#else
+#define CF_SWIFT_NAME(a)
+#endif // !_WIN32
 
 #include "Profiling/Timings.h"
 

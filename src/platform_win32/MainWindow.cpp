@@ -1,7 +1,6 @@
 #include "MainWindow.h"
 #include "Direct3D12View.h"
 #include <initializer_list>
-#define CXX
 #include "../game/Project256.h"
 
 #include "GameState.h"

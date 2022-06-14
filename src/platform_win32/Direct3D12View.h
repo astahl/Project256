@@ -4,7 +4,7 @@
 #include <dxgi1_6.h>
 #include <wrl.h>
 #include <thread>
-#define CXX
+
 #include "../game/Project256.h"
 
 using Microsoft::WRL::ComPtr;
