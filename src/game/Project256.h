@@ -18,6 +18,10 @@ constant unsigned DrawAspectV = 3;
 constant unsigned InputMouseMaxTrackLength = 32;
 
 constant unsigned InputMaxControllers = 5;
+constant unsigned InputControllerAxis1Count = 2;
+constant unsigned InputControllerAxis2Count = 3;
+constant unsigned InputControllerButtonCount = 12;
+
 constant unsigned InputMaxTaps = 20;
 constant unsigned InputMaxTextLength = 256;
 
@@ -42,13 +46,56 @@ struct Button {
     _Bool endedDown;
 } CF_SWIFT_NAME(GameButton);
 
-struct Axis2 {
-	struct Vec2f value;
-	struct Button up, down, left, right;
+struct Axis1 {
+    _Bool isAnalog;
+    float start, end;
+    struct Button trigger;
 };
 
-struct Controller {
-	struct Axis2 left, right, dPad;
+struct Axis2 {
+    struct Vec2f start, end;
+    struct Button up, down, left, right;
+    _Bool latches;
+};
+
+
+enum ControllerSubType {
+    ControllerSubTypeNone,
+    ControllerSubTypeKeyboard,
+    ControllerSubTypeMouse,
+    ControllerSubTypeKeyboardAndMouse,
+    ControllerSubTypeXBox,
+    ControllerSubTypeSteam,
+    ControllerSubTypePlayStation,
+    ControllerSubTypeWiiMote,
+    ControllerSubTypeGenericSNES,
+    ControllerSubTypeGenericNES,
+    ControllerSubTypeGenericTwoButton,
+    ControllerSubTypeGenericSingleButton
+};
+
+struct GameController {
+    enum ControllerSubType subType;
+    // if any action is registered on buttons or axes
+    _Bool isActive;
+    union {
+        struct {
+            struct Axis2 stickLeft, stickRight, dPad;
+        };
+        struct Axis2 axes2[InputControllerAxis2Count];
+    };
+    union {
+        struct {
+            struct Axis1 triggerLeft, triggerRight;
+        };
+        struct Axis1 axes1[InputControllerAxis1Count];
+    };
+    union {
+        struct {
+            struct Button shoulderLeft, shoulderRight, buttonBack, buttonStart, buttonX, buttonY, buttonA, buttonB, buttonStickLeft, buttonStickRight, buttonGripLeft, buttonGripRight;
+        };
+        struct Button buttons[InputControllerButtonCount];
+    };
 };
 
 struct Tap {
@@ -71,13 +118,12 @@ struct GameInput {
     long long upTime_microseconds;
     long long unsigned frameNumber;
 
-    struct Controller controllers[InputMaxControllers];
+    struct GameController controllers[InputMaxControllers];
     unsigned controllerCount;
 
     struct Tap taps[InputMaxTaps];
     unsigned tapCount;
 
-    _Bool hasMouse;
     struct Mouse mouse;
 
     char text_utf8[InputMaxTextLength];
@@ -99,7 +145,7 @@ struct GameOutput {
 };
 
 struct Vec2f clipSpaceDrawBufferScale(unsigned int viewportWidth, unsigned int viewportHeight);
-
+void cleanInput(struct GameInput* input);
 struct GameOutput doGameThings(struct GameInput* input, void* memory);
 void writeDrawBuffer(void* memory, void* buffer);
 

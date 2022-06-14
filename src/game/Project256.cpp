@@ -74,6 +74,45 @@ Vec2f clipSpaceDrawBufferScale(unsigned int viewportWidth, unsigned int viewport
     };
 }
 
+void cleanInput(GameInput* input) {
+    for (int i = 0; i < InputMaxControllers; ++i) {
+        auto& controller = input->controllers[i];
+        for (int axis1Index = 0; axis1Index < InputControllerAxis1Count; ++axis1Index)
+        {
+            controller.axes1[axis1Index].trigger.transitionCount = 0;
+            controller.axes1[axis1Index].start = controller.axes1[axis1Index].end;
+        }
+        for (int axis2Index = 0; axis2Index < InputControllerAxis1Count; ++axis2Index)
+        {
+            controller.axes2[axis2Index].left.transitionCount = 0;
+            controller.axes2[axis2Index].up.transitionCount = 0;
+            controller.axes2[axis2Index].down.transitionCount = 0;
+            controller.axes2[axis2Index].right.transitionCount = 0;
+            controller.axes2[axis2Index].start = controller.axes2[axis2Index].end;
+            if (!controller.axes2[axis2Index].latches)
+                controller.axes2[axis2Index].end = Vec2f{};
+        }
+        for (int buttonIndex = 0; buttonIndex < InputControllerButtonCount; ++buttonIndex)
+        {
+            controller.buttons[buttonIndex].transitionCount = 0;
+        }
+    }
+    auto& mouse = input->mouse;
+    mouse.buttonLeft.transitionCount = 0;
+    mouse.buttonRight.transitionCount = 0;
+    mouse.buttonMiddle.transitionCount = 0;
+    if (mouse.trackLength && mouse.endedOver) {
+        mouse.track[0] = mouse.track[mouse.trackLength - 1];
+        mouse.trackLength = 1;
+    } else {
+        mouse.trackLength = 0;
+    }
+
+    input->textLength = 0;
+    input->closeRequested = false;
+    input->tapCount = 0;
+}
+
 GameOutput doGameThings(GameInput* pInput, void* pMemory)
 {
     using Palette = PaletteC64;
@@ -118,7 +157,6 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
 
     std::memset(memory.vram, (uint8_t)clearColor, DrawBufferWidth * DrawBufferHeight);
     auto wrap = [](auto p) { return wrapAround2d(p, Vec2i(), Vec2i{DrawBufferWidth, DrawBufferHeight});};
-    if (input.hasMouse) {
         if (input.mouse.trackLength) {
             Vec2f mousePosition = input.mouse.track[input.mouse.trackLength - 1];
 
@@ -146,6 +184,17 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
             for (auto p : transform_view(Line{Vec2i{0, 3}, Vec2i{0, -3}}, offset))
                 put(memory.vram, wrap(p), Palette::Color::white);
         }
+    
+
+    for (int i = 0; i < input.controllerCount; ++i) {
+        using namespace ranges_at_home;
+        using namespace Generators;
+        auto offset1 = [&](Vec2i p) { return p + Vec2i { i * 10 + 10, 10 }; };
+        for (auto p : transform_view(Line{Vec2i{}, truncate(7 * input.controllers[i].stickLeft.end)}, offset1))
+            put(memory.vram, wrap(p), Palette::Color::white);
+        auto offset2 = [&](Vec2i p) { return p + Vec2i { i * 10 + 15, 10 }; };
+        for (auto p : transform_view(Line{Vec2i{}, truncate(7 * input.controllers[i].stickRight.end)}, offset2))
+            put(memory.vram, wrap(p), Palette::Color::white);
     }
 
     for (auto p : Generators::Line{memory.points[0], memory.points[1]})

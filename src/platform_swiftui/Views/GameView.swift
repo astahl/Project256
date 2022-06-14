@@ -47,17 +47,17 @@ struct GameView: View {
             }, click: {
                 switch $0 {
                 case .Down(.Left, _):
-                    gameState.input.mouse.buttonLeft.down()
+                    gameState.input.mouse.buttonLeft.press()
                 case .Down(.Right, _):
-                    gameState.input.mouse.buttonRight.down()
+                    gameState.input.mouse.buttonRight.press()
                 case .Down(.Other, _):
-                    gameState.input.mouse.buttonMiddle.down()
+                    gameState.input.mouse.buttonMiddle.press()
                 case .Up(.Left, _):
-                    gameState.input.mouse.buttonLeft.down()
+                    gameState.input.mouse.buttonLeft.release()
                 case .Up(.Right, _):
-                    gameState.input.mouse.buttonRight.down()
+                    gameState.input.mouse.buttonRight.release()
                 case .Up(.Other, _):
-                    gameState.input.mouse.buttonMiddle.down()
+                    gameState.input.mouse.buttonMiddle.release()
 
                 }
             })

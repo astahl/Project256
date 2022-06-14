@@ -7,16 +7,51 @@
 
 import Foundation
 import SwiftUI
+import GameController
 
 extension GameButton {
-    mutating func down() {
-        self.transitionCount += 1
-        self.endedDown = true
+    mutating func press() {
+        self.pressed(true)
     }
 
-    mutating func up() {
+    mutating func release() {
+        self.pressed(false)
+    }
+
+    mutating func pressed(_ down: Bool) {
         self.transitionCount += 1
-        self.endedDown = false
+        self.endedDown = down
+    }
+}
+
+extension Axis2 {
+    mutating func digitalToAnalog() {
+        self.end.y = self.up.endedDown ? 1 : self.down.endedDown ? -1 : 0
+        self.end.x = self.right.endedDown ? 1 : self.left.endedDown ? -1 : 0
+    }
+
+    mutating func analogToDigital(deadZone: Float) {
+        if self.end.y > deadZone {
+            if abs(self.end.x) < self.end.y {
+                self.up.press()
+            } else {
+                if (self.end.x > deadZone) {
+                    self.right.press()
+                } else if (self.end.x < -deadZone) {
+                    self.left.press()
+                }
+            }
+        } else if self.end.y < -deadZone {
+            if abs(self.end.x) < abs(self.end.y) {
+                self.down.press()
+            } else {
+                if (self.end.x > deadZone) {
+                    self.right.press()
+                } else if (self.end.x < -deadZone) {
+                    self.left.press()
+                }
+            }
+        }
     }
 }
 
@@ -141,24 +176,94 @@ class GameState : ObservableObject {
         }
     }
 
-    func clearInput() {
-        var oldInputCopy = input
+    func setupControllers() {
+        if let keyboard = GCKeyboard.coalesced {
 
-        input = GameInput()
-        input.hasMouse = true
-        if oldInputCopy.mouse.endedOver == true && oldInputCopy.mouse.trackLength > 0 {
-            let oldMousePosition = withUnsafeElementPointer(firstElement: &oldInputCopy.mouse.track.0, offset: Int(oldInputCopy.mouse.trackLength - 1)) { $0.pointee }
-            input.mouse.endedOver = true
-            input.mouse.track.0 = oldMousePosition
-            input.mouse.trackLength = 1
+            if input.controllers.0.subType.rawValue == 0 {
+                input.controllers.0.subType = .init(rawValue: 1) // WTF why doesnt the enum work
+            }
+            if input.controllers.0.subType.rawValue == 2 {
+                input.controllers.0.subType = .init(rawValue: 3)
+            }
+            if (input.controllerCount == 0) {
+                input.controllerCount = 1
+            }
+            if let keyboardInput = keyboard.keyboardInput {
+                if keyboardInput.keyChangedHandler == nil {
+                    keyboardInput.keyChangedHandler = keyChanged(keyboard:key:keyCode:pressed:)
+                }
+            }
         }
-        input.mouse.buttonLeft.endedDown = oldInputCopy.mouse.buttonLeft.endedDown
-        input.mouse.buttonRight.endedDown = oldInputCopy.mouse.buttonRight.endedDown
-        input.mouse.buttonMiddle.endedDown = oldInputCopy.mouse.buttonMiddle.endedDown
+
+        if let mouse = GCMouse.current {
+            if input.controllers.0.subType.rawValue == 0 {
+                input.controllers.0.subType = .init(rawValue: 2) // WTF why doesnt the enum work
+            }
+            if input.controllers.0.subType.rawValue == 1 {
+                input.controllers.0.subType = .init(rawValue: 3)
+            }
+            if (input.controllerCount == 0) {
+                input.controllerCount = 1
+            }
+            if let mouseInput = mouse.mouseInput {
+                if mouseInput.mouseMovedHandler == nil {
+                    mouseInput.mouseMovedHandler = mouseMoved(mouse:deltaX:deltaY:)
+                }
+            }
+        }
+    }
+
+    func keyChanged(keyboard: GCKeyboardInput, key: GCControllerButtonInput, keyCode: GCKeyCode, pressed: Bool)
+    {
+        switch keyCode {
+        case .keyW, .upArrow: input.controllers.0.stickLeft.up.pressed(pressed)
+        case .keyA, .leftArrow: input.controllers.0.stickLeft.left.pressed(pressed)
+        case .keyS, .downArrow: input.controllers.0.stickLeft.down.pressed(pressed)
+        case .keyD, .rightArrow: input.controllers.0.stickLeft.right.pressed(pressed)
+        default: break
+        }
+        input.controllers.0.stickLeft.digitalToAnalog()
+        input.controllers.0.stickLeft.latches = true
+    }
+
+    func mouseMoved(mouse: GCMouseInput, deltaX: Float, deltaY: Float)
+    {
+        input.controllers.0.stickRight.end.x = deltaX
+        input.controllers.0.stickRight.end.y = deltaY
+        input.controllers.0.stickRight.analogToDigital(deadZone: 0.2)
     }
 
 
+    func pollControllers() {
+
+
+        if let controller = GCController.current {
+            input.controllerCount = 2
+
+            func dpadHandler(dpad: GCControllerDirectionPad, x: Float, y: Float)            {
+
+                input.controllers.1.dPad.latches = true
+                input.controllers.1.dPad.end = Vec2f(x: x, y: y)
+                input.controllers.1.dPad.analogToDigital(deadZone: 0.0)
+            }
+
+            func leftStickHandler(dpad: GCControllerDirectionPad, x: Float, y: Float)            {
+
+                input.controllers.1.stickLeft.latches = true
+                input.controllers.1.stickLeft.end = Vec2f(x: x, y: y)
+                input.controllers.1.stickLeft.analogToDigital(deadZone: 0.0)
+            }
+            if let extendedGamepad = controller.extendedGamepad {
+                if extendedGamepad.leftThumbstick.valueChangedHandler == nil {
+                    extendedGamepad.leftThumbstick.valueChangedHandler = leftStickHandler(dpad:x:y:)
+                }
+            }
+        }
+    }
+
     func tick() {
+        setupControllers()
+        pollControllers()
         profiling_time_interval(&GameState.timingData, eTimerTickToTick, eTimingTickToTick)
         profiling_time_set(&GameState.timingData, eTimerTickToTick)
         profiling_time_set(&GameState.timingData, eTimerTick)
@@ -190,7 +295,7 @@ class GameState : ObservableObject {
             self.isMouseHidden = setCursorVisible(true, currentlyHidden: self.isMouseHidden)
         }
         #endif
-        self.clearInput()
+        cleanInput(&input)
         profiling_time_interval(&GameState.timingData, eTimerTick, eTimingTickPost)
     }
 }

@@ -177,7 +177,7 @@ extension MetalView : NSViewRepresentable {
     typealias NSViewType = MyMTKView
     
     func makeNSView(context: Context) -> MyMTKView {
-        return MyMTKView(drawBuffer: drawBuffer)
+        return MyMTKView(frame: .zero, drawBuffer: drawBuffer)
     }
     
     func updateNSView(_ nsView: MyMTKView, context: Context) {
