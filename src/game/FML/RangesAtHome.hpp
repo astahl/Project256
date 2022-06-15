@@ -8,7 +8,7 @@
 #pragma once
 #include <concepts>
 #include <ranges>
-
+#include <vector>
 namespace ranges_at_home {
 
 
@@ -34,7 +34,8 @@ using args_t = typename args<Signature>::type;
 template<typename T, typename Func>
 struct transform_view {
     using InputIterator = iterator_t<T>;
-    T base;
+    using Input = std::remove_reference_t<T>;
+    Input base;
     Func func;
 
     constexpr transform_view(T base, Func func)
@@ -80,6 +81,9 @@ struct filter_view {
     using InputIterator = iterator_t<T>;
 
     struct iterator {
+        using value = decltype(*std::declval<InputIterator>());
+        using reference = std::add_lvalue_reference_t<value>;
+
         InputIterator inputIterator;
         InputIterator endInput;
         Func func;
@@ -123,6 +127,7 @@ struct filter_view {
     }
 };
 
+
 template <typename Func>
 struct transform {
 
@@ -153,13 +158,45 @@ struct filter {
 
 };
 
+template <typename Func>
+struct forEach {
+    Func func;
+    forEach(Func func)
+    : func(func) {}
+
+    template <typename T>
+    constexpr void apply(T range) {
+        for(auto&& v : range) {
+            func(v);
+        }
+    }
+};
+
+template <typename Func, typename V>
+struct reduce {
+    Func func;
+    V initial;
+
+    reduce(Func func, V initial = V{}) : func(func), initial{initial} {}
+
+    template <typename T>
+    constexpr auto apply(T range) {
+        V value = initial;
+        for(auto&& v : range) {
+            value = func(v, value);
+        }
+        return value;
+    }
+};
+
+
 template <typename T, typename U>
 struct applicator {
     T left;
     U right;
 
     template <typename W>
-    constexpr auto apply(W w) {
+    constexpr auto apply(W&& w) {
         return right.apply(left.apply(w));
     }
 
@@ -169,6 +206,10 @@ struct applicator {
 
     constexpr auto end() {
         return right.apply(left).end();
+    }
+
+    constexpr auto run() {
+        return right.apply(left);
     }
 };
 
