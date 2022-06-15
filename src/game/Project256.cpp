@@ -187,9 +187,14 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
             for (auto p : Line{{0, -3}, {0, 3}} | atMouse )
                 put(memory.vram, p, Color::white);
 
-            (Line{{-3, -3}, {3, 3}} | atMouse | forEach([&] (const Vec2i& p) {
+            auto drawAcross = (Line{{-3, -3}, {3, 3}} | atMouse | forEach([&] (const Vec2i& p) {
                 put(memory.vram, p, Color::white);
-            })).run();
+            }));
+
+            drawAcross();
+
+            auto sum = (Line{{0, 0}, {9, 3}} | reduce<std::plus<Vec2i>, Vec2i>()).run();
+            put(memory.vram, sum, Color::white);
     }
 
     for (unsigned int i = 0; i < input.controllerCount; ++i) {

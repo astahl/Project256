@@ -31,6 +31,14 @@ struct args<R(Args...)> : types<Args...>{};
 template <typename Signature>
 using args_t = typename args<Signature>::type;
 
+
+template <typename Signature> struct returns;
+template <typename R, typename...Args>
+struct returns<R(Args...)> { using type = R; };
+template <typename Signature>
+using returns_t = typename returns<Signature>::type;
+
+
 template<typename T, typename Func>
 struct transform_view {
     using InputIterator = iterator_t<T>;
@@ -172,12 +180,12 @@ struct forEach {
     }
 };
 
-template <typename Func, typename V>
+template <typename Func, typename V = args_t<decltype(std::declval<Func>())>>
 struct reduce {
     Func func;
     V initial;
 
-    reduce(Func func, V initial = V{}) : func(func), initial{initial} {}
+    reduce(Func func = Func{}, V initial = V{}) : func(func), initial{initial} {}
 
     template <typename T>
     constexpr auto apply(T range) {
@@ -208,8 +216,12 @@ struct applicator {
         return right.apply(left).end();
     }
 
-    constexpr auto run() {
+    constexpr auto operator()() {
         return right.apply(left);
+    }
+
+    constexpr auto run() {
+        return this->operator()();
     }
 };
 
