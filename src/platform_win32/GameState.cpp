@@ -20,7 +20,6 @@ GameOutput GameState::tick() {
     profiling_time_set(&GameState::timingData, eTimerTickToTick);
 
     profiling_time_set(&GameState::timingData, eTimerTick);
-    input.hasMouse = true;
 
     input.frameNumber = frameCount++;
     auto theframeTime = frameTime.elapsed();

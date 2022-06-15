@@ -187,13 +187,13 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
         }
     
 
-    for (int i = 0; i < input.controllerCount; ++i) {
+    for (unsigned int i = 0; i < input.controllerCount; ++i) {
         using namespace ranges_at_home;
         using namespace Generators;
-        auto offset1 = [&](Vec2i p) { return p + Vec2i { i * 10 + 10, 10 }; };
+        auto offset1 = [&](Vec2i p) { return p + Vec2i { static_cast<int>(i) * 10 + 10, 10 }; };
         for (auto p : transform_view(Line{Vec2i{}, truncate(7 * input.controllers[i].stickLeft.end)}, offset1))
             put(memory.vram, wrap(p), Palette::Color::white);
-        auto offset2 = [&](Vec2i p) { return p + Vec2i { i * 10 + 15, 10 }; };
+        auto offset2 = [&](Vec2i p) { return p + Vec2i { static_cast<int>(i) * 10 + 15, 10 }; };
         for (auto p : transform_view(Line{Vec2i{}, truncate(7 * input.controllers[i].stickRight.end)}, offset2))
             put(memory.vram, wrap(p), Palette::Color::white);
     }
@@ -225,8 +225,8 @@ void writeDrawBuffer(void* pMemory, void* buffer)
     uint32_t* pixel = reinterpret_cast<uint32_t*>(buffer);
 
     if (pMemory == nullptr) {
-        for (unsigned y = 0; y < DrawBufferHeight; ++y)
-        for (unsigned x = 0; x < DrawBufferWidth; ++x)
+        for (unsigned int y = 0; y < DrawBufferHeight; ++y)
+        for (unsigned int x = 0; x < DrawBufferWidth; ++x)
         {
             *pixel++ = 0xFF000000 | ((y % 2) && (x % 2) ? 0xFFFFFF : y) ; // argb
         }
