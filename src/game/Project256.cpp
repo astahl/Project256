@@ -178,11 +178,12 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
             using namespace ranges_at_home;
             using namespace Generators;
             auto offset = [&](Vec2i p) { return p + position; };
+            auto clip = [&](Vec2i p) { return !(p < Vec2i{}) && p < bufferSize; };
 
-            for (auto p : transform_view(Line{Vec2i{3, 0}, Vec2i{-3, 0}}, offset))
-                put(memory.vram, wrap(p), Palette::Color::white);
-            for (auto p : transform_view(Line{Vec2i{0, 3}, Vec2i{0, -3}}, offset))
-                put(memory.vram, wrap(p), Palette::Color::white);
+            for (auto p : filter_view(transform_view(Line{Vec2i{3, 0}, Vec2i{-3, 0}}, offset), clip))
+                put(memory.vram, p, Palette::Color::white);
+            for (auto p : filter_view(transform_view(Line{Vec2i{0, 3}, Vec2i{0, -3}}, offset), clip))
+                put(memory.vram, p, Palette::Color::white);
         }
     
 
