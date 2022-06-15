@@ -74,6 +74,9 @@ enum ControllerSubType {
     ControllerSubTypeGenericSingleButton
 };
 
+#pragma warning (push)
+#pragma warning (disable : 4201)
+
 struct GameController {
     enum ControllerSubType subType;
     // if any action is registered on buttons or axes
@@ -97,6 +100,8 @@ struct GameController {
         struct Button buttons[InputControllerButtonCount];
     };
 };
+
+#pragma warning (pop)
 
 struct Tap {
 	struct Vec2i position;

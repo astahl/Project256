@@ -19,7 +19,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\game\Drawing\Palettes.cpp" />
     <ClCompile Include="..\..\src\game\Profiling\Timings.cpp" />
     <ClCompile Include="..\..\src\game\Project256.cpp" />
     <ClCompile Include="..\..\src\platform_win32\Direct3D12View.cpp" />
@@ -28,7 +27,9 @@
     <ClCompile Include="..\..\src\platform_win32\WinMain.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\src\game\defines.h" />
     <ClInclude Include="..\..\src\game\Drawing\Generators.hpp" />
+    <ClInclude Include="..\..\src\game\Drawing\Palettes.hpp" />
     <ClInclude Include="..\..\src\game\Drawing\Sprites.hpp" />
     <ClInclude Include="..\..\src\game\FML\RangesAtHome.hpp" />
     <ClInclude Include="..\..\src\game\Profiling\Timings.h" />
