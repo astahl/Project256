@@ -19,8 +19,8 @@ struct Rectangle {
     const Vec2i topRight;
 
     struct Iterator {
-        const Vec2i& bottomLeft;
-        const Vec2i& topRight;
+        const Vec2i bottomLeft;
+        const Vec2i topRight;
         Vec2i current;
         
         constexpr Vec2i operator*() {
@@ -67,12 +67,14 @@ struct Rectangle {
 struct Line {
 
     struct Iterator {
-        const Line& mLine;
+        Vec2i mD;
+        int mYi;
+        bool mSteep;
         Vec2i mCurrentPosition;
         int mCurrentError;
 
         constexpr Vec2i operator*() {
-            if (mLine.mSteep)
+            if (mSteep)
                 return Vec2i{mCurrentPosition.y, mCurrentPosition.x};
             return mCurrentPosition;
         }
@@ -80,10 +82,10 @@ struct Line {
         constexpr Iterator& operator++() {
             mCurrentPosition.x += 1;
             if (mCurrentError > 0) {
-                mCurrentPosition.y += mLine.mYi;
-                mCurrentError += 2 * (mLine.mD.y - mLine.mD.x);
+                mCurrentPosition.y += mYi;
+                mCurrentError += 2 * (mD.y - mD.x);
             } else {
-                mCurrentError += 2 * mLine.mD.y;
+                mCurrentError += 2 * mD.y;
             }
             return *this;
         }
@@ -99,7 +101,7 @@ struct Line {
     Vec2i mD;
     int mYi = 1;
     bool mSteep = false;
-    Iterator mEnd = {*this, 0, 0};
+    Iterator mEnd;
 
     using iterator = Iterator;
 
@@ -124,14 +126,21 @@ struct Line {
             mYi = -1;
         }
 
-        mEnd.mCurrentPosition = mTo;
-        mEnd.mCurrentError = 2 * mD.y - mD.x;
+        mEnd = {
+            .mD = mD,
+            .mYi = mYi,
+            .mSteep = mSteep,
+            .mCurrentPosition = mTo,
+            .mCurrentError = 2 * mD.y - mD.x,
+        };
         ++mEnd;
     }
 
     constexpr Iterator begin() {
         return Iterator{
-            .mLine = *this,
+            .mD = mD,
+            .mYi = mYi,
+            .mSteep = mSteep,
             .mCurrentPosition = mFrom,
             .mCurrentError = 2 * mD.y - mD.x,
         };

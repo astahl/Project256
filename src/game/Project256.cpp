@@ -174,18 +174,19 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
 
             }
 
-
             using namespace ranges_at_home;
             using namespace Generators;
+
             auto offset = [&](Vec2i p) { return p + position; };
             auto clip = [&](Vec2i p) { return !(p < Vec2i{}) && p < bufferSize; };
+            auto atMouse = transform(offset) | filter(clip);
 
-            for (auto p : filter_view(transform_view(Line{Vec2i{3, 0}, Vec2i{-3, 0}}, offset), clip))
+            for (auto p : Line{Vec2i{3, 0}, Vec2i{-3, 0}} | atMouse )
                 put(memory.vram, p, Palette::Color::white);
-            for (auto p : filter_view(transform_view(Line{Vec2i{0, 3}, Vec2i{0, -3}}, offset), clip))
-                put(memory.vram, p, Palette::Color::white);
-        }
-    
+            for (auto p : Line{Vec2i{0, -3}, Vec2i{0, 3}} | atMouse )
+                put(memory.vram, p, Palette::Color::red);
+
+    }
 
     for (unsigned int i = 0; i < input.controllerCount; ++i) {
         using namespace ranges_at_home;

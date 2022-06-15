@@ -11,9 +11,29 @@
 
 namespace ranges_at_home {
 
+
+template <typename T>
+struct iterator { using type = decltype(std::declval<T&>().begin()); };
+
+template <typename T>
+using iterator_t = typename iterator<T>::type;
+
+template <typename T>
+struct iter_value { using type = decltype(*(std::declval<iterator_t<T>&>())); };
+
+template <typename T>
+using iter_value_t = typename iter_value<T>::type;
+
+template<class...>struct types{using type=types;};
+template <typename Signature> struct args;
+template <typename R, typename...Args>
+struct args<R(Args...)> : types<Args...>{};
+template <typename Signature>
+using args_t = typename args<Signature>::type;
+
 template<typename T, typename Func>
 struct transform_view {
-    using InputIterator = typename std::remove_reference_t<T>::iterator;
+    using InputIterator = iterator_t<T>;
     T base;
     Func func;
 
@@ -23,9 +43,9 @@ struct transform_view {
 
     struct iterator {
         InputIterator inputIterator;
-        const Func& func;
+        Func func;
 
-        constexpr iterator(InputIterator inputIterator, const Func& func)
+        constexpr iterator(InputIterator inputIterator, Func func)
         : inputIterator(inputIterator), func(func) {
         }
 
@@ -35,7 +55,9 @@ struct transform_view {
         }
 
         constexpr decltype(func(*inputIterator)) operator*() {
-            return func(*inputIterator);
+            const auto input = (*inputIterator);
+            const auto result = func(input);
+            return result;
         }
 
         constexpr bool operator!=(iterator& other) {
@@ -55,14 +77,14 @@ struct transform_view {
 
 template<typename T, typename Func>
 struct filter_view {
-    using InputIterator = typename std::remove_reference_t<T>::iterator;
+    using InputIterator = iterator_t<T>;
 
     struct iterator {
         InputIterator inputIterator;
         InputIterator endInput;
-        const Func& func;
+        Func func;
 
-        constexpr iterator(InputIterator inputIterator, InputIterator endInputIterator, const Func& func)
+        constexpr iterator(InputIterator inputIterator, InputIterator endInputIterator, Func func)
         : inputIterator(inputIterator), endInput(endInputIterator), func(func) {
         }
 
@@ -92,8 +114,6 @@ struct filter_view {
     : base(base), func(func), mEnd(iterator(base.end(), base.end(), func)) {
     }
 
-
-
     constexpr iterator begin() {
         return iterator(base.begin(), base.end(), func);
     }
@@ -102,5 +122,61 @@ struct filter_view {
         return mEnd;
     }
 };
+
+template <typename Func>
+struct transform {
+
+    Func func;
+    transform(Func func)
+    : func(func) {}
+
+    template <typename T>
+    transform_view<T, Func> apply(T range)
+    {
+        return transform_view(range, func);
+    }
+
+};
+
+template <typename Func>
+struct filter {
+
+    Func func;
+    filter(Func func)
+    : func(func) {}
+
+    template <typename T>
+    filter_view<T, Func> apply(T range)
+    {
+        return filter_view(range, func);
+    }
+
+};
+
+template <typename T, typename U>
+struct applicator {
+    T left;
+    U right;
+
+    template <typename W>
+    constexpr auto apply(W w) {
+        return right.apply(left.apply(w));
+    }
+
+    constexpr auto begin() {
+        return right.apply(left).begin();
+    }
+
+    constexpr auto end() {
+        return right.apply(left).end();
+    }
+};
+
+template <typename T, typename U>
+constexpr applicator<T, U> operator|(T left, U right)
+{
+    return applicator<T, U> {left, right};
+}
+
 
 }
