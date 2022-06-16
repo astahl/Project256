@@ -16,7 +16,7 @@ class MainWindow
     GameState* state;
     HWND hwnd;
     Direct3D12View* view;
-    char profilingStringBuffer[PROFILING_STR_BUFFER_LENGTH];
+    char profilingStringBuffer[PROFILING_STR_BUFFER_LENGTH]{};
 
     void onPaint();
     void onResize();
@@ -26,6 +26,7 @@ class MainWindow
     void onMouseMove(POINTS points);
     void onMouseLeave();
     void onMouseButton(MouseButtons button, MouseButtonClick clickType);
+    void onKey(WORD vkey, WORD flags, WORD repeatCount);
 public:
     static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 

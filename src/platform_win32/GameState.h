@@ -34,16 +34,38 @@ public:
 };
 
 
+struct WindowsKeyEvent {
+    WORD virtualKeyCode;
+    WORD repeatCount;
+    byte scanCode;
+    bool isExtended;
+    bool isDialogMode;
+    bool isMenuMode;
+    bool isAltDown;
+    bool isRepeat;
+    bool isUp;
+};
+
+struct PlatformInput {
+    constant int MaxKeyEventCount = 16;
+    WindowsKeyEvent keyEvents[MaxKeyEventCount]{};
+    int keyEventCount = 0;
+    uint64_t frameCount{};
+    int64_t upTime{};
+    Vec2i lastCursorPosition{};
+
+    void pushKeyEvent(WindowsKeyEvent keyEvent);
+};
+
+
 struct GameState {
     static TimingData timingData;
     byte* memory;
     byte* drawBuffer;
-    uint64_t frameCount{};
-    int64_t upTime{};
+    PlatformInput platform{};
     GameInput input{};
     Chronometer frameTime{};
     bool forceCursor{};
-    Vec2i lastCursorPosition{};
 
     GameState();
     GameOutput tick();

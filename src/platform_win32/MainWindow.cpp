@@ -120,9 +120,9 @@ void MainWindow::onMouseMove(POINTS points) {
         mouse.track[mouse.trackLength++] = pixelPos;
         mouse.endedOver = true;
     }
-    mouse.relativeMovement.x += static_cast<float>(points.x - this->state->lastCursorPosition.x) / scale.x;
-    mouse.relativeMovement.y -= static_cast<float>(points.y - this->state->lastCursorPosition.y) / scale.y;
-    this->state->lastCursorPosition = Vec2i{ .x = points.x, .y = points.y };
+    mouse.relativeMovement.x += static_cast<float>(points.x - this->state->platform.lastCursorPosition.x) / scale.x;
+    mouse.relativeMovement.y -= static_cast<float>(points.y - this->state->platform.lastCursorPosition.y) / scale.y;
+    this->state->platform.lastCursorPosition = Vec2i{ .x = points.x, .y = points.y };
 }
 
 void MainWindow::onMouseLeave() {
@@ -144,6 +144,22 @@ void MainWindow::onMouseButton(MouseButtons button, MouseButtonClick click) {
     case MouseButtonClick::DoubleClick:
         break;
     }
+}
+
+void MainWindow::onKey(WORD virtualKeyCode, WORD keyFlags, WORD repeatCount)
+{
+    WindowsKeyEvent keyEvent {
+        .virtualKeyCode = virtualKeyCode,
+        .repeatCount = repeatCount,
+        .scanCode = LOBYTE(keyFlags),
+        .isExtended = (keyFlags & KF_EXTENDED) != 0,
+        .isDialogMode = (keyFlags & KF_DLGMODE) != 0,
+        .isMenuMode = (keyFlags & KF_MENUMODE) != 0,
+        .isAltDown = (keyFlags & KF_ALTDOWN) != 0,
+        .isRepeat = (keyFlags & KF_REPEAT) != 0,
+        .isUp = (keyFlags & KF_UP) != 0,
+    };
+    this->state->platform.pushKeyEvent(keyEvent);
 }
 
 int MainWindow::doMainLoop() {
@@ -227,6 +243,15 @@ LRESULT CALLBACK MainWindow::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPA
         break;
     case WM_MOUSELEAVE:
         window->onMouseLeave();
+        break;
+    case WM_KEYDOWN:
+        [[fallthrough]];
+    case WM_SYSKEYDOWN:
+        [[fallthrough]];
+    case WM_KEYUP:
+        [[fallthrough]];
+    case WM_SYSKEYUP:
+        window->onKey(LOWORD(wParam), HIWORD(lParam), LOWORD(lParam));
         break;
     }
 
