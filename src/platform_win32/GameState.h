@@ -58,6 +58,7 @@ struct PlatformInput {
 
     void pushKeyEvent(WindowsKeyEvent keyEvent);
     void updateGameInput(GameInput& gameInput);
+    void pollXInput(GameInput& gameInput);
 };
 
 

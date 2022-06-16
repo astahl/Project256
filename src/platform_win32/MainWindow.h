@@ -27,6 +27,7 @@ class MainWindow
     void onMouseLeave();
     void onMouseButton(MouseButtons button, MouseButtonClick clickType);
     void onKey(WORD vkey, WORD flags, WORD repeatCount);
+    void onActiveChange(bool willBeActive);
 public:
     classmethod LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 

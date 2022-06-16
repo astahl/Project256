@@ -1,9 +1,13 @@
 #include "MainWindow.h"
 #include "Direct3D12View.h"
+#include "GameState.h"
+
+#include "Xinput.h"
+
 #include <initializer_list>
+
 #include "../game/Project256.h"
 
-#include "GameState.h"
 
 enum class Timers : UINT_PTR {
     HighFrequency,
@@ -162,6 +166,15 @@ void MainWindow::onKey(WORD virtualKeyCode, WORD keyFlags, WORD repeatCount)
     mGameState->platform.pushKeyEvent(keyEvent);
 }
 
+void MainWindow::onActiveChange(bool willBeActive)
+{
+    //XInputEnable(willBeActive);
+    if (willBeActive)
+        OutputDebugStringA("ACTIVATE\n");
+    else 
+        OutputDebugStringA("DEACTIVATE\n");
+}
+
 int MainWindow::doMainLoop() {
     MSG msg = { };
 
@@ -252,6 +265,15 @@ LRESULT CALLBACK MainWindow::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPA
     case WM_SYSKEYUP:
         window->onKey(LOWORD(wParam), HIWORD(lParam), LOWORD(lParam));
         break;
+    case WM_ACTIVATE:
+        switch (wParam) {
+        case WA_ACTIVE:
+            [[fallthrough]];
+        case WA_CLICKACTIVE:
+            window->onActiveChange(true);
+        default:
+            window->onActiveChange(false);
+        }
     }
 
     return DefWindowProc(hwnd, uMsg, wParam, lParam);

@@ -53,6 +53,7 @@ struct Axis1 {
 };
 
 struct Axis2 {
+    _Bool isAnalog;
     struct Vec2f start, end;
     struct Button up, down, left, right;
     _Bool latches;
@@ -79,6 +80,7 @@ enum ControllerSubType {
 
 struct GameController {
     enum ControllerSubType subType;
+    _Bool isConnected;
     // if any action is registered on buttons or axes
     _Bool isActive;
     union {

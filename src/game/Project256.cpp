@@ -8,6 +8,7 @@
 #include <iostream>
 #include <chrono>
 #include <algorithm>
+#include <cassert>
 
 struct Timer {
     std::chrono::microseconds firesAt;
@@ -26,6 +27,11 @@ struct Timer {
 template<typename Color, typename Vec2 = Vec2i, int Pitch = DrawBufferWidth>
 constexpr void put(uint8_t* drawBuffer, Vec2 position, Color color)
 {
+    assert(drawBuffer != nullptr);
+    assert(position.x < DrawBufferWidth);
+    assert(position.x >= 0);
+    assert(position.y < DrawBufferHeight);
+    assert(position.y >= 0);
     drawBuffer[static_cast<int>(position.x) + static_cast<int>(position.y) * Pitch] = static_cast<uint8_t>(color);
 }
 
@@ -197,14 +203,18 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
             put(memory.vram, sum, Color::white);
     }
 
-    for (unsigned int i = 0; i < input.controllerCount; ++i) {
+    for (unsigned int i = 0; i < InputMaxControllers; ++i) {
         using namespace ranges_at_home;
         using namespace Generators;
+        auto& controller = input.controllers[i];
+        if (!controller.isConnected)
+            continue;
+
         auto offset1 = [&](Vec2i p) { return p + Vec2i { static_cast<int>(i) * 10 + 10, 10 }; };
-        for (auto p : transform_view(Line{Vec2i{}, truncate(7 * input.controllers[i].stickLeft.end)}, offset1))
+        for (auto p : transform_view(Line{Vec2i{}, truncate(7 * controller.stickLeft.end)}, offset1))
             put(memory.vram, wrap(p), Palette::Color::white);
         auto offset2 = [&](Vec2i p) { return p + Vec2i { static_cast<int>(i) * 10 + 15, 10 }; };
-        for (auto p : transform_view(Line{Vec2i{}, truncate(7 * input.controllers[i].stickRight.end)}, offset2))
+        for (auto p : transform_view(Line{Vec2i{}, truncate(7 * controller.stickRight.end)}, offset2))
             put(memory.vram, wrap(p), Palette::Color::white);
     }
 
