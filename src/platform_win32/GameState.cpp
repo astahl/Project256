@@ -30,15 +30,10 @@ void PlatformInput::pushKeyEvent(WindowsKeyEvent keyEvent)
     }
 
     this->keyEvents[insertPosition] = keyEvent;
+    keyEventCount++;
 }
 
-void PlatformInput::updateGameInput(GameInput& gameInput) {
-    auto elapsed = frameTime.elapsed();
-    upTime += elapsed.microseconds;
-    gameInput.elapsedTime_s = elapsed.seconds;
-    gameInput.upTime_microseconds = upTime;
-    gameInput.frameNumber = frameCount++;
-}
+
 
 
 inline internalfunc bool gamepadButton(Button& button, bool isDown) {
@@ -102,7 +97,52 @@ inline internalfunc bool gamepadAxis16bit(Axis2& axis, SHORT valueX, SHORT value
     return changeX || changeY;
 }
 
+void PlatformInput::updateGameInput(GameInput& gameInput) {
+    auto elapsed = frameTime.elapsed();
+    upTime += elapsed.microseconds;
+    gameInput.elapsedTime_s = elapsed.seconds;
+    gameInput.upTime_microseconds = upTime;
+    gameInput.frameNumber = frameCount++;
 
+    GameController& kbm = gameInput.controllers[0];
+    kbm.isConnected = true;
+    for (int i = 0; i < keyEventCount; ++i) {
+        auto& keyEvent = keyEvents[i];
+        bool down = !keyEvent.isUp;
+        bool isAction = false;
+        switch (keyEvent.virtualKeyCode) {
+        case 'W': isAction = gamepadButton(kbm.stickLeft.up, down); break;
+        case 'A': isAction = gamepadButton(kbm.stickLeft.left, down); break;
+        case 'S': isAction = gamepadButton(kbm.stickLeft.down, down); break;
+        case 'D': isAction = gamepadButton(kbm.stickLeft.right, down); break;
+        case '1': isAction = gamepadButton(kbm.dPad.up, down); break;
+        case '2': isAction = gamepadButton(kbm.dPad.left, down); break;
+        case '4': isAction = gamepadButton(kbm.dPad.down, down); break;
+        case '3': isAction = gamepadButton(kbm.dPad.right, down); break;
+        case VK_UP: isAction = gamepadButton(kbm.stickRight.up, down); break;
+        case VK_LEFT: isAction = gamepadButton(kbm.stickRight.left, down); break;
+        case VK_DOWN: isAction = gamepadButton(kbm.stickRight.down, down); break;
+        case VK_RIGHT: isAction = gamepadButton(kbm.stickRight.right, down); break;
+
+        case VK_CONTROL: isAction = gamepadButton(kbm.shoulderLeft, down); break;
+        case VK_SHIFT: isAction = gamepadButton(kbm.shoulderRight, down); break;
+        case VK_SPACE: isAction = gamepadButton(kbm.buttonA, down); break;
+        case 'F': isAction = gamepadButton(kbm.buttonB, down); break;
+        case 'R': isAction = gamepadButton(kbm.buttonX, down); break;
+        case 'C': isAction = gamepadButton(kbm.buttonY, down); break;
+        case VK_TAB: isAction = gamepadButton(kbm.buttonStickRight, down); break;
+        case VK_ESCAPE: isAction = gamepadButton(kbm.buttonBack, down); break;
+        case VK_RETURN: isAction = gamepadButton(kbm.buttonStart, down); break;
+        default: isAction = false;
+        }
+        kbm.isActive |= isAction;
+    }
+    keyEventCount = 0;
+
+    kbm.stickRight.end = gameInput.mouse.relativeMovement;
+    kbm.triggerLeft.trigger = gameInput.mouse.buttonLeft;
+    kbm.triggerRight.trigger = gameInput.mouse.buttonRight;
+}
 
 void PlatformInput::pollXInput(GameInput& gameInput)
 {
