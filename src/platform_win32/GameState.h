@@ -53,8 +53,11 @@ struct PlatformInput {
     uint64_t frameCount{};
     int64_t upTime{};
     Vec2i lastCursorPosition{};
+    Chronometer frameTime{};
+    bool forceCursor{};
 
     void pushKeyEvent(WindowsKeyEvent keyEvent);
+    void updateGameInput(GameInput& gameInput);
 };
 
 
@@ -62,10 +65,9 @@ struct GameState {
     static TimingData timingData;
     byte* memory;
     byte* drawBuffer;
-    PlatformInput platform{};
     GameInput input{};
-    Chronometer frameTime{};
-    bool forceCursor{};
+
+    PlatformInput platform{};
 
     GameState();
     GameOutput tick();

@@ -45,6 +45,8 @@ int WINAPI wWinMain(_In_ HINSTANCE instanceHandle,
     if (!windowHandle)
         return 0;
     
+    SetWindowLongPtr(windowHandle, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(windowPtr));
+
     ShowWindow(windowHandle, nCmdShow);
     return windowPtr->doMainLoop();
 }

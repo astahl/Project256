@@ -1,7 +1,7 @@
 #pragma once
 #include <Windows.h>
 #include <cstdint>
-
+#include "../game/defines.h"
 
 class Direct3D12View;
 
@@ -12,10 +12,10 @@ enum class MouseButtonClick { Down, Up, DoubleClick };
 
 class MainWindow
 {
-    const static int PROFILING_STR_BUFFER_LENGTH = 1000;
-    GameState* state;
-    HWND hwnd;
-    Direct3D12View* view;
+    constant int PROFILING_STR_BUFFER_LENGTH = 1000;
+    GameState* mGameState;
+    HWND mHwnd;
+    Direct3D12View* mGameView;
     char profilingStringBuffer[PROFILING_STR_BUFFER_LENGTH]{};
 
     void onPaint();
@@ -28,7 +28,7 @@ class MainWindow
     void onMouseButton(MouseButtons button, MouseButtonClick clickType);
     void onKey(WORD vkey, WORD flags, WORD repeatCount);
 public:
-    static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+    classmethod LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
     MainWindow(HWND hwnd);
     ~MainWindow();

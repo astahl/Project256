@@ -10,7 +10,7 @@ enum class Timers : UINT_PTR {
     LowFrequency,
 };
 
-static void setCursorVisible(bool shouldShow) {
+internalfunc void setCursorVisible(bool shouldShow) {
     CURSORINFO cursorInfo{ .cbSize = sizeof(CURSORINFO) };
     GetCursorInfo(&cursorInfo);
     if (!shouldShow && cursorInfo.flags == CURSOR_SHOWING) // cursor is visible
@@ -25,42 +25,42 @@ static void setCursorVisible(bool shouldShow) {
 
 
 MainWindow::MainWindow(HWND hwnd)
-    : state(new GameState())
-    , hwnd(hwnd)
+    : mGameState(new GameState())
+    , mHwnd(hwnd)
 {
     RECT rect{};
     GetWindowRect(hwnd, &rect);
-    this->view = new Direct3D12View(hwnd, rect.right - rect.left, rect.bottom - rect.top);
+    mGameView = new Direct3D12View(hwnd, rect.right - rect.left, rect.bottom - rect.top);
     SetTimer(hwnd, static_cast<UINT_PTR>(Timers::HighFrequency), 1, NULL);
     SetTimer(hwnd, static_cast<UINT_PTR>(Timers::LowFrequency), 1000, NULL);
 }
 
 MainWindow::~MainWindow()
 {
-    KillTimer(hwnd, static_cast<UINT_PTR>(Timers::HighFrequency));
+    KillTimer(mHwnd, static_cast<UINT_PTR>(Timers::HighFrequency));
 }
 
 void MainWindow::onTick() {
-    const auto output = state->tick();
+    const auto output = mGameState->tick();
     if (output.shouldQuit) {
         OutputDebugStringA("Should Quit");
-        DestroyWindow(hwnd);
+        DestroyWindow(mHwnd);
     }
 
-    if ((output.shouldShowSystemCursor) != state->forceCursor) {
-        state->forceCursor = output.shouldShowSystemCursor;
-        setCursorVisible(state->forceCursor);
+    if ((output.shouldShowSystemCursor) != mGameState->platform.forceCursor) {
+        mGameState->platform.forceCursor = output.shouldShowSystemCursor;
+        setCursorVisible(mGameState->platform.forceCursor);
     }
 
     if (output.shouldPinMouse) {
         RECT rect{};
-        GetClientRect(hwnd, &rect);
+        GetClientRect(mHwnd, &rect);
         POINT center{ .x = rect.left + (rect.right - rect.left) / 2, .y = rect.top + (rect.bottom - rect.top) / 2 };
-        ClientToScreen(hwnd, &center);
+        ClientToScreen(mHwnd, &center);
         SetCursorPos(center.x, center.y);
     }
 
-    InvalidateRect(hwnd, NULL, FALSE);
+    InvalidateRect(mHwnd, NULL, FALSE);
 
     profiling_time_interval(&GameState::timingData, eTimerTick, eTimingTickPost);
 }
@@ -68,23 +68,23 @@ void MainWindow::onTick() {
 void MainWindow::onPaint() {
     profiling_time_set(&GameState::timingData, eTimerDraw);
     profiling_time_set(&GameState::timingData, eTimerBufferCopy);
-    writeDrawBuffer(state->memory, state->drawBuffer);
+    writeDrawBuffer(mGameState->memory, mGameState->drawBuffer);
     profiling_time_interval(&GameState::timingData, eTimerBufferCopy, eTimingBufferCopy);
-    this->view->SetDrawBuffer(state->drawBuffer);
+    mGameView->SetDrawBuffer(mGameState->drawBuffer);
     profiling_time_interval(&GameState::timingData, eTimerDraw, eTimingDrawBefore);
-    this->view->Draw();
-    ValidateRect(hwnd, NULL);
+    mGameView->Draw();
+    ValidateRect(mHwnd, NULL);
 }
 
 void MainWindow::onResize() {
     RECT rect{};
-    GetWindowRect(hwnd, &rect);
+    GetWindowRect(mHwnd, &rect);
     
-    this->view->Resize(rect.right - rect.left, rect.bottom - rect.top);
+    mGameView->Resize(rect.right - rect.left, rect.bottom - rect.top);
 }
 
 void MainWindow::onClose() {
-    this->state->input.closeRequested = true;
+    mGameState->input.closeRequested = true;
 }
 
 void MainWindow::onTimer(WPARAM timerId) {
@@ -101,10 +101,10 @@ void MainWindow::onTimer(WPARAM timerId) {
 }
 
 void MainWindow::onMouseMove(POINTS points) {
-    auto& mouse = this->state->input.mouse;
-    auto scale = this->view->currentScale();
+    auto& mouse = mGameState->input.mouse;
+    auto scale = mGameView->currentScale();
     RECT windowRect{};
-    GetClientRect(hwnd, &windowRect);
+    GetClientRect(mHwnd, &windowRect);
     const int width = windowRect.right - windowRect.left;
     const int height = windowRect.bottom - windowRect.top;
     auto normalizedToWindow = Vec2f{ .x = static_cast<float>(points.x) / width, .y = static_cast<float>(points.y) / height };
@@ -115,14 +115,14 @@ void MainWindow::onMouseMove(POINTS points) {
         setCursorVisible(TRUE);
         mouse.endedOver = false;
     } else {
-        setCursorVisible(state->forceCursor);
+        setCursorVisible(mGameState->platform.forceCursor);
         auto pixelPos = Vec2f{ .x = scaledPos.x * DrawBufferWidth, .y = scaledPos.y * DrawBufferHeight };
         mouse.track[mouse.trackLength++] = pixelPos;
         mouse.endedOver = true;
     }
-    mouse.relativeMovement.x += static_cast<float>(points.x - this->state->platform.lastCursorPosition.x) / scale.x;
-    mouse.relativeMovement.y -= static_cast<float>(points.y - this->state->platform.lastCursorPosition.y) / scale.y;
-    this->state->platform.lastCursorPosition = Vec2i{ .x = points.x, .y = points.y };
+    mouse.relativeMovement.x += static_cast<float>(points.x - mGameState->platform.lastCursorPosition.x) / scale.x;
+    mouse.relativeMovement.y -= static_cast<float>(points.y - mGameState->platform.lastCursorPosition.y) / scale.y;
+    mGameState->platform.lastCursorPosition = Vec2i{ .x = points.x, .y = points.y };
 }
 
 void MainWindow::onMouseLeave() {
@@ -130,7 +130,7 @@ void MainWindow::onMouseLeave() {
 }
 
 void MainWindow::onMouseButton(MouseButtons button, MouseButtonClick click) {
-    auto& mouse = this->state->input.mouse;
+    auto& mouse = mGameState->input.mouse;
     auto& btn = button == MouseButtons::Left ? mouse.buttonLeft : (button == MouseButtons::Right ? mouse.buttonRight : mouse.buttonMiddle);
     switch (click) {
     case MouseButtonClick::Down:
@@ -159,7 +159,7 @@ void MainWindow::onKey(WORD virtualKeyCode, WORD keyFlags, WORD repeatCount)
         .isRepeat = (keyFlags & KF_REPEAT) != 0,
         .isUp = (keyFlags & KF_UP) != 0,
     };
-    this->state->platform.pushKeyEvent(keyEvent);
+    mGameState->platform.pushKeyEvent(keyEvent);
 }
 
 int MainWindow::doMainLoop() {
@@ -167,7 +167,7 @@ int MainWindow::doMainLoop() {
 
     BOOL bRet;
 
-    while ((bRet = GetMessage(&msg, hwnd, 0, 0)) != 0)
+    while ((bRet = GetMessage(&msg, mHwnd, 0, 0)) != 0)
     {
         if (bRet == -1)
         {
@@ -185,14 +185,13 @@ int MainWindow::doMainLoop() {
 
 LRESULT CALLBACK MainWindow::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-    static MainWindow* window = nullptr;
+    MainWindow* const window = reinterpret_cast<MainWindow*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
 
     switch (uMsg) {
     case WM_CREATE: {
         CREATESTRUCT* createStruct = reinterpret_cast<CREATESTRUCT*>(lParam);
         MainWindow** windowPP = reinterpret_cast<MainWindow**>(createStruct->lpCreateParams);
-        window = new MainWindow(hwnd);
-        *windowPP = window;
+        *windowPP = new MainWindow(hwnd);
     } break;
     case WM_SIZE: {
         window->onResize();

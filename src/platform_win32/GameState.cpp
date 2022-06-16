@@ -32,6 +32,14 @@ void PlatformInput::pushKeyEvent(WindowsKeyEvent keyEvent)
     this->keyEvents[insertPosition] = keyEvent;
 }
 
+void PlatformInput::updateGameInput(GameInput& gameInput) {
+    auto elapsed = frameTime.elapsed();
+    upTime += elapsed.microseconds;
+    gameInput.elapsedTime_s = elapsed.seconds;
+    gameInput.upTime_microseconds = upTime;
+    gameInput.frameNumber = frameCount++;
+}
+
 
 GameState::GameState() {
     this->memory = reinterpret_cast<byte*>(VirtualAlloc(LPVOID(2LL * 1024 * 1024 * 1024), MemorySize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
@@ -44,28 +52,15 @@ GameOutput GameState::tick() {
 
     profiling_time_set(&GameState::timingData, eTimerTick);
 
-    input.frameNumber = platform.frameCount++;
-    auto theframeTime = frameTime.elapsed();
-    platform.upTime += theframeTime.microseconds;
-    input.elapsedTime_s = theframeTime.seconds;
-    input.upTime_microseconds = platform.upTime;
-
-    GameInput inputCopy = input;
-    input = {};
+   
+    platform.updateGameInput(input);
     GameOutput output{};
 
     profiling_time_interval(&GameState::timingData, eTimerTick, eTimingTickSetup);
-    output = doGameThings(&inputCopy, memory);
+    output = doGameThings(&input, memory);
     profiling_time_interval(&GameState::timingData, eTimerTick, eTimingTickDo);
 
-
-    if (inputCopy.mouse.trackLength && inputCopy.mouse.endedOver) {
-        input.mouse.track[0] = inputCopy.mouse.track[inputCopy.mouse.trackLength - 1];
-        input.mouse.trackLength += 1;
-        input.mouse.endedOver = true;
-    }
-    input.mouse.buttonLeft.endedDown = inputCopy.mouse.buttonLeft.endedDown;
-    input.mouse.buttonRight.endedDown = inputCopy.mouse.buttonRight.endedDown;
-    input.mouse.buttonMiddle.endedDown = inputCopy.mouse.buttonMiddle.endedDown;
+    cleanInput(&input);
+    
     return output;
 }
