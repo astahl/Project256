@@ -42,7 +42,7 @@ struct Vec2i {
 };
 
 struct Recti {
-    Vec2i origin, size;
+    struct Vec2i origin, size;
 };
 
 struct Button {

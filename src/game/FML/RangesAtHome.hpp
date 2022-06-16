@@ -127,7 +127,11 @@ struct filter_view {
     }
 
     constexpr iterator begin() {
-        return iterator(base.begin(), base.end(), func);
+        auto it = iterator(base.begin(), base.end(), func);
+        if (!func(*it)) {
+            return ++it;
+        }
+        return it; 
     }
 
     constexpr iterator end() {

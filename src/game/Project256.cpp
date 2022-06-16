@@ -28,10 +28,10 @@ template<typename Color, typename Vec2 = Vec2i, int Pitch = DrawBufferWidth>
 constexpr void put(uint8_t* drawBuffer, Vec2 position, Color color)
 {
     assert(drawBuffer != nullptr);
-    assert(position.x < DrawBufferWidth);
     assert(position.x >= 0);
-    assert(position.y < DrawBufferHeight);
+    assert(position.x < DrawBufferWidth);
     assert(position.y >= 0);
+    assert(position.y < DrawBufferHeight);
     drawBuffer[static_cast<int>(position.x) + static_cast<int>(position.y) * Pitch] = static_cast<uint8_t>(color);
 }
 
@@ -193,7 +193,9 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
             using namespace Generators;
 
             auto offset = [&](Vec2i p) { return p + position; };
-            auto clip = [&](Vec2i p) { return !(p < Vec2i{}) && p < bufferSize; };
+            auto clip = [&](Vec2i p) {
+                return (Vec2i{0,0} <= p) && (p < bufferSize);
+            };
             auto atMouse = transform(offset) | filter(clip);
 
             for (auto p : Line{{3, 0}, {-3, 0}} | atMouse )

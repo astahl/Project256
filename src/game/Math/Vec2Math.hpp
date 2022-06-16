@@ -68,6 +68,25 @@ constexpr bool operator<(Vec1 left, Vec2 right)
     return left.x < right.x && left.y < right.y;
 }
 
+template<typename Vec1, typename Vec2>
+constexpr bool operator<=(Vec1 left, Vec2 right)
+{
+    return left.x <= right.x && left.y <= right.y;
+}
+
+template<typename Vec1, typename Vec2>
+constexpr bool operator>(Vec1 left, Vec2 right)
+{
+    return left.x > right.x && left.y > right.y;
+}
+
+template<typename Vec1, typename Vec2>
+constexpr bool operator>=(Vec1 left, Vec2 right)
+{
+    return left.x >= right.x && left.y >= right.y;
+}
+
+
 template<typename Vec1, typename Vec2, typename = std::enable_if_t<std::conjunction<is_vec2_v<Vec1>, is_vec2_v<Vec2> >::value>>
 constexpr bool operator==(Vec1 left, Vec2 right )
 {
