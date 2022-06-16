@@ -71,24 +71,32 @@ inline internalfunc bool gamepadAxis16bit(Axis2& axis, SHORT valueX, SHORT value
     if (valueX > Deadzone) {
         axis.end.x = static_cast<float>(valueX - Deadzone) * deadFactorPositive;
         gamepadButton(axis.right, true);
+        gamepadButton(axis.left, false);
     }
     else if (valueX < -Deadzone) {
         axis.end.x = static_cast<float>(valueX + Deadzone) * deadFactorNegative;
         gamepadButton(axis.left, true);
+        gamepadButton(axis.right, false);
     }
     else {
+        gamepadButton(axis.left, false);
+        gamepadButton(axis.right, false);
         changeX = false;
     }
 
     if (valueY > Deadzone) {
         axis.end.y = static_cast<float>(valueY - Deadzone) * deadFactorPositive;
         gamepadButton(axis.up, true);
+        gamepadButton(axis.down, false);
     }
     else if (valueY < -Deadzone) {
         axis.end.y = static_cast<float>(valueY + Deadzone) * deadFactorNegative;
         gamepadButton(axis.down, true);
+        gamepadButton(axis.up, false);
     }
     else {
+        gamepadButton(axis.up, false);
+        gamepadButton(axis.down, false);
         changeY = false;
     }
     return changeX || changeY;

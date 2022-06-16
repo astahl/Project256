@@ -122,9 +122,10 @@ void cleanInput(GameInput* input) {
 GameOutput doGameThings(GameInput* pInput, void* pMemory)
 {
     using Palette = PaletteC64;
-    auto clearColor = Palette::Color::black;
+    using Color = Palette::Color;
+    auto clearColor = Color::black;
     if (pInput->closeRequested) {
-        clearColor = Palette::Color::lightRed;
+        clearColor = Color::white;
     }
     const auto bufferSize = Vec2i{ DrawBufferWidth, DrawBufferHeight};
     const auto center = bufferSize / 2;
@@ -162,6 +163,14 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
     }
 
     std::memset(memory.vram, (uint8_t)clearColor, DrawBufferWidth * DrawBufferHeight);
+
+    // draw the palette in the first rows
+
+    for (int x = 0; x < DrawBufferWidth; ++x) {
+        put(memory.vram, Vec2i{ x, 0 }, (x * Palette::count) / DrawBufferWidth);
+    }
+
+
     auto wrap = [](auto p) { return wrapAround2d(p, Vec2i(), Vec2i{DrawBufferWidth, DrawBufferHeight});};
         if (input.mouse.trackLength) {
             Vec2f mousePosition = input.mouse.track[input.mouse.trackLength - 1];
@@ -176,13 +185,12 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
 
             if (input.mouse.buttonLeft.endedDown) {
                 for (auto p : Generators::Rectangle{ .bottomLeft = position - Vec2i{3,3}, .topRight = position + Vec2i{3, 3} })
-                    put(memory.vram, wrap(p), Palette::Color::red);
+                    put(memory.vram, wrap(p), Palette::Color::green);
 
             }
 
             using namespace ranges_at_home;
             using namespace Generators;
-            using Color = Palette::Color;
 
             auto offset = [&](Vec2i p) { return p + position; };
             auto clip = [&](Vec2i p) { return !(p < Vec2i{}) && p < bufferSize; };
@@ -203,19 +211,40 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
             put(memory.vram, sum, Color::white);
     }
 
-    for (unsigned int i = 0; i < InputMaxControllers; ++i) {
-        using namespace ranges_at_home;
-        using namespace Generators;
-        auto& controller = input.controllers[i];
-        if (!controller.isConnected)
-            continue;
+        for (int i = 0; i < InputMaxControllers; ++i) {
+            using namespace ranges_at_home;
+            using namespace Generators;
+            auto& controller = input.controllers[i];
+            if (!controller.isConnected)
+                continue;
 
-        auto offset1 = [&](Vec2i p) { return p + Vec2i { static_cast<int>(i) * 10 + 10, 10 }; };
-        for (auto p : transform_view(Line{Vec2i{}, truncate(7 * controller.stickLeft.end)}, offset1))
-            put(memory.vram, wrap(p), Palette::Color::white);
-        auto offset2 = [&](Vec2i p) { return p + Vec2i { static_cast<int>(i) * 10 + 15, 10 }; };
-        for (auto p : transform_view(Line{Vec2i{}, truncate(7 * controller.stickRight.end)}, offset2))
-            put(memory.vram, wrap(p), Palette::Color::white);
+            Vec2i p{ 10, (i + 1) * 10 };
+            for (auto& button : controller.buttons) {
+                if (button.endedDown)
+                    put(memory.vram, p, Color::white);
+                p.x += 2;
+            }
+
+            for (auto& axis1 : controller.axes1) {
+                if (axis1.trigger.endedDown)
+                    put(memory.vram, p, Color::white);
+                p.x += 2;
+            }
+
+            for (auto& axis2 : controller.axes2) {
+                if (axis2.up.endedDown)
+                    put(memory.vram, p + Vec2i{ 1,1 }, Color::white);
+                if (axis2.down.endedDown)
+                    put(memory.vram, p + Vec2i{ 1,-1 }, Color::white);
+                if (axis2.left.endedDown)
+                    put(memory.vram, p + Vec2i{ }, Color::white);
+                if (axis2.right.endedDown)
+                    put(memory.vram, p + Vec2i{ 2,0 }, Color::white);
+                p.x += 4;
+            }
+
+            p.x = 10;
+            p.y = (i + 1) * 10 + 3;
     }
 
     for (auto p : Generators::Line{memory.points[0], memory.points[1]})
@@ -225,7 +254,7 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
     memory.birdPosition = memory.birdPosition + static_cast<float>(input.elapsedTime_s) * memory.birdSpeed * normalized(memory.birdTarget - memory.birdPosition);
     memory.birdPosition = clamp(memory.birdPosition, Vec2f{}, Vec2f{DrawBufferWidth - 1, DrawBufferHeight - 1});
 
-    put(memory.vram, memory.birdTarget, Palette::Color::cyan);
+    put(memory.vram, memory.birdTarget, Palette::Color::lightBlue);
 
     // draw
     blitSprite(memory.sprite, memory.currentSpriteFrame, memory.vram, DrawBufferWidth, truncate(memory.birdPosition), Vec2i{}, Vec2i{DrawBufferWidth, DrawBufferHeight});

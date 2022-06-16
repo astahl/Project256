@@ -19,11 +19,23 @@
     <Filter Include="Header Files\Platform">
       <UniqueIdentifier>{7adc4c76-d84e-4309-b655-a8edeb530ff6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Debug">
+      <UniqueIdentifier>{b7f94ce7-8d41-40c9-9dd3-dcb04ae1b0d7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Drawing">
+      <UniqueIdentifier>{3c40c6e5-13a2-4167-8206-0c1aff137e95}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\FML">
+      <UniqueIdentifier>{2df96f80-c727-4fba-80d1-4db7b4267923}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Profiling">
+      <UniqueIdentifier>{2ab806c8-0f24-4124-8614-16cdc2ea312d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Profiling">
+      <UniqueIdentifier>{3d6ed653-ae58-4e89-9f32-cdde7bba52c2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\game\Project256.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\platform_win32\WinMain.cpp">
       <Filter>Source Files\Platform</Filter>
     </ClCompile>
@@ -33,11 +45,14 @@
     <ClCompile Include="..\..\src\platform_win32\Direct3D12View.cpp">
       <Filter>Source Files\Platform</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\game\Profiling\Timings.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\platform_win32\GameState.cpp">
       <Filter>Source Files\Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\game\Project256.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\game\Profiling\Timings.cpp">
+      <Filter>Source Files\Profiling</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -50,26 +65,29 @@
     <ClInclude Include="..\..\src\platform_win32\Direct3D12View.h">
       <Filter>Header Files\Platform</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\game\Drawing\Generators.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\game\Drawing\Sprites.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\game\Profiling\Timings.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\game\FML\RangesAtHome.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\platform_win32\GameState.h">
       <Filter>Header Files\Platform</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\game\defines.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\game\FML\RangesAtHome.hpp">
+      <Filter>Header Files\FML</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\game\Drawing\Palettes.hpp">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Drawing</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\game\Drawing\Generators.hpp">
+      <Filter>Header Files\Drawing</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\game\Drawing\Sprites.hpp">
+      <Filter>Header Files\Drawing</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\game\Profiling\Timings.h">
+      <Filter>Header Files\Profiling</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\game\Debug\DebugDrawController.hpp">
+      <Filter>Header Files\Debug</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

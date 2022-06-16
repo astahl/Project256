@@ -42,6 +42,7 @@ MainWindow::MainWindow(HWND hwnd)
 MainWindow::~MainWindow()
 {
     KillTimer(mHwnd, static_cast<UINT_PTR>(Timers::HighFrequency));
+    KillTimer(mHwnd, static_cast<UINT_PTR>(Timers::LowFrequency));
 }
 
 void MainWindow::onTick() {
