@@ -12,14 +12,56 @@
 namespace ranges_at_home {
 
 
+template <typename T, size_t N = 0>
+struct iterator {};
+
 template <typename T>
-struct iterator { using type = decltype(std::declval<T&>().begin()); };
+struct iterator<T> { using type = decltype(std::declval<T&>().begin()); };
+
+template <typename T>
+struct iterator<const T> { using type = decltype(std::declval<const T&>().begin()); };
+//
+//template <typename T, size_t N>
+//struct iterator<std::array<T, N>> { using type = T*; };
+//
+//template <typename T, size_t N>
+//struct iterator<const std::array<T, N>> { using type = const T*; };
+
+template <typename T, size_t N>
+struct iterator<T[N]> { using type = T*; };
+
+template <typename T, size_t N>
+struct iterator<const T[N]> { using type = const T*; };
+
+template <typename T, size_t N = 0>
+struct sentinel {};
+
+template <typename T>
+struct sentinel<T> { using type = decltype(std::declval<T&>().end()); };
+
+template <typename T>
+struct sentinel<const T> { using type = decltype(std::declval<const T&>().end()); };
+
+//template <typename T, size_t N>
+//struct sentinel<std::array<T, N>> { using type = T*; };
+//
+//template <typename T, size_t N>
+//struct sentinel<const std::array<T, N>> { using type = const T*; };
+
+template <typename T, size_t N>
+struct sentinel<T[N]> { using type = T*; };
+
+template <typename T, size_t N>
+struct sentinel<const T[N]> { using type = const T*; };
 
 template <typename T>
 using iterator_t = typename iterator<T>::type;
 
 template <typename T>
-struct iter_value { using type = decltype(*(std::declval<iterator_t<T>&>())); };
+using sentinel_t = typename sentinel<T>::type;
+
+template <typename T>
+struct iter_value { using type = std::decay_t<decltype(*(std::declval<iterator_t<T>&>()))>; };
 
 template <typename T>
 using iter_value_t = typename iter_value<T>::type;
@@ -39,22 +81,41 @@ template <typename Signature>
 using returns_t = typename returns<Signature>::type;
 
 
-template<typename T, typename Func>
-struct transform_view {
-    using InputIterator = iterator_t<T>;
-    using Input = std::remove_reference_t<T>;
-    Input base;
-    Func func;
+template <typename T>
+constexpr iterator_t<const T> begin(const T& t) { return t.begin(); }
 
-    constexpr transform_view(T base, Func func)
+template <typename T, size_t N = std::extent_v<T>, typename U = T[N]>
+constexpr iterator_t<const T> begin(const U& t) { return &t[0]; }
+
+template <typename T>
+constexpr sentinel_t<const T> end(const T& t) { return t.end(); }
+
+template <typename T, size_t N = std::extent_v<T>, typename U = T[N]>
+constexpr sentinel_t<const T> end(const U& t) { return &t[N - 1]; }
+
+
+template<typename T, typename Func>
+struct transform_view final {
+    using InputIterator = iterator_t<const T>;
+    using InputSentinel = sentinel_t<const T>;
+    using InputValue = decltype(*std::declval<InputIterator>());
+    using Value = decltype(std::declval<Func>()(std::declval<InputValue>()));
+    const T& base;
+    const Func& func;
+
+    constexpr transform_view(const T& base, const Func& func)
     : base(base), func(func) {
     }
 
+    struct sentinel {
+        const InputSentinel mInputSentinel;
+    };
+
     struct iterator {
         InputIterator inputIterator;
-        Func func;
+        const Func& func;
 
-        constexpr iterator(InputIterator inputIterator, Func func)
+        constexpr iterator(InputIterator inputIterator, const Func& func)
         : inputIterator(inputIterator), func(func) {
         }
 
@@ -63,92 +124,167 @@ struct transform_view {
             return *this;
         }
 
-        constexpr decltype(func(*inputIterator)) operator*() {
-            const auto input = (*inputIterator);
-            const auto result = func(input);
+        constexpr Value operator*() const {
+            const Value input = (*inputIterator);
+            const Value result = func(input);
             return result;
         }
 
-        constexpr bool operator!=(iterator& other) {
+        constexpr bool operator!=(const iterator& other) const {
             return this->inputIterator != other.inputIterator;
+        }
+
+        constexpr bool operator!=(const sentinel& other) const {
+            return this->inputIterator != other.mInputSentinel;
         }
     };
 
-    constexpr iterator begin() {
-        return iterator(base.begin(), func);
+    constexpr iterator begin() const {
+        return iterator{ranges_at_home::begin(base), func};
     }
 
-    constexpr iterator end() {
-        return iterator(base.end(), func);
+    constexpr sentinel end() const {
+        return sentinel{ranges_at_home::end(base)};
+    }
+};
+
+
+template<typename T, typename U = iter_value_t<T>>
+struct enumerate_view final {
+    using InputIterator = iterator_t<const T>;
+    using InputSentinel = sentinel_t<const T>;
+    const T& base;
+
+    struct enumerated final {
+        U value;
+        int position;
+    };
+
+    constexpr enumerate_view(const T& base)
+    : base(base) {
+    }
+
+    struct sentinel {
+        InputSentinel mEndIt;
+    };
+
+    struct iterator {
+        InputIterator inputIterator;
+        int position = 0;
+
+        constexpr iterator(InputIterator inputIterator)
+        : inputIterator(inputIterator) {
+        }
+
+        constexpr iterator& operator++() {
+            ++inputIterator;
+            ++position;
+            return *this;
+        }
+
+        constexpr enumerated operator*() const {
+            U input = (*inputIterator);
+            auto result = enumerated{.value = input, .position = position};
+            return result;
+        }
+
+        constexpr bool operator!=(const iterator& other) const {
+            return this->inputIterator != other.inputIterator;
+        }
+
+        constexpr bool operator!=(const sentinel& other) const {
+            return this->inputIterator != other.mEndIt;
+        }
+    };
+
+    constexpr iterator begin() const {
+        return iterator{ranges_at_home::begin(base)};
+    }
+
+    constexpr sentinel end() const {
+        return sentinel{ranges_at_home::end(base)};
     }
 };
 
 
 template<typename T, typename Func>
-struct filter_view {
-    using InputIterator = iterator_t<T>;
+struct filter_view final {
+    using InputIterator = iterator_t<const T>;
+    using InputSentinel = sentinel_t<const T>;
+    struct sentinel {
+        InputSentinel mEndIt;
+    };
 
     struct iterator {
-        using value = decltype(*std::declval<InputIterator>());
-        using reference = std::add_lvalue_reference_t<value>;
+        using value = iter_value_t<const T>;
 
-        InputIterator inputIterator;
-        InputIterator endInput;
-        Func func;
+        InputIterator mInputIterator;
+        InputSentinel mInputSentinel;
+        value mCurrentValue;
+        const Func& mFunc;
 
-        constexpr iterator(InputIterator inputIterator, InputIterator endInputIterator, Func func)
-        : inputIterator(inputIterator), endInput(endInputIterator), func(func) {
+        constexpr iterator(InputIterator inputIterator, InputSentinel inputSentinel, const Func& func)
+        : mInputIterator(inputIterator), mInputSentinel(inputSentinel), mCurrentValue{*inputIterator}, mFunc(func) {
         }
 
         constexpr iterator& operator++() {
-            do {
-                ++inputIterator;
+            if (mInputIterator != mInputSentinel) {
+                do {
+                    ++mInputIterator;
+                    mCurrentValue = *mInputIterator;
+                }
+                while (needsToAdvance());
             }
-            while (inputIterator != endInput && !func(*inputIterator));
+
             return *this;
         }
 
-        constexpr decltype(*inputIterator) operator*() {
-            return *inputIterator;
+        constexpr value operator*() const {
+            return mCurrentValue;
         }
 
-        constexpr bool operator!=(iterator& other) {
-            return this->inputIterator != other.inputIterator;
+        constexpr bool operator!=(const iterator& other) const {
+            return mInputIterator != other.mInputIterator;
+        }
+
+        constexpr bool operator!=(const sentinel& other) const {
+            return mInputIterator != other.mEndIt;
+        }
+
+        constexpr bool needsToAdvance() const {
+            return (mInputIterator != mInputSentinel) && !mFunc(mCurrentValue);
         }
     };
 
+    const T& base;
+    const Func& mFunc;
 
-    T base;
-    Func func;
-    const iterator mEnd;
-
-    constexpr filter_view(T base, Func func)
-    : base(base), func(func), mEnd(iterator(base.end(), base.end(), func)) {
+    constexpr filter_view(const T& base, const Func& func)
+    : base(base), mFunc(func) {
     }
 
-    constexpr iterator begin() {
-        auto it = iterator(base.begin(), base.end(), func);
-        if (!func(*it)) {
-            return ++it;
-        }
+    constexpr iterator begin() const {
+        auto it = iterator{ranges_at_home::begin(base), ranges_at_home::end(base), mFunc};
+        while (it.needsToAdvance())
+            ++it;
         return it; 
     }
 
-    constexpr iterator end() {
-        return mEnd;
+    constexpr sentinel end() const {
+        return sentinel{ranges_at_home::end(base)};
     }
 };
 
 
 template <typename Func>
-struct transform {
+struct transform final {
 
-    Func func;
-    transform(Func func)
+    const Func& func;
+    constexpr transform(const Func& func)
     : func(func) {}
 
     template <typename T>
-    transform_view<T, Func> apply(T range)
+    constexpr transform_view<T, Func> apply(const T& range) const
     {
         return transform_view(range, func);
     }
@@ -158,82 +294,172 @@ struct transform {
 template <typename Func>
 struct filter {
 
-    Func func;
-    filter(Func func)
+    const Func& func;
+    constexpr filter(const Func& func)
     : func(func) {}
 
     template <typename T>
-    filter_view<T, Func> apply(T range)
+    constexpr filter_view<T, Func> apply(const T& range) const
     {
         return filter_view(range, func);
     }
 
 };
 
+struct enumerate {
+    template <typename T>
+    constexpr enumerate_view<T> apply(const T& range) const
+    {
+        return enumerate_view(range);
+    }
+};
+
 template <typename Func>
 struct forEach {
-    Func func;
-    forEach(Func func)
-    : func(func) {}
+    const Func& mFunc;
+
+    constexpr forEach(const Func& func) : mFunc(func) {}
 
     template <typename T>
-    constexpr void apply(T range) {
-        for(auto&& v : range) {
-            func(v);
+    constexpr void apply(const T& range) const {
+        for(const auto& v : range) {
+            mFunc(v);
         }
     }
 };
 
 template <typename Func, typename V = args_t<decltype(std::declval<Func>())>>
 struct reduce {
-    Func func;
-    V initial;
+    const Func& mFunc;
+    const V initial;
 
-    reduce(Func func = Func{}, V initial = V{}) : func(func), initial{initial} {}
+    constexpr reduce(V initial, const Func& func) : mFunc(func), initial{initial} {}
 
     template <typename T>
-    constexpr auto apply(T range) {
+    constexpr auto apply(const T& range) const {
         V value = initial;
-        for(auto&& v : range) {
-            value = func(v, value);
+        for(const auto& v : range) {
+            value = mFunc(value, v);
         }
         return value;
     }
 };
 
+template <size_t N>
+struct toArray {
 
-template <typename T, typename U>
-struct applicator {
-    T left;
-    U right;
-
-    template <typename W>
-    constexpr auto apply(W&& w) {
-        return right.apply(left.apply(w));
-    }
-
-    constexpr auto begin() {
-        return right.apply(left).begin();
-    }
-
-    constexpr auto end() {
-        return right.apply(left).end();
-    }
-
-    constexpr auto operator()() {
-        return right.apply(left);
-    }
-
-    constexpr auto run() {
-        return this->operator()();
+    template<typename U>
+    constexpr auto apply(const U& range) const
+    {
+        using T = iter_value_t<U>;
+        using V = typename enumerate_view<U>::enumerated;
+        return (enumerate{} | reduce(std::array<T,N>{},
+                                            [](std::array<T,N>& arr, const V& en) {
+                                                arr[en.position] = en.value;
+                                                return arr;
+                                            })).apply(range);
     }
 };
 
 template <typename T, typename U>
-constexpr applicator<T, U> operator|(T left, U right)
+struct applicator final {
+    const T& left;
+    const U& right;
+
+    template <typename W>
+    constexpr auto apply(const W& w) const {
+        return right.apply(left.apply(w));
+    }
+
+    constexpr auto begin() const {
+        return ranges_at_home::begin(right.apply(left));
+    }
+
+    constexpr auto end() const {
+        return ranges_at_home::end(right.apply(left));
+    }
+
+    constexpr auto operator()() const {
+        return right.apply(left);
+    }
+
+    constexpr auto run() const {
+        return this->operator()();
+    }
+};
+
+
+template <typename T, typename U>
+constexpr applicator<T, U> operator|(const T& left, const U& right)
 {
     return applicator<T, U> {left, right};
 }
 
+
+template <typename T, typename U>
+struct concatenator final {
+    T left;
+    U right;
+
+    using InputIteratorLeft = iterator_t<T>;
+    using InputIteratorRight = iterator_t<U>;
+    using InputSentinelLeft = sentinel_t<T>;
+    using InputSentinelRight = sentinel_t<U>;
+
+    static_assert(std::is_same_v<iter_value_t<T>, iter_value_t<U>> == true, "Left and Right must have same value type.");
+
+    struct sentinel {
+        InputSentinelRight mRightSentinel;
+    };
+
+    struct iterator {
+        using Value = iter_value_t<T>;
+        InputIteratorLeft mLeft;
+        InputIteratorRight mRight;
+        InputSentinelLeft mLeftSentinel;
+
+        constexpr iterator& operator++() {
+            if (mLeft != mLeftSentinel) {
+                ++mLeft;
+            } else {
+                ++mRight;
+            }
+            return *this;
+        }
+
+        constexpr Value operator*() const {
+            if (mLeft != mLeftSentinel) {
+                return *mLeft;
+            } else {
+                return *mRight;
+            }
+        }
+
+        constexpr bool operator!=(const sentinel& other) const {
+            return mRight != other.mRightSentinel;
+        }
+    };
+
+    constexpr auto begin() const {
+        return iterator {
+            .mLeft = ranges_at_home::begin(left),
+            .mRight = ranges_at_home::begin(right),
+            .mLeftSentinel = ranges_at_home::end(left),
+        };
+    }
+
+    constexpr auto end() const {
+        return sentinel {
+            .mRightSentinel = ranges_at_home::end(right)
+        };
+    }
+};
+
+template <typename T, typename U, std::enable_if_t<
+        std::is_same_v<iter_value_t<T>, iter_value_t<U>>, bool> = true>
+constexpr concatenator<T, U> operator^(T left, U right)
+{
+    return concatenator<T, U> {left, right};
+}
 
 }

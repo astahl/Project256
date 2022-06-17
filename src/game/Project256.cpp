@@ -25,7 +25,7 @@ struct Timer {
 
 
 template<typename Color, typename Vec2 = Vec2i, int Pitch = DrawBufferWidth>
-constexpr void put(uint8_t* drawBuffer, Vec2 position, Color color)
+compiletime void put(uint8_t* drawBuffer, Vec2 position, Color color)
 {
     assert(drawBuffer != nullptr);
     assert(position.x >= 0);
@@ -127,8 +127,8 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
     if (pInput->closeRequested) {
         clearColor = Color::white;
     }
-    const auto bufferSize = Vec2i{ DrawBufferWidth, DrawBufferHeight};
-    const auto center = bufferSize / 2;
+    compiletime auto bufferSize = Vec2i{ DrawBufferWidth, DrawBufferHeight};
+    compiletime auto center = bufferSize / 2;
     GameMemory& memory = *reinterpret_cast<GameMemory*>(pMemory);
     GameInput& input = *pInput;
     if (input.textLength)
@@ -151,6 +151,9 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
         memory.birdSpeed = 5;
     }
 
+    constant auto whitePixel = [&](const auto& p) { put(memory.vram, p, Color::white); };
+
+
     const auto time = std::chrono::microseconds(input.upTime_microseconds);
     if (memory.directionChangeTimer.hasFired(time) || memory.birdTarget == round(memory.birdPosition)) {
         memory.directionChangeTimer = Timer(time, std::chrono::seconds(100 / memory.birdSpeed++));
@@ -172,83 +175,82 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
 
 
     auto wrap = [](auto p) { return wrapAround2d(p, Vec2i(), Vec2i{DrawBufferWidth, DrawBufferHeight});};
-        if (input.mouse.trackLength) {
-            Vec2f mousePosition = input.mouse.track[input.mouse.trackLength - 1];
 
-            Vec2i position = truncate(mousePosition);
+    if (input.mouse.trackLength) {
+        using namespace ranges_at_home;
+        using namespace Generators;
 
-            if (input.mouse.buttonLeft.endedDown) {
-                memory.points[memory.currentPoint] = position;
-            } else if (input.mouse.buttonLeft.transitionCount) {
-                memory.currentPoint = (memory.currentPoint + 1) % 2;
-            }
+        Vec2f mousePosition = input.mouse.track[input.mouse.trackLength - 1];
 
-            if (input.mouse.buttonLeft.endedDown) {
-                for (auto p : Generators::Rectangle{ .bottomLeft = position - Vec2i{3,3}, .topRight = position + Vec2i{3, 3} })
-                    put(memory.vram, wrap(p), Palette::Color::green);
+        Vec2i position = truncate(mousePosition);
 
-            }
+        auto offset = [position](const auto& p) {
+            return p + position;
+        };
+        compiletime auto clip = [&](const auto& p) {
+            return (Vec2i{0,0} <= p) && (p < bufferSize);
+        };
 
-            using namespace ranges_at_home;
-            using namespace Generators;
+        if (input.mouse.buttonLeft.endedDown) {
+            memory.points[memory.currentPoint] = position;
+        } else if (input.mouse.buttonLeft.transitionCount) {
+            memory.currentPoint = (memory.currentPoint + 1) % 2;
+        }
 
-            auto offset = [&](Vec2i p) { return p + position; };
-            auto clip = [&](Vec2i p) {
-                return (Vec2i{0,0} <= p) && (p < bufferSize);
-            };
-            auto atMouse = transform(offset) | filter(clip);
+        auto atMouse = transform(offset);
+        compiletime auto clipped = filter(clip);
+        compiletime auto rectangleGenerator = Rectangle{ Vec2i{-3,-3}, Vec2i{3, 3} };
 
-            for (auto p : Line{{3, 0}, {-3, 0}} | atMouse )
-                put(memory.vram, p, Color::white);
-            for (auto p : Line{{0, -3}, {0, 3}} | atMouse )
-                put(memory.vram, p, Color::white);
+        if (input.mouse.buttonLeft.endedDown) {
+            for (auto p : rectangleGenerator | atMouse | clipped)
+                put(memory.vram, wrap(p), Palette::Color::green);
+        }
 
-            auto drawAcross = (Line{{-3, -3}, {3, 3}} | atMouse | forEach([&] (const Vec2i& p) {
-                put(memory.vram, p, Color::white);
-            }));
+        compiletime auto crossGenerator = (Line{{3, 0}, {-3, 0}} ^ Line{{0, 3}, {0, -3}});
+        compiletime auto cross = (crossGenerator | toArray<14>{}).run();
 
-            drawAcross();
-
-            auto sum = (Line{{0, 0}, {9, 3}} | reduce<std::plus<Vec2i>, Vec2i>()).run();
-            put(memory.vram, sum, Color::white);
+        for (const auto p : cross | atMouse | clipped) {
+            whitePixel(p);
+        }
     }
 
-        for (int i = 0; i < InputMaxControllers; ++i) {
-            using namespace ranges_at_home;
-            using namespace Generators;
-            auto& controller = input.controllers[i];
-            if (!controller.isConnected)
-                continue;
+    for (int i = 0; i < InputMaxControllers; ++i) {
+        using namespace ranges_at_home;
+        using namespace Generators;
+        auto& controller = input.controllers[i];
+        if (!controller.isConnected)
+            continue;
 
-            Vec2i p{ 10, (i + 1) * 10 };
-            for (auto& button : controller.buttons) {
-                if (button.endedDown)
-                    put(memory.vram, p, Color::white);
-                p.x += 2;
-            }
+        Vec2i p{ 10, (i + 1) * 10 };
+        for (auto& button : controller.buttons) {
+            if (button.endedDown)
+                put(memory.vram, p, Color::white);
+            p.x += 2;
+        }
 
-            for (auto& axis1 : controller.axes1) {
-                if (axis1.trigger.endedDown)
-                    put(memory.vram, p, Color::white);
-                p.x += 2;
-            }
+        for (auto& axis1 : controller.axes1) {
+            if (axis1.trigger.endedDown)
+                put(memory.vram, p, Color::white);
+            p.x += 2;
+        }
 
-            for (auto& axis2 : controller.axes2) {
-                if (axis2.up.endedDown)
-                    put(memory.vram, p + Vec2i{ 1,1 }, Color::white);
-                if (axis2.down.endedDown)
-                    put(memory.vram, p + Vec2i{ 1,-1 }, Color::white);
-                if (axis2.left.endedDown)
-                    put(memory.vram, p + Vec2i{ }, Color::white);
-                if (axis2.right.endedDown)
-                    put(memory.vram, p + Vec2i{ 2,0 }, Color::white);
-                p.x += 4;
-            }
+        for (auto& axis2 : controller.axes2) {
+            if (axis2.up.endedDown)
+                put(memory.vram, p + Vec2i{ 1,1 }, Color::white);
+            if (axis2.down.endedDown)
+                put(memory.vram, p + Vec2i{ 1,-1 }, Color::white);
+            if (axis2.left.endedDown)
+                put(memory.vram, p + Vec2i{ }, Color::white);
+            if (axis2.right.endedDown)
+                put(memory.vram, p + Vec2i{ 2,0 }, Color::white);
+            p.x += 4;
+        }
 
-            p.x = 10;
-            p.y = (i + 1) * 10 + 3;
+        p.x = 10;
+        p.y = (i + 1) * 10 + 3;
     }
 
+    if (memory.points[0] != memory.points[1])
     for (auto p : Generators::Line{memory.points[0], memory.points[1]})
         put(memory.vram, p, Palette::Color::white);
 
