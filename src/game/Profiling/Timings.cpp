@@ -12,6 +12,7 @@
 #include <cstdio>
 #include <array>
 #include <string>
+#include <shared_mutex>
 
 #endif
 
@@ -32,17 +33,22 @@ static const std::array<std::array<char, 16>, TimingIntervalCount> sIntervalName
     "DrawPresent"
 };
 
+globalvar std::shared_mutex Mutex{};
+
 void profiling_time_initialise(TimingData* data) {
+    std::unique_lock lock{Mutex};
     data->zero = data->getPlatformTimeMicroseconds();
 }
 
 void profiling_time_set(TimingData* data, TimingTimer timer)
 {
+    std::unique_lock lock{Mutex};
     data->timers[timer] = data->getPlatformTimeMicroseconds();
 }
 
 void profiling_time_interval(TimingData* data, TimingTimer timer, TimingInterval interval)
 {
+    std::unique_lock lock{Mutex};
     auto now = data->getPlatformTimeMicroseconds();
     auto elapsed = now - data->timers[timer];
     data->intervals[interval] += elapsed;
@@ -52,6 +58,7 @@ void profiling_time_interval(TimingData* data, TimingTimer timer, TimingInterval
 
 int profiling_time_print(TimingData* data, char* buffer, int bufferSize)
 {
+    std::shared_lock lock{Mutex};
     int writtenTotal = 0;
     for (int interval = 0; interval < TimingIntervalCount; ++interval)
     {
@@ -66,6 +73,7 @@ int profiling_time_print(TimingData* data, char* buffer, int bufferSize)
 
 void profiling_time_clear(struct TimingData* data)
 {
+    std::unique_lock lock{Mutex};
     std::memset(data->intervals, 0, TimingIntervalCount * sizeof(int64_t));
     std::memset(data->intervalCount, 0, TimingIntervalCount * sizeof(int));
 }

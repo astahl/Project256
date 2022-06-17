@@ -13,9 +13,9 @@
 struct Timer {
     std::chrono::microseconds firesAt;
 
-    Timer(std::chrono::microseconds currentTime, std::chrono::microseconds period)
-    : firesAt{currentTime}{
-        firesAt += period;
+    static Timer delay(std::chrono::microseconds currentTime, std::chrono::microseconds period)
+    {
+        return {.firesAt = currentTime + period };
     }
 
     bool hasFired(std::chrono::microseconds currentTime) const {
@@ -37,20 +37,19 @@ compiletime void put(uint8_t* drawBuffer, Vec2 position, Color color)
 
 
 struct GameMemory {
-    uint8_t vram[DrawBufferWidth * DrawBufferHeight];
-    uint32_t palette[16];
-    Vec2f birdPosition;
-    int birdSpeed;
-    Vec2i birdTarget;
-    Timer directionChangeTimer;
+    uint8_t vram[DrawBufferWidth * DrawBufferHeight]{};
+    uint32_t palette[16]{};
+    Vec2f birdPosition{};
+    int birdSpeed{};
+    Vec2i birdTarget{};
+    Timer directionChangeTimer{};
 
-    SpritePicture<5, 2, 4> sprite;
-    Timer spriteAnimationTimer;
-    int currentSpriteFrame;
+    SpritePicture<5, 2, 4> sprite{};
+    Timer spriteAnimationTimer{};
+    int currentSpriteFrame{};
 
-    Vec2i points[2];
-    int currentPoint;
-
+    Vec2i points[2]{};
+    int currentPoint{};
 };
 
 static_assert(sizeof(GameMemory) <= MemorySize, "MemorySize is too small to hold GameMemory struct");
@@ -127,16 +126,17 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
     if (pInput->closeRequested) {
         clearColor = Color::white;
     }
-    compiletime auto bufferSize = Vec2i{ DrawBufferWidth, DrawBufferHeight};
-    compiletime auto center = bufferSize / 2;
+    compiletime auto BufferSize = Vec2i{ DrawBufferWidth, DrawBufferHeight};
+    compiletime auto Center = BufferSize / 2;
     GameMemory& memory = *reinterpret_cast<GameMemory*>(pMemory);
     GameInput& input = *pInput;
     if (input.textLength)
         std::cout << input.text_utf8;
 
     if (input.frameNumber == 0) {
+        memory = GameMemory{};
         Palette::writeTo(memory.palette);
-        memory.birdPosition = itof(center);
+        memory.birdPosition = itof(Center);
         memory.sprite.data = {
             0, 0, 1, 0, 0,
             1, 1, 0, 1, 1,
@@ -156,12 +156,12 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
 
     const auto time = std::chrono::microseconds(input.upTime_microseconds);
     if (memory.directionChangeTimer.hasFired(time) || memory.birdTarget == round(memory.birdPosition)) {
-        memory.directionChangeTimer = Timer(time, std::chrono::seconds(100 / memory.birdSpeed++));
-        memory.birdTarget = (rand2d() % bufferSize);
+        memory.directionChangeTimer = Timer::delay(time, std::chrono::seconds(100 / memory.birdSpeed++));
+        memory.birdTarget = (rand2d() % BufferSize);
     }
 
     if (memory.spriteAnimationTimer.hasFired(time)) {
-        memory.spriteAnimationTimer = Timer(time, std::chrono::milliseconds(1000 / memory.birdSpeed));
+        memory.spriteAnimationTimer = Timer::delay(time, std::chrono::milliseconds(1000 / memory.birdSpeed));
         memory.currentSpriteFrame = (memory.currentSpriteFrame + 1) % decltype(memory.sprite)::frameCount;
     }
 
@@ -173,22 +173,21 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
         put(memory.vram, Vec2i{ x, 0 }, (x * Palette::count) / DrawBufferWidth);
     }
 
-
-    auto wrap = [](auto p) { return wrapAround2d(p, Vec2i(), Vec2i{DrawBufferWidth, DrawBufferHeight});};
+    compiletime auto wrap = [](auto p) { return wrapAround2d(p, Vec2i(), Vec2i{DrawBufferWidth, DrawBufferHeight});};
 
     if (input.mouse.trackLength) {
         using namespace ranges_at_home;
         using namespace Generators;
 
         Vec2f mousePosition = input.mouse.track[input.mouse.trackLength - 1];
-
         Vec2i position = truncate(mousePosition);
+//        printf("%d  %d, %d\n", input.mouse.trackLength, position.x, position.y);
 
-        auto offset = [position](const auto& p) {
+        auto offset = [=](const auto& p) {
             return p + position;
         };
-        compiletime auto clip = [&](const auto& p) {
-            return (Vec2i{0,0} <= p) && (p < bufferSize);
+        compiletime auto clip = [=](const auto& p) {
+            return (Vec2i{0,0} <= p) && (p < BufferSize);
         };
 
         if (input.mouse.buttonLeft.endedDown) {
@@ -199,6 +198,7 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
 
         auto atMouse = transform(offset);
         compiletime auto clipped = filter(clip);
+        compiletime auto wrapped = transform(wrap);
         compiletime auto rectangleGenerator = Rectangle{ Vec2i{-3,-3}, Vec2i{3, 3} };
 
         if (input.mouse.buttonLeft.endedDown) {
@@ -209,7 +209,7 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
         compiletime auto crossGenerator = (Line{{3, 0}, {-3, 0}} ^ Line{{0, 3}, {0, -3}});
         compiletime auto cross = (crossGenerator | toArray<14>{}).run();
 
-        for (const auto p : cross | atMouse | clipped) {
+        for (const auto p : cross | atMouse | wrapped) {
             whitePixel(p);
         }
     }

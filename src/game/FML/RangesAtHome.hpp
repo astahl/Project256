@@ -363,8 +363,8 @@ struct toArray {
 
 template <typename T, typename U>
 struct applicator final {
-    const T& left;
-    const U& right;
+    T left;
+    U right;
 
     template <typename W>
     constexpr auto apply(const W& w) const {
