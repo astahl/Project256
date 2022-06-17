@@ -187,6 +187,7 @@ class GameState : ObservableObject {
             }
             if (input.controllerCount == 0) {
                 input.controllerCount = 1
+                input.controllers.0.isConnected = true
             }
             if let keyboardInput = keyboard.keyboardInput {
                 if keyboardInput.keyChangedHandler == nil {
@@ -204,6 +205,7 @@ class GameState : ObservableObject {
             }
             if (input.controllerCount == 0) {
                 input.controllerCount = 1
+                input.controllers.0.isConnected = true
             }
             if let mouseInput = mouse.mouseInput {
                 if mouseInput.mouseMovedHandler == nil {
@@ -227,6 +229,7 @@ class GameState : ObservableObject {
         }
         input.controllers.0.stickLeft.digitalToAnalog()
         input.controllers.0.stickLeft.latches = true
+        input.controllers.0.isActive = true
     }
 
     func mouseMoved(mouse: GCMouseInput, deltaX: Float, deltaY: Float)
@@ -234,6 +237,7 @@ class GameState : ObservableObject {
         input.controllers.0.stickRight.end.x = deltaX
         input.controllers.0.stickRight.end.y = deltaY
         input.controllers.0.stickRight.analogToDigital(deadZone: 0.2)
+        input.controllers.0.isActive = true
     }
 
 
