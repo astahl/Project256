@@ -227,6 +227,72 @@ struct Circle {
     }
 };
 
+struct Ellipsis {
+    Vec2i mRadii;
+    Vec2i mCenter{};
 
+    struct Sentinel {
+    };
+
+    struct Iterator {
+        long mRx2;
+        long mRy2;
+        long mError;
+        Vec2i mCenter;
+        Vec2i mOffset;
+        int mQuadrant = -2;
+
+        constexpr bool operator!=(const Sentinel&) const {
+            return mOffset.y >= 0;
+        }
+
+        constexpr Vec2i operator*() const {
+            switch (mQuadrant) {
+                case 0: return mCenter + mOffset;
+                case 1: return mCenter + swizzled<Vec2SwizzleMask::NegateX>(mOffset);
+                case 2: return mCenter + swizzled<Vec2SwizzleMask::Negate>(mOffset);
+                case 3: return mCenter + swizzled<Vec2SwizzleMask::NegateY>(mOffset);
+                default:
+                    return mCenter;
+            }
+        }
+
+        constexpr Iterator& operator++() {
+            if (mQuadrant < 4) {
+                ++mQuadrant;
+                return *this;
+            }
+            // all quadrants done, now calculate next offsets and errors
+            mQuadrant = 0;
+
+            long errorNext = mError * 2;
+            if (errorNext < (2 * mOffset.x + 1) * mRy2) {
+                mOffset.x += 1;
+                mError += (2 * mOffset.x + 1) * mRy2;
+            }
+            if (errorNext > -(2* mOffset.y - 1) * mRx2) {
+                mOffset.y -= 1;
+                mError -= (2* mOffset.y - 1) * mRx2;
+            }
+            return *this;
+        }
+    };
+
+    constexpr Iterator begin() const {
+        long rx2 = static_cast<long>(mRadii.x) * mRadii.x;
+        long ry2 = static_cast<long>(mRadii.y) * mRadii.y;
+        return Iterator {
+            .mRx2 = rx2,
+            .mRy2 = ry2,
+            .mError = ry2 - ( 2 * mRadii.y - 1) * rx2,
+            .mCenter = mCenter,
+            .mOffset = {.x = 0, .y = mRadii.y}
+        };
+    }
+
+    constexpr Sentinel end() const {
+        return Sentinel{};
+    }
+};
 
 }

@@ -302,6 +302,59 @@ struct filter_view final {
 };
 
 
+
+template<typename T>
+struct skip_view {
+    using InputIterator = iterator_t<const T>;
+    using InputSentinel = sentinel_t<const T>;
+    using InputValue = iter_value_t<const T>;
+
+    int mCount;
+    const T& mInputRange;
+
+    struct Sentinel {};
+
+    struct Iterator {
+        InputIterator mInputIt;
+        InputSentinel mEnd;
+        int mCount;
+
+        constexpr void doTheSkip() {
+            while (mCount > 0 && mInputIt != mEnd) {
+                mCount -= 1;
+                ++mInputIt;
+            }
+        }
+
+        constexpr Iterator& operator++() {
+            ++mInputIt;
+            return *this;
+        }
+
+        constexpr InputValue operator*() const {
+            return *mInputIt;
+        }
+
+        constexpr bool operator!=(const Sentinel&) const {
+            return mInputIt != mEnd;
+        }
+    };
+
+    constexpr Iterator begin() const {
+        auto it = Iterator{
+            .mInputIt = ranges_at_home::begin(mInputRange),
+            .mEnd = ranges_at_home::end(mInputRange),
+            .mCount = mCount
+        };
+        it.doTheSkip();
+        return it;
+    }
+
+    constexpr Sentinel end() const {
+        return {};
+    }
+};
+
 template <typename Func>
 struct transform final {
 
@@ -316,6 +369,9 @@ struct transform final {
     }
 
 };
+
+
+
 
 template <typename Func>
 struct filter {
@@ -339,6 +395,22 @@ struct enumerate {
         return enumerate_view(range);
     }
 };
+
+struct skip {
+    int mCount;
+
+    template <typename T>
+    constexpr skip_view<T> apply(const T& range) const
+    {
+        return skip_view<T> {
+            .mInputRange = range,
+            .mCount = mCount
+        };
+    }
+};
+
+
+
 
 template <typename Func>
 struct forEach {
@@ -384,6 +456,22 @@ struct toArray {
                                                 arr[en.position] = en.value;
                                                 return arr;
                                             })).apply(range);
+    }
+};
+
+
+template <size_t N, typename Compare>
+struct sortedArray {
+    Compare mCompare{};
+
+    template<typename U>
+    auto apply(const U& range) const
+    {
+        using T = iter_value_t<U>;
+        using V = typename enumerate_view<U>::enumerated;
+        auto array = toArray<N>().apply(range);
+        std::sort(array.begin(), array.end(), mCompare);
+        return array;
     }
 };
 

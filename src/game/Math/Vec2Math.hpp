@@ -8,6 +8,8 @@
 #include "../Project256.h"
 #include <cmath>
 #include <type_traits>
+#include <utility>
+
 
 template <typename T>
 struct is_vec2 {
@@ -16,6 +18,11 @@ struct is_vec2 {
 
 template <typename T>
 using is_vec2_v = typename is_vec2<T>::value;
+
+template <typename T>
+struct is_scalar {
+    using value = std::negation<is_vec2_v<T>>;
+};
 
 template <typename T>
 struct vec2 {};
@@ -45,10 +52,10 @@ constexpr float length(V vec) {
     return sqrtf(dot(vec, vec));
 }
 
-template<typename V, typename = std::enable_if_t<is_vec2_v<V>{}>>
-constexpr V normalized(V vec) {
+template<typename V, typename R = vec2_t<decltype(vec2_scalar_t<V>{} / float{})>, typename = std::enable_if_t<is_vec2_v<V>{}>>
+constexpr R normalized(V vec) {
     auto leng = length(vec);
-    if (leng == 0.0) return V{};
+    if (leng == 0.0) return R{1.0f, 0.0f};
     return vec / leng;
 }
 
@@ -85,9 +92,14 @@ constexpr vec2_t<R> operator-(V left, W right) {
     return vec2_t<R>{left.x - right.x, left.y - right.y};
 }
 
-template<typename V, typename W, typename R = decltype(vec2_scalar_t<V>{} - vec2_scalar_t<W>{})>
+template<typename V, typename W, typename R = decltype(vec2_scalar_t<V>{} + vec2_scalar_t<W>{})>
 constexpr vec2_t<R> operator+(V left, W right) {
     return vec2_t<R>{left.x + right.x, left.y + right.y};
+}
+
+template<typename V, typename W, typename R = decltype(vec2_scalar_t<V>{} * vec2_scalar_t<W>{})>
+constexpr vec2_t<R> operator*(V left, W right) {
+    return vec2_t<R>{left.x * right.x, left.y * right.y};
 }
 
 template<typename Vec1, typename Vec2>
@@ -121,13 +133,13 @@ constexpr bool operator==(Vec1 left, Vec2 right )
     return left.x == right.x && left.y == right.y;
 }
 
-template<typename Vec1, typename Vec2, typename = std::enable_if_t<std::conjunction<is_vec2_v<Vec1>, is_vec2_v<Vec2> >::value>>
+template<typename Vec1, typename Vec2, std::enable_if_t<std::conjunction_v<is_vec2_v<Vec1>, is_vec2_v<Vec2>>, bool> = true>
 constexpr bool operator!=(Vec1 left, Vec2 right )
 {
     return !(left == right);
 }
 
-template<typename Scalar, typename Vec, typename R = decltype(Scalar{} * vec2_scalar_t<Vec>{})>
+template<typename Scalar, typename Vec, typename R = decltype(Scalar{} * vec2_scalar_t<Vec>{}), typename = std::enable_if<std::is_scalar_v<Scalar>>>
 constexpr vec2_t<R> operator*(Scalar left, Vec right)
 {
     return vec2_t<R>{
@@ -203,4 +215,70 @@ constexpr Vec wrapAround2d(Vec a, U1 lowerBound, U2 upperBound) {
 template<typename V>
 constexpr V clamp(V vec, V upper, V lower) {
     return V { std::clamp(vec.x, upper.x, lower.x), std::clamp(vec.y, upper.y, lower.y)};
+}
+
+
+template <typename T, size_t Rows, size_t Cols>
+struct Matrix{
+    struct Row {
+        std::array<T, Cols> values;
+    };
+    std::array<Row, Rows> rows;
+};
+
+using Mat4i = Matrix<int, 4, 4>;
+using Mat4f = Matrix<float, 4, 4>;
+
+template <typename T, typename Vec, typename U = vec2_scalar_t<Vec>, typename R = vec2_t<decltype(T{} * U{})>>
+constexpr R operator*(const Matrix<T, 2, 3>& matrix, const Vec& vector)
+{
+    return vec2<R>{
+        .x = matrix.rows[0].values[0] * vector.x + matrix.rows[0].values[1] * vector.y + matrix.rows[0].values[2] * 1,
+        .y = matrix.rows[1].values[0] * vector.x + matrix.rows[1].values[1] * vector.y + matrix.rows[1].values[2] * 1
+    };
+}
+
+template <typename T, typename Vec, typename U = vec2_scalar_t<Vec>, typename R = vec2_t<decltype(T{} * U{})>>
+constexpr R operator*(const Matrix<T, 2, 2>& matrix, const Vec& vector)
+{
+    return R{
+        .x = matrix.rows[0].values[0] * vector.x + matrix.rows[0].values[1] * vector.y,
+        .y = matrix.rows[1].values[0] * vector.x + matrix.rows[1].values[1] * vector.y
+    };
+}
+
+template <typename T>
+constexpr Matrix<T, 2, 2> makeScale2d(T uniform) {
+    Matrix<T, 2, 2> result {};
+    result.rows[0].values[0] = uniform;
+    result.rows[1].values[1] = uniform;
+    return result;
+}
+
+template <typename Vec, typename T = vec2_scalar_t<Vec>>
+constexpr auto makeBase2d(Vec base1, Vec base2) {
+    using M = Matrix<T, 2, 2>;
+    using R = typename M::Row;
+    M result{
+        .rows{
+            R({ base1.x, base2.x }),
+            R({ base1.y, base2.y })
+        }
+    };
+    return result;
+}
+
+template <typename Vec, typename T = vec2_scalar_t<Vec>>
+constexpr Matrix<T, 2, 2> makeBase2d(Vec base1) {
+    return makeBase2d(base1, {-base1.y, base1.x});
+}
+
+constexpr Matrix<float, 2, 2> makeRotation2d(float angle) {
+    Matrix<float, 2, 2> result {
+        .rows {
+            Matrix<float, 2, 2>::Row{ .values = { cos(angle), -sin(angle) } },
+            Matrix<float, 2, 2>::Row{ .values = { sin(angle), cos(angle) } }
+        }
+    };
+    return result;
 }

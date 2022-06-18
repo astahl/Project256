@@ -9,7 +9,7 @@
 
 constant long MemorySize = 640 * 1024; // 640kbytes
 
-constant unsigned DrawBufferWidth = 320;
+constant unsigned DrawBufferWidth = 160;
 constant unsigned DrawBufferHeight = 200;
 
 constant unsigned DrawAspectH = 4;

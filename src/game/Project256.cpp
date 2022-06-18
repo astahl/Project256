@@ -181,7 +181,6 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
 
         Vec2f mousePosition = input.mouse.track[input.mouse.trackLength - 1];
         Vec2i position = truncate(mousePosition);
-//        printf("%d  %d, %d\n", input.mouse.trackLength, position.x, position.y);
 
         auto offset = [=](const auto& p) {
             return p + position;
@@ -199,6 +198,8 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
         auto atMouse = transform(offset);
         compiletime auto clipped = filter(clip);
         compiletime auto wrapped = transform(wrap);
+
+
         compiletime auto rectangleGenerator = Rectangle{ Vec2i{-3,-3}, Vec2i{3, 3} };
 
         if (input.mouse.buttonLeft.endedDown) {
@@ -208,12 +209,19 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
 
         compiletime auto crossGenerator = (Line{{3, 0}, {-3, 0}} ^ Line{{0, 3}, {0, -3}});
         compiletime auto cross = (crossGenerator | toArray<size(crossGenerator)>{}).run();
-
         (cross | atMouse | wrapped | forEach(whitePixel)).run();
 
-        compiletime auto circleGenerator = Circle{.mRadius = 200};
+        compiletime auto circleGenerator = Circle{.mRadius = 20};
         compiletime auto circle = (circleGenerator | toArray<size(circleGenerator)>{}).run();
         (circle | atMouse | wrapped | forEach(whitePixel)).run();
+
+        compiletime auto ellipsisGenerator = Ellipsis{.mRadii = {20, 10}};
+        compiletime auto ellipsis = (ellipsisGenerator | toArray<size(ellipsisGenerator)>{}).run();
+        compiletime auto count = ellipsis.size();
+        const auto scale = [&](Vec2i p) { return truncate(makeBase2d(mousePosition / 100) * itof(p)); };
+        auto sorter = [](Vec2i a, Vec2i b) { return a.x < b.x; };
+        auto arr = (ellipsis | sortedArray<count, decltype(sorter)>{sorter}).run();
+        ( arr | skip{40} | transform(scale) | atMouse | wrapped | forEach(whitePixel)).run();
     }
 
     for (int i = 0; i < InputMaxControllers; ++i) {
