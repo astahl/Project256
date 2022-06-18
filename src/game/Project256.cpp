@@ -209,9 +209,7 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
         compiletime auto crossGenerator = (Line{{3, 0}, {-3, 0}} ^ Line{{0, 3}, {0, -3}});
         compiletime auto cross = (crossGenerator | toArray<14>{}).run();
 
-        for (const auto p : cross | atMouse | wrapped) {
-            whitePixel(p);
-        }
+        (cross | atMouse | wrapped | forEach(whitePixel)).run();
     }
 
     for (int i = 0; i < InputMaxControllers; ++i) {

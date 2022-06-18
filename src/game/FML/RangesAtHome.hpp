@@ -146,6 +146,10 @@ struct transform_view final {
     constexpr sentinel end() const {
         return sentinel{ranges_at_home::end(base)};
     }
+
+    constexpr size_t size() const {
+        return base.size();
+    }
 };
 
 
@@ -203,6 +207,10 @@ struct enumerate_view final {
 
     constexpr sentinel end() const {
         return sentinel{ranges_at_home::end(base)};
+    }
+
+    constexpr size_t size() const {
+        return base.size();
     }
 };
 
@@ -272,6 +280,10 @@ struct filter_view final {
 
     constexpr sentinel end() const {
         return sentinel{ranges_at_home::end(base)};
+    }
+
+    constexpr size_t size() const {
+        return std::distance(begin(), end());
     }
 };
 
@@ -345,7 +357,7 @@ struct reduce {
     }
 };
 
-template <size_t N>
+template <size_t N = 0>
 struct toArray {
 
     template<typename U>
@@ -385,6 +397,10 @@ struct applicator final {
 
     constexpr auto run() const {
         return this->operator()();
+    }
+
+    constexpr size_t size() const {
+        return right.apply(left).size();
     }
 };
 
@@ -452,6 +468,10 @@ struct concatenator final {
         return sentinel {
             .mRightSentinel = ranges_at_home::end(right)
         };
+    }
+
+    constexpr size_t size() const {
+        return left.size() + right.size();
     }
 };
 

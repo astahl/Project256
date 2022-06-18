@@ -152,6 +152,10 @@ struct Line {
     constexpr Sentinel end() const {
         return Sentinel{mTo.x + 1};
     }
+
+    constexpr size_t size() const {
+        return abs(mTo.x - mFrom.x) + 1;
+    }
 };
 
 
