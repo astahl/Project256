@@ -403,8 +403,8 @@ struct skip {
     constexpr skip_view<T> apply(const T& range) const
     {
         return skip_view<T> {
+            .mCount = mCount,
             .mInputRange = range,
-            .mCount = mCount
         };
     }
 };

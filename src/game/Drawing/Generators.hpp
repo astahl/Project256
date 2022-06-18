@@ -188,7 +188,6 @@ struct Circle {
                 case 6: return mCenter + swizzled<Vec2SwizzleMask::Swap>(mOffset);
                 case 7: return mCenter + swizzled<Vec2SwizzleMask::SwapNegateX>(mOffset);
                 default:
-                    assert(false);
                     return {};
             }
         }

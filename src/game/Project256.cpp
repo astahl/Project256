@@ -221,7 +221,7 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
         const auto scale = [&](Vec2i p) { return truncate(makeBase2d(mousePosition / 100) * itof(p)); };
         auto sorter = [](Vec2i a, Vec2i b) { return a.x < b.x; };
         auto arr = (ellipsis | sortedArray<count, decltype(sorter)>{sorter}).run();
-        ( arr | skip{40} | transform(scale) | atMouse | wrapped | forEach(whitePixel)).run();
+        (arr | skip{40} | transform(scale) | atMouse | wrapped | forEach(whitePixel)).run();
     }
 
     for (int i = 0; i < InputMaxControllers; ++i) {
@@ -265,7 +265,7 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
         put(memory.vram, p, Palette::Color::white);
 
     // update
-    memory.birdPosition = memory.birdPosition + static_cast<float>(input.elapsedTime_s) * memory.birdSpeed * normalized(memory.birdTarget - memory.birdPosition);
+    memory.birdPosition = memory.birdPosition + static_cast<float>(input.elapsedTime_s) * memory.birdSpeed * normalized(itof(memory.birdTarget) - memory.birdPosition);
     memory.birdPosition = clamp(memory.birdPosition, Vec2f{}, Vec2f{DrawBufferWidth - 1, DrawBufferHeight - 1});
 
     put(memory.vram, memory.birdTarget, Palette::Color::lightBlue);
