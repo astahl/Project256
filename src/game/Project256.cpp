@@ -207,9 +207,13 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
         }
 
         compiletime auto crossGenerator = (Line{{3, 0}, {-3, 0}} ^ Line{{0, 3}, {0, -3}});
-        compiletime auto cross = (crossGenerator | toArray<14>{}).run();
+        compiletime auto cross = (crossGenerator | toArray<size(crossGenerator)>{}).run();
 
         (cross | atMouse | wrapped | forEach(whitePixel)).run();
+
+        compiletime auto circleGenerator = Circle{.mRadius = 200};
+        compiletime auto circle = (circleGenerator | toArray<size(circleGenerator)>{}).run();
+        (circle | atMouse | wrapped | forEach(whitePixel)).run();
     }
 
     for (int i = 0; i < InputMaxControllers; ++i) {

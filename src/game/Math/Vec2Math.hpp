@@ -52,6 +52,34 @@ constexpr V normalized(V vec) {
     return vec / leng;
 }
 
+enum class Vec2SwizzleMask : uint8_t {
+    None = 0,
+    Swap = 1,
+    NegateX = 2,
+    SwapNegateX = 3,
+    NegateY = 4,
+    SwapNegateY = 5,
+    Negate = 6,
+    SwapNegate = 7
+};
+
+template<Vec2SwizzleMask mask, typename V, std::enable_if_t<is_vec2_v<V>{}, bool> = true>
+constexpr V swizzled(V vec) {
+    V result{};
+    if constexpr (static_cast<uint8_t>(mask) & static_cast<uint8_t>(Vec2SwizzleMask::Swap)) {
+        result = { vec.y, vec.x };
+    } else {
+        result = vec;
+    }
+    if constexpr (static_cast<uint8_t>(mask) & static_cast<uint8_t>(Vec2SwizzleMask::NegateX)) {
+        result.x = -result.x;
+    }
+    if constexpr (static_cast<uint8_t>(mask) & static_cast<uint8_t>(Vec2SwizzleMask::NegateY)) {
+        result.y = -result.y;
+    }
+    return result;
+}
+
 template<typename V, typename W, typename R = decltype(vec2_scalar_t<V>{} - vec2_scalar_t<W>{})>
 constexpr vec2_t<R> operator-(V left, W right) {
     return vec2_t<R>{left.x - right.x, left.y - right.y};

@@ -159,6 +159,73 @@ struct Line {
 };
 
 
+struct Circle {
+    int mRadius;
+    Vec2i mCenter{};
+
+    struct Sentinel {
+    };
+
+    struct Iterator {
+        int mError;
+        Vec2i mErrorChange;
+        Vec2i mCenter;
+        Vec2i mOffset;
+        int mOctant = 4;
+
+        constexpr bool operator!=(const Sentinel&) const {
+            return mOffset.x <= mOffset.y;
+        }
+
+        constexpr Vec2i operator*() const {
+            switch (mOctant) {
+                case 0: return mCenter + swizzled<Vec2SwizzleMask::NegateX>(mOffset);
+                case 1: return mCenter + swizzled<Vec2SwizzleMask::SwapNegateY>(mOffset);
+                case 2: return mCenter + swizzled<Vec2SwizzleMask::SwapNegate>(mOffset);
+                case 3: return mCenter + swizzled<Vec2SwizzleMask::Negate>(mOffset);
+                case 4: return mCenter + mOffset;
+                case 5: return mCenter + swizzled<Vec2SwizzleMask::NegateY>(mOffset);
+                case 6: return mCenter + swizzled<Vec2SwizzleMask::Swap>(mOffset);
+                case 7: return mCenter + swizzled<Vec2SwizzleMask::SwapNegateX>(mOffset);
+                default:
+                    assert(false);
+                    return {};
+            }
+        }
+
+        constexpr Iterator& operator++() {
+            if (mOctant < 7) {
+                ++mOctant;
+                return *this;
+            }
+            // all octants done, now calculate next offsets and errors
+            mOctant = 0;
+
+            if (mError >= 0) {
+                mOffset.y -= 1;
+                mErrorChange.y += 2;
+                mError += mErrorChange.y;
+            }
+            mOffset.x += 1;
+            mErrorChange.x += 2;
+            mError += mErrorChange.x + 1;
+            return *this;
+        }
+    };
+
+    constexpr Iterator begin() const {
+        return Iterator {
+            .mError = 1 - mRadius,
+            .mErrorChange = Vec2i{.x = 0, .y = -2* mRadius },
+            .mCenter = mCenter,
+            .mOffset = {.x = 0, .y = mRadius}
+        };
+    }
+
+    constexpr Sentinel end() const {
+        return Sentinel{};
+    }
+};
 
 
 

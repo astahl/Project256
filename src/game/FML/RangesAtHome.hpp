@@ -93,6 +93,20 @@ constexpr sentinel_t<const T> end(const T& t) { return t.end(); }
 template <typename T, size_t N = std::extent_v<T>, typename U = T[N]>
 constexpr sentinel_t<const T> end(const U& t) { return &t[N - 1]; }
 
+template <typename T>
+constexpr size_t size(const T& t) {
+    size_t sz = 0;
+    for (auto it = begin(t); it != end(t); ++it) sz++;
+    return sz;
+}
+
+template <typename T, typename T::size>
+constexpr size_t size(const T& t) { return t.size(); }
+
+template <typename T, size_t N = std::extent_v<T>, typename U = T[N]>
+constexpr size_t size(const U& t) { return N; }
+
+
 
 template<typename T, typename Func>
 struct transform_view final {
@@ -357,7 +371,7 @@ struct reduce {
     }
 };
 
-template <size_t N = 0>
+template <size_t N>
 struct toArray {
 
     template<typename U>
@@ -372,6 +386,7 @@ struct toArray {
                                             })).apply(range);
     }
 };
+
 
 template <typename T, typename U>
 struct applicator final {
