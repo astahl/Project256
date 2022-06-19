@@ -240,7 +240,7 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
         const auto scale = [&](Vec2i p) { return truncate(makeBase2d((mousePosition - Center)/ 100) * itof(p)); };
         auto sorter = [](Vec2i a, Vec2i b) { return a.x < b.x; };
         auto arr = (ellipsis | sortedArray<count, decltype(sorter)>{sorter}).run();
-        (arr | skip{40} | transform(scale) | atMouse | wrapped | forEach(whitePixel)).run();
+        (arr | skip{40} | take{50} | transform(scale) | atMouse | wrapped | forEach(whitePixel)).run();
     }
 
     for (int i = 0; i < InputMaxControllers; ++i) {

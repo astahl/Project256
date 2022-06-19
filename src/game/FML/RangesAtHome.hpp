@@ -355,6 +355,52 @@ struct skip_view {
     }
 };
 
+
+template<typename T>
+struct take_view {
+    using InputIterator = iterator_t<const T>;
+    using InputSentinel = sentinel_t<const T>;
+    using InputValue = iter_value_t<const T>;
+
+    int mCount;
+    const T& mInputRange;
+
+    struct Sentinel {};
+
+    struct Iterator {
+        InputIterator mInputIt;
+        InputSentinel mEnd;
+        int mCount;
+
+        constexpr Iterator& operator++() {
+            mCount--;
+            ++mInputIt;
+            return *this;
+        }
+
+        constexpr InputValue operator*() const {
+            return *mInputIt;
+        }
+
+        constexpr bool operator!=(const Sentinel&) const {
+            return mCount > 0 && mInputIt != mEnd;
+        }
+    };
+
+    constexpr Iterator begin() const {
+        auto it = Iterator{
+            .mInputIt = ranges_at_home::begin(mInputRange),
+            .mEnd = ranges_at_home::end(mInputRange),
+            .mCount = mCount
+        };
+        return it;
+    }
+
+    constexpr Sentinel end() const {
+        return {};
+    }
+};
+
 template <typename Func>
 struct transform final {
 
@@ -369,8 +415,6 @@ struct transform final {
     }
 
 };
-
-
 
 
 template <typename Func>
@@ -409,6 +453,18 @@ struct skip {
     }
 };
 
+struct take {
+    int mCount;
+
+    template <typename T>
+    constexpr take_view<T> apply(const T& range) const
+    {
+        return take_view<T> {
+            .mCount = mCount,
+            .mInputRange = range,
+        };
+    }
+};
 
 
 
