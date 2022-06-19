@@ -220,17 +220,22 @@ class GameState : ObservableObject {
 
     func keyChanged(keyboard: GCKeyboardInput, key: GCControllerButtonInput, keyCode: GCKeyCode, pressed: Bool)
     {
-        switch keyCode {
-        case .keyW, .upArrow: input.controllers.0.stickLeft.up.pressed(pressed)
-        case .keyA, .leftArrow: input.controllers.0.stickLeft.left.pressed(pressed)
-        case .keyS, .downArrow: input.controllers.0.stickLeft.down.pressed(pressed)
-        case .keyD, .rightArrow: input.controllers.0.stickLeft.right.pressed(pressed)
-        default: break
+        withUnsafeMutableElementPointer(firstElement: &input.controllers.0, offset: 0) {
+            controller in
+            switch keyCode {
+            case .escape: controller.pointee.buttonBack.pressed(pressed)
+            case .keyW, .upArrow: controller.pointee.stickLeft.up.pressed(pressed)
+            case .keyA, .leftArrow: controller.pointee.stickLeft.left.pressed(pressed)
+            case .keyS, .downArrow: controller.pointee.stickLeft.down.pressed(pressed)
+            case .keyD, .rightArrow: controller.pointee.stickLeft.right.pressed(pressed)
+            default: break
+            }
+            controller.pointee.stickLeft.digitalToAnalog()
+            controller.pointee.stickLeft.latches = true
+            controller.pointee.isActive = true
         }
-        input.controllers.0.stickLeft.digitalToAnalog()
-        input.controllers.0.stickLeft.latches = true
-        input.controllers.0.isActive = true
     }
+
 
     func mouseMoved(mouse: GCMouseInput, deltaX: Float, deltaY: Float)
     {

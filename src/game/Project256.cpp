@@ -35,21 +35,24 @@ compiletime void put(uint8_t* drawBuffer, Vec2 position, Color color)
     drawBuffer[static_cast<int>(position.x) + static_cast<int>(position.y) * Pitch] = static_cast<uint8_t>(color);
 }
 
+template<typename Return, typename ...Args>
+using FunctionPointer = Return (*)(Args...);
 
 struct GameMemory {
-    uint8_t vram[DrawBufferWidth * DrawBufferHeight]{};
-    uint32_t palette[16]{};
-    Vec2f birdPosition{};
-    int birdSpeed{};
-    Vec2i birdTarget{};
-    Timer directionChangeTimer{};
+    std::array<uint8_t, DrawBufferWidth * DrawBufferHeight> vram;
+    std::array<uint32_t, 256> palette;
+    Vec2f birdPosition;
+    int birdSpeed;
+    Vec2i birdTarget;
+    Timer directionChangeTimer;
+    FunctionPointer<void, GameMemory&> timerCallback;
 
-    SpritePicture<5, 2, 4> sprite{};
-    Timer spriteAnimationTimer{};
-    int currentSpriteFrame{};
+    SpritePicture<5, 2, 4> sprite;
+    Timer spriteAnimationTimer;
+    int currentSpriteFrame;
 
-    Vec2i points[2]{};
-    int currentPoint{};
+    Vec2i points[2];
+    int currentPoint;
 };
 
 static_assert(sizeof(GameMemory) <= MemorySize, "MemorySize is too small to hold GameMemory struct");
@@ -118,16 +121,30 @@ void cleanInput(GameInput* input) {
     input->tapCount = 0;
 }
 
+
+compiletime auto BufferSize = Vec2i{ DrawBufferWidth, DrawBufferHeight};
+compiletime auto Center = BufferSize / 2;
+
+void birdDirectionChange(GameMemory& memory) {
+    memory.birdTarget = (rand2d() % BufferSize);
+}
+
+
 GameOutput doGameThings(GameInput* pInput, void* pMemory)
 {
-    using Palette = PaletteC64;
-    using Color = Palette::Color;
-    auto clearColor = Color::black;
+    GameOutput output{};
+    using Palette = PaletteAppleII;
+    compiletime uint8_t black = []() { return findNearest(Colors::Black, Palette::colors).index; }();
+    compiletime uint8_t cyan = []() { return findNearest(Colors::Cyan, Palette::colors).index; }();
+    compiletime uint8_t lightBlue = []() { return findNearest(Colors::LightBlue, Palette::colors).index; }();
+    compiletime uint8_t white = []() { return findNearest(Colors::White, Palette::colors).index; }();
+    compiletime uint8_t green = []() { return findNearest(Colors::Green, Palette::colors).index; }();
+
+    auto clearColor = black;
     if (pInput->closeRequested) {
-        clearColor = Color::white;
+        clearColor = white;
     }
-    compiletime auto BufferSize = Vec2i{ DrawBufferWidth, DrawBufferHeight};
-    compiletime auto Center = BufferSize / 2;
+
     GameMemory& memory = *reinterpret_cast<GameMemory*>(pMemory);
     GameInput& input = *pInput;
     if (input.textLength)
@@ -135,8 +152,9 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
 
     if (input.frameNumber == 0) {
         memory = GameMemory{};
-        Palette::writeTo(memory.palette);
+        Palette::writeTo(memory.palette.data());
         memory.birdPosition = itof(Center);
+        memory.timerCallback = birdDirectionChange;
         memory.sprite.data = {
             0, 0, 1, 0, 0,
             1, 1, 0, 1, 1,
@@ -147,17 +165,17 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
             0, 0, 1, 0, 0,
             1, 1, 1, 1, 1,
         };
+        std::replace(memory.sprite.data.begin(), memory.sprite.data.end(), static_cast<uint8_t>(1), cyan);
         memory.currentSpriteFrame = 0;
         memory.birdSpeed = 5;
     }
 
-    constant auto whitePixel = [&](const auto& p) { put(memory.vram, p, Color::white); };
-
+    constant auto whitePixel = [&](const auto& p) { put(memory.vram.data(), p, white); };
 
     const auto time = std::chrono::microseconds(input.upTime_microseconds);
     if (memory.directionChangeTimer.hasFired(time) || memory.birdTarget == round(memory.birdPosition)) {
         memory.directionChangeTimer = Timer::delay(time, std::chrono::seconds(100 / memory.birdSpeed++));
-        memory.birdTarget = (rand2d() % BufferSize);
+        memory.timerCallback(memory);
     }
 
     if (memory.spriteAnimationTimer.hasFired(time)) {
@@ -165,13 +183,14 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
         memory.currentSpriteFrame = (memory.currentSpriteFrame + 1) % decltype(memory.sprite)::frameCount;
     }
 
-    std::memset(memory.vram, (uint8_t)clearColor, DrawBufferWidth * DrawBufferHeight);
+    std::memset(memory.vram.data(), (uint8_t)clearColor, DrawBufferWidth * DrawBufferHeight);
 
     // draw the palette in the first rows
 
+    for (int y = 0; y < memory.palette.size() / 16; ++y) {
     for (int x = 0; x < DrawBufferWidth; ++x) {
-        put(memory.vram, Vec2i{ x, 0 }, (x * Palette::count) / DrawBufferWidth);
-    }
+        put(memory.vram.data(), Vec2i{ x, y }, (x * 16 / DrawBufferWidth) + y * 16);
+    } }
 
     compiletime auto wrap = [](auto p) { return wrapAround2d(p, Vec2i(), Vec2i{DrawBufferWidth, DrawBufferHeight});};
 
@@ -204,7 +223,7 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
 
         if (input.mouse.buttonLeft.endedDown) {
             for (auto p : rectangleGenerator | atMouse | clipped)
-                put(memory.vram, wrap(p), Palette::Color::green);
+                put(memory.vram.data(), wrap(p), green);
         }
 
         compiletime auto crossGenerator = (Line{{3, 0}, {-3, 0}} ^ Line{{0, 3}, {0, -3}});
@@ -218,7 +237,7 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
         compiletime auto ellipsisGenerator = Ellipsis{.mRadii = {20, 10}};
         compiletime auto ellipsis = (ellipsisGenerator | toArray<size(ellipsisGenerator)>{}).run();
         compiletime auto count = ellipsis.size();
-        const auto scale = [&](Vec2i p) { return truncate(makeBase2d(mousePosition / 100) * itof(p)); };
+        const auto scale = [&](Vec2i p) { return truncate(makeBase2d((mousePosition - Center)/ 100) * itof(p)); };
         auto sorter = [](Vec2i a, Vec2i b) { return a.x < b.x; };
         auto arr = (ellipsis | sortedArray<count, decltype(sorter)>{sorter}).run();
         (arr | skip{40} | transform(scale) | atMouse | wrapped | forEach(whitePixel)).run();
@@ -234,50 +253,49 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
         Vec2i p{ 10, (i + 1) * 10 };
         for (auto& button : controller.buttons) {
             if (button.endedDown)
-                put(memory.vram, p, Color::white);
+                whitePixel(p);
             p.x += 2;
         }
 
         for (auto& axis1 : controller.axes1) {
             if (axis1.trigger.endedDown)
-                put(memory.vram, p, Color::white);
+                whitePixel(p);
             p.x += 2;
         }
 
         for (auto& axis2 : controller.axes2) {
             if (axis2.up.endedDown)
-                put(memory.vram, p + Vec2i{ 1,1 }, Color::white);
+                whitePixel(p + Vec2i{ 1,1 });
             if (axis2.down.endedDown)
-                put(memory.vram, p + Vec2i{ 1,-1 }, Color::white);
+                whitePixel(p + Vec2i{ 1,-1 });
             if (axis2.left.endedDown)
-                put(memory.vram, p + Vec2i{ }, Color::white);
+                whitePixel(p + Vec2i{ });
             if (axis2.right.endedDown)
-                put(memory.vram, p + Vec2i{ 2,0 }, Color::white);
+                whitePixel(p + Vec2i{ 2,0 });
             p.x += 4;
         }
 
         p.x = 10;
         p.y = (i + 1) * 10 + 3;
+        if (controller.buttonBack.transitionCount != 0 && controller.buttonBack.endedDown) {
+            output.shouldQuit = true;
+        }
     }
 
     if (memory.points[0] != memory.points[1])
     for (auto p : Generators::Line{memory.points[0], memory.points[1]})
-        put(memory.vram, p, Palette::Color::white);
+        whitePixel(p);
 
     // update
     memory.birdPosition = memory.birdPosition + static_cast<float>(input.elapsedTime_s) * memory.birdSpeed * normalized(itof(memory.birdTarget) - memory.birdPosition);
     memory.birdPosition = clamp(memory.birdPosition, Vec2f{}, Vec2f{DrawBufferWidth - 1, DrawBufferHeight - 1});
 
-    put(memory.vram, memory.birdTarget, Palette::Color::lightBlue);
+    put(memory.vram.data(), memory.birdTarget, lightBlue);
 
     // draw
-    blitSprite(memory.sprite, memory.currentSpriteFrame, memory.vram, DrawBufferWidth, truncate(memory.birdPosition), Vec2i{}, Vec2i{DrawBufferWidth, DrawBufferHeight});
+    blitSprite(memory.sprite, memory.currentSpriteFrame, memory.vram.data(), DrawBufferWidth, truncate(memory.birdPosition), Vec2i{}, Vec2i{DrawBufferWidth, DrawBufferHeight});
 
-	return GameOutput{
-		.shouldQuit = input.closeRequested,
-        .shouldPinMouse = input.mouse.buttonRight.endedDown,
-        .shouldShowSystemCursor = input.mouse.buttonMiddle.endedDown,
-	};
+    return output;
 }
 
 void writeDrawBuffer(void* pMemory, void* buffer)
@@ -297,13 +315,13 @@ void writeDrawBuffer(void* pMemory, void* buffer)
     }
 
     GameMemory& memory = *reinterpret_cast<GameMemory*>(pMemory);
-    uint8_t* vram = memory.vram;
+    uint8_t* vram = memory.vram.data();
     if constexpr (DrawBufferWidth % 8 == 0)
     {
         constexpr int count = DrawBufferWidth * DrawBufferHeight;
         uint64_t* src = reinterpret_cast<uint64_t*>(vram);
         uint64_t* dst = reinterpret_cast<uint64_t*>(buffer);
-        const uint32_t* palette = memory.palette;
+        const uint32_t* palette = memory.palette.data();
         for (int i = 0; i < count; i += 8) {
             const uint64_t sourcePixel8 = *src++;
             
