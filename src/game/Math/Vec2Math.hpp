@@ -269,8 +269,13 @@ constexpr auto makeBase2d(Vec base1, Vec base2) {
 }
 
 template <typename Vec, typename T = vec2_scalar_t<Vec>>
-constexpr Matrix<T, 2, 2> makeBase2d(Vec base1) {
-    return makeBase2d(base1, {-base1.y, base1.x});
+constexpr Matrix<T, 2, 2> makeBase2dX(Vec newBaseX) {
+    return makeBase2d(newBaseX, {-newBaseX.y, newBaseX.x});
+}
+
+template <typename Vec, typename T = vec2_scalar_t<Vec>>
+constexpr Matrix<T, 2, 2> makeBase2dY(Vec newBaseY) {
+    return makeBase2d({newBaseY.y, -newBaseY.x}, newBaseY);
 }
 
 constexpr Matrix<float, 2, 2> makeRotation2d(float angle) {

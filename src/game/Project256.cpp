@@ -132,11 +132,15 @@ void birdDirectionChange(GameMemory& memory) {
 
 GameOutput doGameThings(GameInput* pInput, void* pMemory)
 {
+    using namespace ranges_at_home;
+    using namespace Generators;
+
     GameOutput output{};
     using Palette = PaletteAppleII;
     compiletime uint8_t black = []() { return findNearest(Colors::Black, Palette::colors).index; }();
     compiletime uint8_t cyan = []() { return findNearest(Colors::Cyan, Palette::colors).index; }();
     compiletime uint8_t lightBlue = []() { return findNearest(Colors::LightBlue, Palette::colors).index; }();
+    compiletime uint8_t red = []() { return findNearest(Colors::Red, Palette::colors).index; }();
     compiletime uint8_t white = []() { return findNearest(Colors::White, Palette::colors).index; }();
     compiletime uint8_t green = []() { return findNearest(Colors::Green, Palette::colors).index; }();
 
@@ -171,6 +175,7 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
     }
 
     constant auto whitePixel = [&](const auto& p) { put(memory.vram.data(), p, white); };
+    constant auto redPixel = [&](const auto& p) { put(memory.vram.data(), p, red); };
 
     const auto time = std::chrono::microseconds(input.upTime_microseconds);
     if (memory.directionChangeTimer.hasFired(time) || memory.birdTarget == round(memory.birdPosition)) {
@@ -195,9 +200,6 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
     compiletime auto wrap = [](auto p) { return wrapAround2d(p, Vec2i(), Vec2i{DrawBufferWidth, DrawBufferHeight});};
 
     if (input.mouse.trackLength) {
-        using namespace ranges_at_home;
-        using namespace Generators;
-
         Vec2f mousePosition = input.mouse.track[input.mouse.trackLength - 1];
         Vec2i position = truncate(mousePosition);
 
@@ -230,22 +232,18 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
         compiletime auto cross = (crossGenerator | toArray<size(crossGenerator)>{}).run();
         (cross | atMouse | wrapped | forEach(whitePixel)).run();
 
-        compiletime auto circleGenerator = Circle{.mRadius = 20};
+        compiletime auto circleGenerator = Circle{.mRadius = 10};
         compiletime auto circle = (circleGenerator | toArray<size(circleGenerator)>{}).run();
         (circle | atMouse | wrapped | forEach(whitePixel)).run();
 
-        compiletime auto ellipsisGenerator = Ellipsis{.mRadii = {20, 10}};
-        compiletime auto ellipsis = (ellipsisGenerator | toArray<size(ellipsisGenerator)>{}).run();
-        compiletime auto count = ellipsis.size();
-        const auto scale = [&](Vec2i p) { return truncate(makeBase2d((mousePosition - Center)/ 100) * itof(p)); };
-        auto sorter = [](Vec2i a, Vec2i b) { return a.x < b.x; };
-        auto arr = (ellipsis | sortedArray<count, decltype(sorter)>{sorter}).run();
-        (arr | skip{40} | take{50} | transform(scale) | atMouse | wrapped | forEach(whitePixel)).run();
+        compiletime auto ellipsisGenerator = Ellipsis{.mRadii = {30, 20}};
+        compiletime auto ellipsis = (ellipsisGenerator | skip{100} | take{100} | toArray<100>{}).run();
+
+        const auto scale = [&](Vec2i p) { return truncate(makeBase2dY(normalized(Center - mousePosition)) * itof(p)); };
+        (Line{{}, {20, 0}} ^ Line{{}, {0, 40}} | transform(scale) | atMouse | wrapped | forEach(redPixel)).run();
     }
 
     for (int i = 0; i < InputMaxControllers; ++i) {
-        using namespace ranges_at_home;
-        using namespace Generators;
         auto& controller = input.controllers[i];
         if (!controller.isConnected)
             continue;
