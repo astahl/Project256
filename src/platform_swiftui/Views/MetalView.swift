@@ -159,7 +159,7 @@ final class MetalView {
     private var beforeDrawHandler: BeforeDrawHandler?
     var pixelPosition: PointConversion?
     var drawBuffer: DrawBuffer?
-
+    var prefferedFrameRate: FPSTargets = ._60
     init(drawBuffer: DrawBuffer?)
     {
         self.drawBuffer = drawBuffer
@@ -183,6 +183,12 @@ extension MetalView : NSViewRepresentable {
     func updateNSView(_ nsView: MyMTKView, context: Context) {
         nsView.beforeDrawHandler = self.beforeDrawHandler
         pixelPosition = nsView.positionOnBuffer(locationInView:)
+        if self.prefferedFrameRate == .Stop {
+            nsView.isPaused = true
+        } else {
+            nsView.isPaused = false
+            nsView.preferredFramesPerSecond = self.prefferedFrameRate.rawValue
+        }
 
     }
 }
@@ -197,6 +203,12 @@ extension MetalView : UIViewRepresentable {
     func updateUIView(_ uiView: MyMTKView, context: Context) {
         uiView.beforeDrawHandler = self.beforeDrawHandler
         pixelPosition = uiView.positionOnBuffer(locationInView:)
+        if self.prefferedFrameRate == .Stop {
+            uiView.isPaused = true
+        } else {
+            uiView.isPaused = false
+            uiView.preferredFramesPerSecond = self.prefferedFrameRate.rawValue
+        }
     }
 }
 #endif

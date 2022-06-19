@@ -135,6 +135,9 @@ class GameState : ObservableObject {
     var upTime_microseconds: Int64 = 0
     var drawBuffer = DrawBuffer()
     @Published var tickScale: Double = 1.0
+    @Published var timeScale: Double = 1.0
+    @Published var tickTargetHz: Double = 100.0
+    @Published var frameTargetHz: FPSTargets = ._60
 
     init() {
         GameState.timingData.getPlatformTimeMicroseconds = {
@@ -283,9 +286,9 @@ class GameState : ObservableObject {
         self.input.frameNumber = self.frameNumber
         self.frameNumber += 1
         let frameTime = self.frameTime.elapsed()
-        self.upTime_microseconds += Int64(Double(frameTime.microseconds) * tickScale)
+        self.upTime_microseconds += Int64(Double(frameTime.microseconds) * timeScale)
 
-        self.input.upTime_microseconds =  self.upTime_microseconds
+        self.input.upTime_microseconds = self.upTime_microseconds
         self.input.elapsedTime_s = frameTime.seconds * tickScale
         // TODO finalize inputs
         profiling_time_interval(&GameState.timingData, eTimerTick, eTimingTickSetup)

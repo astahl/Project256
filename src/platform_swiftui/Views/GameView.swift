@@ -21,6 +21,7 @@ struct GameView: View {
             profiling_time_interval(&GameState.timingData, eTimerBufferCopy, eTimingBufferCopy)
             return drawBuffer
         })
+        self.drawBufferView.metalView.prefferedFrameRate = self.gameState.frameTargetHz
     }
 
     var body: some View {
