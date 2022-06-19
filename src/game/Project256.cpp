@@ -236,11 +236,23 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
         compiletime auto circle = (circleGenerator | toArray<size(circleGenerator)>{}).run();
         (circle | atMouse | wrapped | forEach(whitePixel)).run();
 
-        compiletime auto ellipsisGenerator = Ellipsis{.mRadii = {30, 20}};
-        compiletime auto ellipsis = (ellipsisGenerator | skip{100} | take{100} | toArray<100>{}).run();
+        auto mat = makeBase2dX(-normalized(Center - position));
+        const auto pointAtCenter = [=](Vec2i p) {
+            return truncate(mat * p); };
 
-        const auto scale = [&](Vec2i p) { return truncate(makeBase2dY(normalized(Center - mousePosition)) * itof(p)); };
-        (Line{{}, {20, 0}} ^ Line{{}, {0, 40}} | transform(scale) | atMouse | wrapped | forEach(redPixel)).run();
+        const std::array<Vec2i, 4> points{ Vec2i{ 40, 0 }, Vec2i{-10, 20}, Vec2i{-5, 0}, Vec2i{-10, -20} };
+        for (auto p : points
+             | transform(pointAtCenter)
+             | atMouse
+             | batch<2, 1, true>{}
+             | transform([](std::array<Vec2i, 2> arr) {
+                 Vec2i a = arr[0];
+                 Vec2i b = arr[1];
+                 return Line(a, b); })
+             | flatten{}
+             | wrapped ) {
+            whitePixel(p);
+        }
     }
 
     for (int i = 0; i < InputMaxControllers; ++i) {

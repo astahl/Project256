@@ -9,6 +9,7 @@
 #include <concepts>
 #include <ranges>
 #include <vector>
+#include <utility>
 namespace ranges_at_home {
 
 
@@ -139,8 +140,8 @@ struct transform_view final {
         }
 
         constexpr Value operator*() const {
-            const Value input = (*inputIterator);
-            const Value result = func(input);
+            InputValue input = (*inputIterator);
+            Value result = func(input);
             return result;
         }
 
@@ -401,6 +402,156 @@ struct take_view {
     }
 };
 
+
+template<typename T, size_t N, size_t Stride, bool Wrap>
+struct batch_view {
+    using InputIterator = iterator_t<const T>;
+    using InputSentinel = sentinel_t<const T>;
+    using InputValue = iter_value_t<const T>;
+
+    int mCount;
+    const T& mInputRange;
+
+    struct Sentinel {};
+
+    struct Iterator {
+        InputIterator mBegin;
+        InputIterator mInputIt;
+        InputSentinel mEnd;
+
+        constexpr Iterator& operator++() {
+            for (size_t i = 0; i < Stride && mInputIt != mEnd; ++i) {
+                ++mInputIt;
+            }
+
+            return *this;
+        }
+
+        constexpr std::array<InputValue, N> operator*() const {
+            std::array<InputValue, N> result{};
+            size_t i = 0;
+            if constexpr (Wrap) {
+                if constexpr (!std::is_copy_assignable_v<InputIterator>) {
+                    std::unique_ptr<InputIterator> inputCopy{new InputIterator(mInputIt)};
+                    while (i < N) {
+                        result[i] = *(*inputCopy);
+                        ++*inputCopy;
+                        ++i;
+                        if (!(*inputCopy != mEnd)) {
+                            inputCopy.reset(new InputIterator{mBegin});
+                        }
+                    }
+                } else {
+                    InputIterator inputCopy{mInputIt};
+                    while (i < N) {
+                        result[i] = *(inputCopy);
+                        ++inputCopy;
+                        ++i;
+                        if (!(inputCopy != mEnd)) {
+                            inputCopy = mBegin;
+                        }
+                    }
+                }
+
+            } else {
+                auto inputCopy{mInputIt};
+                while (i < N && inputCopy != mEnd) {
+                    result[i] = *inputCopy;
+                    ++inputCopy;
+                    ++i;
+                }
+            }
+            return result;
+        }
+
+        constexpr bool operator!=(const Sentinel&) const {
+            return mInputIt != mEnd;
+        }
+    };
+
+    constexpr Iterator begin() const {
+        const auto begin = ranges_at_home::begin(mInputRange);
+        auto it = Iterator{
+            .mInputIt = begin,
+            .mBegin = begin,
+            .mEnd = ranges_at_home::end(mInputRange),
+        };
+        return it;
+    }
+
+    constexpr Sentinel end() const {
+        return {};
+    }
+};
+
+
+
+template<typename T>
+struct flatten_view {
+    using InputIterator = iterator_t<const T>;
+    using InputSentinel = sentinel_t<const T>;
+    using InputValue = iter_value_t<const T>;
+    using FlattenedInputIterator = iterator_t<InputValue>;
+    using FlattenedInputSentinel = sentinel_t<InputValue>;
+    using FlattenedValue = iter_value_t<InputValue>;
+
+    const T& mInputRange;
+
+    struct Sentinel {};
+
+    struct Iterator {
+        InputIterator mInputIt;
+        InputSentinel mEnd;
+        FlattenedInputIterator mFlattenedIt;
+        FlattenedInputSentinel mFlattenedSentinel;
+
+        constexpr Iterator& operator++() {
+            if (mFlattenedIt != mFlattenedSentinel) {
+                ++mFlattenedIt;
+            } else if (mInputIt != mEnd) {
+                ++mInputIt;
+                if (mInputIt != mEnd) {
+                    mFlattenedIt = ranges_at_home::begin(*mInputIt);
+                    mFlattenedSentinel = ranges_at_home::end(*mInputIt);
+                }
+            }
+            return *this;
+        }
+
+        constexpr FlattenedValue operator*() const {
+            return *mFlattenedIt;
+        }
+
+        constexpr bool operator!=(const Sentinel&) const {
+            return mInputIt != mEnd;
+        }
+    };
+
+    constexpr Iterator begin() const {
+        const auto begin = ranges_at_home::begin(mInputRange);
+        const auto end = ranges_at_home::end(mInputRange);
+        if (begin != end)
+        {
+            auto flattenedIt = ranges_at_home::begin(*begin);
+            auto flattenedSentinel = ranges_at_home::end(*begin);
+            return Iterator{
+                .mInputIt = begin,
+                .mEnd = end,
+                .mFlattenedIt = flattenedIt,
+                .mFlattenedSentinel = flattenedSentinel
+            };
+        }
+        return Iterator {
+            .mInputIt = begin,
+            .mEnd = end,
+        };
+    }
+
+    constexpr Sentinel end() const {
+        return {};
+    }
+};
+
 template <typename Func>
 struct transform final {
 
@@ -467,6 +618,28 @@ struct take {
 };
 
 
+template <size_t N, size_t Stride = N, bool Wrap = true>
+struct batch {
+    static_assert(Stride > 0, "Stride must be greater than 0");
+    template <typename T>
+    constexpr auto apply(const T& range) const {
+        return batch_view<T, N, Stride, Wrap> {
+            .mInputRange = range
+        };
+    }
+};
+
+
+struct flatten final {
+
+    template <typename T>
+    constexpr flatten_view<T> apply(const T& range) const
+    {
+        return flatten_view<T>{.mInputRange = range};
+    }
+
+};
+
 
 template <typename Func>
 struct forEach {
@@ -499,6 +672,7 @@ struct reduce {
     }
 };
 
+
 template <size_t N>
 struct toArray {
 
@@ -517,7 +691,7 @@ struct toArray {
 
 
 template <size_t N, typename Compare>
-struct sortedArray {
+struct toSortedArray {
     Compare mCompare{};
 
     template<typename U>
@@ -569,6 +743,18 @@ constexpr applicator<T, U> operator|(const T& left, const U& right)
 {
     return applicator<T, U> {left, right};
 }
+
+template <typename T, typename U>
+constexpr applicator<T, U> operator|(T&& left, U&& right)
+{
+    return applicator<T, U> {static_cast<T&&>(left), static_cast<U&&>(right)};
+}
+
+//template <typename T, typename U>
+//constexpr applicator<T, U> operator|(T&& left, const U& right)
+//{
+//    return applicator<T, U> {static_cast<T&&>(left), right};
+//}
 
 
 template <typename T, typename U>
