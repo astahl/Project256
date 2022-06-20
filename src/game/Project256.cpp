@@ -221,7 +221,6 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
         compiletime auto clipped = filter(clip);
         compiletime auto wrapped = transform(wrap);
 
-
         compiletime auto rectangleGenerator = Rectangle{ Vec2i{-3,-3}, Vec2i{3, 3} };
 
         if (input.mouse.buttonLeft.endedDown) {
@@ -240,7 +239,6 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
         auto mat = makeBase2dX(-normalized(Center - position));
         const auto pointAtCenter = [=](Vec2i p) {
             return truncate(mat * p); };
-
 
         const std::array<Vec2i, 4> points{ Vec2i{ 40, 0 }, Vec2i{-10, 20}, Vec2i{-5, 0}, Vec2i{-10, -20} };
         for (auto p : points

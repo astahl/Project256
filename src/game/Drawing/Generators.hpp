@@ -20,8 +20,8 @@ template <typename T>
 compiletime void swap(T& x, T& y) { T temp = x; x = y; y = temp; }
 
 struct Rectangle {
-    Vec2i bottomLeft;
-    Vec2i topRight;
+    Vec2i bottomLeft{};
+    Vec2i topRight{};
 
     struct Sentinel {};
 

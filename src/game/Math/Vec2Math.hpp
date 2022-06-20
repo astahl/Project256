@@ -46,6 +46,11 @@ constexpr float length(V vec) {
     return sqrtf(static_cast<float>(dot(vec, vec)));
 }
 
+template<typename V, std::enable_if_t<is_vec2_v<V>, bool> = true>
+auto atan2(V vec) {
+    return std::atan2(vec.y, vec.x);
+}
+
 template<typename V, typename R = vec2_t<decltype(vec2_scalar_t<V>{} / float{})>, typename = std::enable_if_t<is_vec2_v<V>>>
 constexpr R normalized(V vec) {
     auto leng = length(vec);
