@@ -303,9 +303,9 @@ struct PaletteEGA {
     compiletime std::array<uint32_t, 16> colors = [](){
         std::array<uint32_t, 16> result{};
         uint8_t pos = 0;
-        for(uint8_t colorSpaceIndex : {0, 1, 2, 3, 4, 5, 20, 7, 56, 57, 58, 59, 60, 61, 62, 63})
+        for(auto colorSpaceIndex : {0, 1, 2, 3, 4, 5, 20, 7, 56, 57, 58, 59, 60, 61, 62, 63})
         {
-            result[pos++] = egaTo8Bit(colorSpaceIndex);
+            result[pos++] = egaTo8Bit(static_cast<uint8_t>(colorSpaceIndex));
         }
         return result;
     }();

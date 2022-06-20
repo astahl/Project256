@@ -10,6 +10,8 @@
 #include <ranges>
 #include <vector>
 #include <utility>
+#include <memory>
+
 namespace ranges_at_home {
 
 template <typename...> struct WhichType;
@@ -434,7 +436,7 @@ struct batch_view {
             size_t i = 0;
             if constexpr (Wrap) {
                 if constexpr (!std::is_copy_assignable_v<InputIterator>) {
-                    std::unique_ptr<InputIterator> inputCopy{new InputIterator(mInputIt)};
+                    std::unique_ptr<InputIterator> inputCopy = std::make_unique<InputIterator>(mInputIt);
                     while (i < N) {
                         result[i] = *(*inputCopy);
                         ++*inputCopy;
@@ -474,8 +476,8 @@ struct batch_view {
     constexpr Iterator begin() const {
         const auto begin = ranges_at_home::begin(mInputRange);
         auto it = Iterator{
-            .mInputIt = begin,
             .mBegin = begin,
+            .mInputIt = begin,
             .mEnd = ranges_at_home::end(mInputRange),
         };
         return it;

@@ -100,7 +100,7 @@ struct Line {
             return *this;
         }
 
-        constexpr bool operator!=(const Sentinel& other) const {
+        constexpr bool operator!=(const Sentinel&) const {
             return !mFinished;
         }
     };
@@ -141,8 +141,8 @@ struct Line {
             .mD = mD,
             .mYi = mYi,
             .mSteep = mSteep,
-            .mTo = mTo,
             .mCurrentPosition = mFrom,
+            .mTo = mTo,
             .mCurrentError = 2 * mD.y - mD.x,
         };
     }
@@ -179,7 +179,7 @@ struct HLine {
             return *this;
         }
 
-        constexpr bool operator!=(const Sentinel& other) const {
+        constexpr bool operator!=(const Sentinel&) const {
             return mCount > 0;
         }
     };

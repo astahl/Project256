@@ -43,7 +43,7 @@ constexpr R dot(V left, W right) {
 
 template<typename V, typename = std::enable_if_t<is_vec2_v<V>>>
 constexpr float length(V vec) {
-    return sqrtf(dot(vec, vec));
+    return sqrtf(static_cast<float>(dot(vec, vec)));
 }
 
 template<typename V, typename R = vec2_t<decltype(vec2_scalar_t<V>{} / float{})>, typename = std::enable_if_t<is_vec2_v<V>>>

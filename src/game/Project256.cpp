@@ -137,12 +137,13 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
 
     GameOutput output{};
     using Palette = PaletteAppleII;
-    compiletime uint8_t black = []() { return findNearest(Colors::Black, Palette::colors).index; }();
-    compiletime uint8_t cyan = []() { return findNearest(Colors::Cyan, Palette::colors).index; }();
-    compiletime uint8_t lightBlue = []() { return findNearest(Colors::LightBlue, Palette::colors).index; }();
-    compiletime uint8_t red = []() { return findNearest(Colors::Red, Palette::colors).index; }();
-    compiletime uint8_t white = []() { return findNearest(Colors::White, Palette::colors).index; }();
-    compiletime uint8_t green = []() { return findNearest(Colors::Green, Palette::colors).index; }();
+    compiletime auto lookupColor = [](auto col) { return static_cast<uint8_t>(findNearest(col, Palette::colors).index); };
+    compiletime uint8_t black = lookupColor(Colors::Black);
+    compiletime uint8_t cyan = lookupColor(Colors::Cyan);
+    compiletime uint8_t lightBlue = lookupColor(Colors::LightBlue);
+    compiletime uint8_t red = lookupColor(Colors::Red);
+    compiletime uint8_t white = lookupColor(Colors::White);
+    compiletime uint8_t green = lookupColor(Colors::Green);
 
     auto clearColor = black;
     if (pInput->closeRequested) {
