@@ -96,11 +96,12 @@ struct Line {
             } else {
                 mCurrentError += 2 * mD.y;
             }
+            mFinished = !(mCurrentPosition != mTo);
             return *this;
         }
 
         constexpr bool operator!=(const Sentinel& other) const {
-            return mCurrentPosition.x != mTo.x + 1;
+            return !mFinished;
         }
     };
 
@@ -156,6 +157,76 @@ struct Line {
         } else {
             return abs(mTo.x - mFrom.x) + 1;
         }
+    }
+};
+
+
+struct HLine {
+
+    struct Sentinel {};
+
+    struct Iterator {
+        int mCount;
+        Vec2i mCurrentPosition;
+
+        constexpr Vec2i operator*() const {
+            return mCurrentPosition;
+        }
+
+        constexpr Iterator& operator++() {
+            mCurrentPosition.x += 1;
+            mCount -= 1;
+            return *this;
+        }
+
+        constexpr bool operator!=(const Sentinel& other) const {
+            return mCount > 0;
+        }
+    };
+
+
+    Vec2i mFrom{};
+    int mCount{};
+
+    using iterator = Iterator;
+
+    constexpr HLine(Vec2i from, Vec2i to)
+    {
+        int distance = to.x - from.x;
+        if (distance > 0){
+            mCount = distance;
+            mFrom = from;
+        } else {
+            mCount = -distance;
+            mFrom = to;
+        }
+        mCount += 1;
+    }
+
+    constexpr HLine(Vec2i from, int length)
+    {
+        mFrom = from;
+        if (length > 0){
+            mCount = length;
+        } else {
+            mCount = -length;
+            mFrom.x += length  + 1;
+        }
+    }
+
+    constexpr Iterator begin() const {
+        return Iterator{
+            .mCount = mCount,
+            .mCurrentPosition = mFrom,
+        };
+    }
+
+    constexpr Sentinel end() const {
+        return Sentinel{};
+    }
+
+    constexpr size_t size() const {
+        return mCount;
     }
 };
 

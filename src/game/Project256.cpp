@@ -228,7 +228,7 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
                 put(memory.vram.data(), wrap(p), green);
         }
 
-        compiletime auto crossGenerator = (Line{{3, 0}, {-3, 0}} ^ Line{{0, 3}, {0, -3}});
+        compiletime auto crossGenerator = (HLine{{3, 0}, {-3, 0}} ^ HLine{{3, 1}, -7} ^ Line{{0, 4}, {0, -3}});
         compiletime auto cross = (crossGenerator | toArray<size(crossGenerator)>{}).run();
         (cross | atMouse | wrapped | forEach(whitePixel)).run();
 
