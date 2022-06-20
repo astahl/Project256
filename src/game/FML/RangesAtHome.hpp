@@ -12,6 +12,9 @@
 #include <utility>
 namespace ranges_at_home {
 
+template <typename...> struct WhichType;
+class Something {};
+
 
 template <typename T, size_t N = 0>
 struct iterator {};
@@ -73,7 +76,6 @@ template <typename R, typename...Args>
 struct args<R(Args...)> : types<Args...>{};
 template <typename Signature>
 using args_t = typename args<Signature>::type;
-
 
 template <typename Signature> struct returns;
 template <typename R, typename...Args>
@@ -655,12 +657,12 @@ struct forEach {
     }
 };
 
-template <typename Func, typename V = args_t<decltype(std::declval<Func>())>>
+template <typename Func, typename V>
 struct reduce {
     const Func& mFunc;
     const V initial;
 
-    constexpr reduce(V initial, const Func& func) : mFunc(func), initial{initial} {}
+    constexpr reduce(const Func& func, V initial) : mFunc(func), initial{initial} {}
 
     template <typename T>
     constexpr auto apply(const T& range) const {
@@ -681,11 +683,13 @@ struct toArray {
     {
         using T = iter_value_t<U>;
         using V = typename enumerate_view<U>::enumerated;
-        return (enumerate{} | reduce(std::array<T,N>{},
-                                            [](std::array<T,N>& arr, const V& en) {
-                                                arr[en.position] = en.value;
-                                                return arr;
-                                            })).apply(range);
+        using A = std::array<T,N>;
+        return (enumerate{}
+                | reduce([](A& arr, const V& en) {
+                            arr[en.position] = en.value;
+                            return arr;
+                        }, A{}))
+        .apply(range);
     }
 };
 
@@ -737,25 +741,13 @@ struct applicator final {
     }
 };
 
-
-template <typename T, typename U>
-constexpr applicator<T, U> operator|(const T& left, const U& right)
-{
-    return applicator<T, U> {left, right};
-}
-
 template <typename T, typename U>
 constexpr applicator<T, U> operator|(T&& left, U&& right)
 {
-    return applicator<T, U> {static_cast<T&&>(left), static_cast<U&&>(right)};
+    return applicator<T, U> {
+        .left{static_cast<T&&>(left)},
+        .right{static_cast<U&&>(right)}};
 }
-
-//template <typename T, typename U>
-//constexpr applicator<T, U> operator|(T&& left, const U& right)
-//{
-//    return applicator<T, U> {static_cast<T&&>(left), right};
-//}
-
 
 template <typename T, typename U>
 struct concatenator final {
@@ -822,9 +814,9 @@ struct concatenator final {
 
 template <typename T, typename U, std::enable_if_t<
         std::is_same_v<iter_value_t<T>, iter_value_t<U>>, bool> = true>
-constexpr concatenator<T, U> operator^(T left, U right)
+constexpr concatenator<T, U> operator^(T&& left, U&& right)
 {
-    return concatenator<T, U> {left, right};
+    return concatenator<T, U> {static_cast<T&&>(left), static_cast<U&&>(right)};
 }
 
 }

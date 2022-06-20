@@ -71,15 +71,15 @@ struct Rectangle {
 
 struct Line {
 
-    struct Sentinel {
-        int mXPos;
-    };
+    struct Sentinel {};
 
     struct Iterator {
         Vec2i mD;
         int mYi;
         bool mSteep;
         Vec2i mCurrentPosition;
+        Vec2i mTo;
+        mutable bool mFinished;
         int mCurrentError;
 
         constexpr Vec2i operator*() const {
@@ -99,12 +99,8 @@ struct Line {
             return *this;
         }
 
-        constexpr bool operator!=(const Iterator& other) const {
-            return mCurrentPosition != other.mCurrentPosition;
-        }
-
         constexpr bool operator!=(const Sentinel& other) const {
-            return mCurrentPosition.x != other.mXPos;
+            return mCurrentPosition.x != mTo.x + 1;
         }
     };
 
@@ -144,17 +140,22 @@ struct Line {
             .mD = mD,
             .mYi = mYi,
             .mSteep = mSteep,
+            .mTo = mTo,
             .mCurrentPosition = mFrom,
             .mCurrentError = 2 * mD.y - mD.x,
         };
     }
 
     constexpr Sentinel end() const {
-        return Sentinel{mTo.x + 1};
+        return Sentinel{};
     }
 
     constexpr size_t size() const {
-        return abs(mTo.x - mFrom.x) + 1;
+        if (mSteep) {
+            return abs(mTo.y - mFrom.y) + 1;
+        } else {
+            return abs(mTo.x - mFrom.x) + 1;
+        }
     }
 };
 

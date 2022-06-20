@@ -240,7 +240,14 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
         const auto pointAtCenter = [=](Vec2i p) {
             return truncate(mat * p); };
 
+
         const std::array<Vec2i, 4> points{ Vec2i{ 40, 0 }, Vec2i{-10, 20}, Vec2i{-5, 0}, Vec2i{-10, -20} };
+        for (auto p : points
+             | transform(pointAtCenter)
+             | atMouse | wrapped) {
+            redPixel(p);
+        }
+
         for (auto p : points
              | transform(pointAtCenter)
              | atMouse
@@ -253,6 +260,7 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
              | wrapped ) {
             whitePixel(p);
         }
+
     }
 
     for (int i = 0; i < InputMaxControllers; ++i) {
