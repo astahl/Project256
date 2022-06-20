@@ -125,6 +125,15 @@ func withUnsafeMutableBuffer<T, Result>(start: inout T, end: inout T, body: @esc
     }
 }
 
+func loadDataDEBUG(filenamePtr: UnsafePointer<CChar>?, destination: UnsafeMutablePointer<UInt8>?, bufferSize: Int64) -> Int64 {
+    let filename = String(cString: filenamePtr!)
+    let url = Bundle.main.url(forResource: filename, withExtension: nil)
+    let data = try? Data(contentsOf: url!)
+    data!.copyBytes(to: destination!, count: Int(bufferSize))
+    return min(bufferSize, Int64(data!.count))
+}
+
+
 class GameState : ObservableObject {
     static var timingData = TimingData()
     let memory = UnsafeMutableRawPointer.allocate(byteCount: MemorySize, alignment: 128)
@@ -276,6 +285,8 @@ class GameState : ObservableObject {
         }
     }
 
+
+
     func tick() {
         setupControllers()
         pollControllers()
@@ -293,7 +304,9 @@ class GameState : ObservableObject {
         // TODO finalize inputs
         profiling_time_interval(&GameState.timingData, eTimerTick, eTimingTickSetup)
 
-        let output = doGameThings(&self.input, self.memory)
+        let platformCallbacks = PlatformCallbacks(readFile: loadDataDEBUG(filenamePtr:destination:bufferSize:))
+
+        let output = doGameThings(&self.input, self.memory, platformCallbacks)
         profiling_time_interval(&GameState.timingData, eTimerTick, eTimingTickDo)
 
         if output.shouldQuit {

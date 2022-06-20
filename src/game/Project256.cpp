@@ -38,9 +38,21 @@ compiletime void put(uint8_t* drawBuffer, Vec2 position, Color color)
 template<typename Return, typename ...Args>
 using FunctionPointer = Return (*)(Args...);
 
+constant int TextCharacterW = 8;
+constant int TextCharacterH = 8;
+constant int TextCharacterBytes = 8;
+constant int TextLines = DrawBufferHeight / TextCharacterH;
+constant int TextLineLength = DrawBufferWidth / TextCharacterW;
+
+
 struct GameMemory {
     std::array<uint8_t, DrawBufferWidth * DrawBufferHeight> vram;
     std::array<uint32_t, 256> palette;
+    std::array<uint8_t, TextLines * TextLineLength> textBuffer;
+    int firstLine;
+    int lastLine;
+
+
     Vec2f birdPosition;
     int birdSpeed;
     Vec2i birdTarget;
@@ -53,6 +65,10 @@ struct GameMemory {
 
     Vec2i points[2];
     int currentPoint;
+
+    Timer charChangeTimer;
+    uint8_t currentChar;
+    std::array<uint8_t, TextCharacterBytes * 256> characterROM;
 };
 
 static_assert(sizeof(GameMemory) <= MemorySize, "MemorySize is too small to hold GameMemory struct");
@@ -130,13 +146,13 @@ void birdDirectionChange(GameMemory& memory) {
 }
 
 
-GameOutput doGameThings(GameInput* pInput, void* pMemory)
+GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks platform)
 {
     using namespace ranges_at_home;
     using namespace Generators;
 
     GameOutput output{};
-    using Palette = PaletteAppleII;
+    using Palette = PaletteC64;
     compiletime auto lookupColor = [](auto col) { return static_cast<uint8_t>(findNearest(col, Palette::colors).index); };
     compiletime uint8_t black = lookupColor(Colors::Black);
     compiletime uint8_t cyan = lookupColor(Colors::Cyan);
@@ -173,6 +189,23 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
         std::replace(memory.sprite.data.begin(), memory.sprite.data.end(), static_cast<uint8_t>(1), cyan);
         memory.currentSpriteFrame = 0;
         memory.birdSpeed = 5;
+
+        FILE* x = fopen("Hallo.txt", "w");
+        putc(5, x);
+        fclose(x);
+
+        std::string filename = std::string("CharacterRomPET8x8x256.bin");
+        platform.readFile(filename.c_str(), memory.characterROM.data(), memory.characterROM.size());
+
+        for (auto& c : memory.textBuffer) {
+            c = 32;
+        }
+
+        memory.textBuffer[3 * TextLineLength + 4] = 1;
+        memory.textBuffer[4] = 2;
+        memory.firstLine = 3;
+        memory.lastLine = 3;
+
     }
 
     constant auto whitePixel = [&](const auto& p) { put(memory.vram.data(), p, white); };
@@ -195,7 +228,8 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
 
     for (int y = 0; y < memory.palette.size() / 16; ++y) {
     for (int x = 0; x < DrawBufferWidth; ++x) {
-        put(memory.vram.data(), Vec2i{ x, y }, (x * 16 / DrawBufferWidth) + y * 16);
+        // uncomment for all 256 colors
+        put(memory.vram.data(), Vec2i{ x, y }, (x * 16 / DrawBufferWidth)/* + y * 16*/);
     } }
 
     compiletime auto wrap = [](auto p) { return wrapAround2d(p, Vec2i(), Vec2i{DrawBufferWidth, DrawBufferHeight});};
@@ -311,6 +345,64 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
 
     // draw
     blitSprite(memory.sprite, memory.currentSpriteFrame, memory.vram.data(), DrawBufferWidth, truncate(memory.birdPosition), Vec2i{}, Vec2i{DrawBufferWidth, DrawBufferHeight});
+
+    if (memory.charChangeTimer.hasFired(time)) {
+        memory.charChangeTimer = Timer::delay(time, std::chrono::seconds(1));
+        ++memory.currentChar;
+    }
+
+
+
+    uint8_t* drawPointer = &memory.vram[(DrawBufferHeight - TextCharacterH) * DrawBufferWidth];
+    uint8_t* textPointer = memory.textBuffer.data();
+
+    compiletime uint8_t mask0 = 1 << 7;
+    compiletime uint8_t mask1 = 1 << 6;
+    compiletime uint8_t mask2 = 1 << 5;
+    compiletime uint8_t mask3 = 1 << 4;
+    compiletime uint8_t mask4 = 1 << 3;
+    compiletime uint8_t mask5 = 1 << 2;
+    compiletime uint8_t mask6 = 1 << 1;
+    compiletime uint8_t mask7 = 1 << 0;
+
+    for (int line = 0; line < TextLines; ++line) {
+        uint8_t* linePointer = drawPointer;
+        if (line >= memory.firstLine && line <= memory.lastLine) {
+            for (int y = TextCharacterH - 1; y >= 0; --y) {
+                for (int pos = 0; pos < TextLineLength; ++pos)
+                {
+                    const uint8_t t = textPointer[pos];
+                    const uint8_t c = memory.characterROM[y + t * 8];
+                    if (c == 0) {
+                        linePointer += 8;
+                        continue;
+                    }
+                    linePointer[0] = c & mask0 ? 2 : linePointer[0];
+                    linePointer[1] = c & mask1 ? 2 : linePointer[1];
+                    linePointer[2] = c & mask2 ? 2 : linePointer[2];
+                    linePointer[3] = c & mask3 ? 2 : linePointer[3];
+                    linePointer[4] = c & mask4 ? 2 : linePointer[4];
+                    linePointer[5] = c & mask5 ? 2 : linePointer[5];
+                    linePointer[6] = c & mask6 ? 2 : linePointer[6];
+                    linePointer[7] = c & mask7 ? 2 : linePointer[7];
+                    linePointer += 8;
+                }
+            }
+        }
+        textPointer += TextLineLength;
+        drawPointer -= DrawBufferWidth * TextCharacterH;
+    }
+
+//        for (uint8_t ascii : "THE QUICK BROWN FOX") {
+//            const uint8_t& c = memory.characterROM[y + (ascii - 'A' + 1) * 8];
+//            linePointer[0] = c >> 6 & 3;
+//            linePointer[1] = c >> 4 & 3;
+//            linePointer[2] = c >> 2 & 3;
+//            linePointer[3] = c >> 0 & 3;
+//
+//            linePointer += 4;
+//        }
+    //    drawPointer += DrawBufferWidth;
 
     return output;
 }

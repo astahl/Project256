@@ -9,8 +9,8 @@
 
 constant long MemorySize = 640 * 1024; // 640kbytes
 
-constant unsigned DrawBufferWidth = 320;
-constant unsigned DrawBufferHeight = 200;
+constant unsigned DrawBufferWidth = 640;
+constant unsigned DrawBufferHeight = 480;
 
 constant unsigned DrawAspectH = 4;
 constant unsigned DrawAspectV = 3;
@@ -143,6 +143,10 @@ struct GameInput {
     _Bool closeRequested;
 };
 
+struct PlatformCallbacks {
+    long long (*readFile)(const char*, unsigned char*, long long);
+};
+
 struct Rumble {
 	float left, right;
 };
@@ -157,7 +161,7 @@ struct GameOutput {
 
 struct Vec2f clipSpaceDrawBufferScale(unsigned int viewportWidth, unsigned int viewportHeight);
 void cleanInput(struct GameInput* input);
-struct GameOutput doGameThings(struct GameInput* input, void* memory);
+struct GameOutput doGameThings(struct GameInput* input, void* memory, struct PlatformCallbacks callbacks);
 void writeDrawBuffer(void* memory, void* buffer);
 
 #ifdef __cplusplus
