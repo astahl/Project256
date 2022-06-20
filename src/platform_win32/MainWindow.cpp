@@ -272,8 +272,10 @@ LRESULT CALLBACK MainWindow::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPA
             [[fallthrough]];
         case WA_CLICKACTIVE:
             window->onActiveChange(true);
+            break;
         default:
             window->onActiveChange(false);
+            break;
         }
     }
 

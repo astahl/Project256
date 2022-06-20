@@ -156,7 +156,7 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory)
         std::cout << input.text_utf8;
 
     if (input.frameNumber == 0) {
-        memory = GameMemory{};
+        std::memset(&memory, 0, MemorySize);
         Palette::writeTo(memory.palette.data());
         memory.birdPosition = itof(Center);
         memory.timerCallback = birdDirectionChange;

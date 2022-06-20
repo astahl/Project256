@@ -466,11 +466,14 @@ void Direct3D12View::SetDrawBuffer(byte* drawBuffer) {
 	D3D12_MEMCPY_DEST memcpydest{
 		.pData = data + layouts[0].Offset,
 		.RowPitch = layouts[0].Footprint.RowPitch,
-		.SlicePitch = layouts[0].Footprint.RowPitch * numRows[0],
+		.SlicePitch = static_cast<SIZE_T>(layouts[0].Footprint.RowPitch) * numRows[0],
 	};
 	for (UINT row = 0; row < numRows[0]; ++row)
 	{
-		memcpy(static_cast<byte*>(memcpydest.pData) + memcpydest.RowPitch * row, drawBuffer + DrawBufferWidth * 4 * row, rowSizesInBytes[0]);
+		auto src = drawBuffer + static_cast<std::ptrdiff_t>(DrawBufferWidth) * 4 * row;
+		auto dst = static_cast<byte*>(memcpydest.pData) + static_cast<std::ptrdiff_t>(memcpydest.RowPitch) * row;
+		auto count = rowSizesInBytes[0];
+		memcpy(dst, src, count);
 	}
 	mTextureUploadHeap->Unmap(0, nullptr);
 	mNeedsUpload = true;
@@ -576,7 +579,7 @@ void Direct3D12View::Draw()
 	mCommandList->ResourceBarrier(1, &barrierRenderTargetTransition);
 
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle{
-		.ptr = SIZE_T(mRtvHeap->GetCPUDescriptorHandleForHeapStart().ptr) + SIZE_T(mFrameIndex * mRtvDescriptorSize),
+		.ptr = SIZE_T(mRtvHeap->GetCPUDescriptorHandleForHeapStart().ptr) + SIZE_T(mFrameIndex) * mRtvDescriptorSize,
 	};
 
 	const float clearColor[] = { 0.0f, 0.0f, 0.0f, 1.0f };

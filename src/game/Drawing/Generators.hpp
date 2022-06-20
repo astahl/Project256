@@ -23,16 +23,20 @@ struct Rectangle {
     Vec2i bottomLeft;
     Vec2i topRight;
 
+    struct Sentinel {};
+
     struct Iterator {
         Vec2i bottomLeft;
         Vec2i topRight;
         Vec2i current;
+        bool mFinished;
         
         constexpr Vec2i operator*() const {
             return current;
         }
 
         constexpr Iterator& operator++() {
+            mFinished = !(current != topRight);
             if (current.x == topRight.x) {
                 ++current.y;
                 current.x = bottomLeft.x;
@@ -40,17 +44,27 @@ struct Rectangle {
             else {
                 ++current.x;
             }
+
             return *this;
         }
 
-        constexpr bool operator!=(const Iterator& other) const {
-            return (current.x != other.current.x) || (current.y != other.current.y);
+        constexpr bool operator!=(const Sentinel&) const {
+            return !mFinished;
         }
     };
 
     using iterator = Iterator;
 
-    const Iterator mEnd = ++(Iterator{ .bottomLeft = bottomLeft, .topRight = topRight, .current = topRight });
+    constexpr Rectangle(const Vec2i& corner1, const Vec2i& corner2) {
+        if (corner1 < corner2) {
+            bottomLeft = corner1;
+            topRight = corner2;
+        }
+        else {
+            bottomLeft = corner2;
+            topRight = corner1;
+        }
+    }
 
     constexpr Iterator begin() const {
         return Iterator{
@@ -60,12 +74,20 @@ struct Rectangle {
         };
     }
 
-    constexpr Iterator end() const {
-        return mEnd;
+    constexpr Sentinel end() const {
+        return Sentinel{};
+    }
+
+    constexpr size_t width() const {
+        return static_cast<int64_t>(topRight.x) - bottomLeft.x + 1;
+    }
+
+    constexpr size_t height() const {
+        return static_cast<int64_t>(topRight.y) - bottomLeft.y + 1;
     }
 
     constexpr size_t size() const {
-        return (1 + topRight.x - bottomLeft.x) * (1 + topRight.y - bottomLeft.y);
+        return width() * height();
     }
 };
 
@@ -89,6 +111,7 @@ struct Line {
         }
 
         constexpr Iterator& operator++() {
+            mFinished = !(mCurrentPosition != mTo);
             mCurrentPosition.x += 1;
             if (mCurrentError > 0) {
                 mCurrentPosition.y += mYi;
@@ -96,7 +119,6 @@ struct Line {
             } else {
                 mCurrentError += 2 * mD.y;
             }
-            mFinished = !(mCurrentPosition != mTo);
             return *this;
         }
 
@@ -104,7 +126,6 @@ struct Line {
             return !mFinished;
         }
     };
-
 
     Vec2i mFrom{};
     Vec2i mTo{};
@@ -153,9 +174,9 @@ struct Line {
 
     constexpr size_t size() const {
         if (mSteep) {
-            return abs(mTo.y - mFrom.y) + 1;
+            return abs(static_cast<int64_t>(mTo.y) - mFrom.y) + 1;
         } else {
-            return abs(mTo.x - mFrom.x) + 1;
+            return abs(static_cast<int64_t>(mTo.x) - mFrom.x) + 1;
         }
     }
 };
