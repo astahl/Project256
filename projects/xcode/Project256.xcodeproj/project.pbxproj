@@ -34,8 +34,8 @@
 		68D205DD2855EAB000CB4213 /* MetalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6819ACC1283ECD8E00CCBFD5 /* MetalView.swift */; };
 		68D205DE2855EE3700CB4213 /* GameState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 685035D528428EE200355252 /* GameState.swift */; };
 		68D205DF2855EE3800CB4213 /* GameState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 685035D528428EE200355252 /* GameState.swift */; };
-		68FC4A0A2860EB61009FC29D /* CharacterRomPET8x8x256.bin in Resources */ = {isa = PBXBuildFile; fileRef = 68FC4A092860EB61009FC29D /* CharacterRomPET8x8x256.bin */; };
-		68FC4A0B2860EB61009FC29D /* CharacterRomPET8x8x256.bin in Resources */ = {isa = PBXBuildFile; fileRef = 68FC4A092860EB61009FC29D /* CharacterRomPET8x8x256.bin */; };
+		68FC4A0E2861B6F4009FC29D /* CharacterRomPET8x8x256.bin in Resources */ = {isa = PBXBuildFile; fileRef = 68FC4A0D2861B6F4009FC29D /* CharacterRomPET8x8x256.bin */; };
+		68FC4A0F2861B6F4009FC29D /* CharacterRomPET8x8x256.bin in Resources */ = {isa = PBXBuildFile; fileRef = 68FC4A0D2861B6F4009FC29D /* CharacterRomPET8x8x256.bin */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -63,7 +63,7 @@
 		68D205D52854EE2F00CB4213 /* Timings.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Timings.cpp; sourceTree = "<group>"; };
 		68D205D62854EE2F00CB4213 /* Timings.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Timings.h; sourceTree = "<group>"; };
 		68D205D9285516A900CB4213 /* RangesAtHome.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = RangesAtHome.hpp; sourceTree = "<group>"; };
-		68FC4A092860EB61009FC29D /* CharacterRomPET8x8x256.bin */ = {isa = PBXFileReference; explicitFileType = compiled; name = CharacterRomPET8x8x256.bin; path = ../../assets/CharacterRomPET8x8x256.bin; sourceTree = "<group>"; };
+		68FC4A0D2861B6F4009FC29D /* CharacterRomPET8x8x256.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; name = CharacterRomPET8x8x256.bin; path = ../../assets/CharacterRomPET8x8x256.bin; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -168,7 +168,7 @@
 		687B91AD283D7E95007604C7 = {
 			isa = PBXGroup;
 			children = (
-				68FC4A092860EB61009FC29D /* CharacterRomPET8x8x256.bin */,
+				68FC4A0C2861B67C009FC29D /* Assets */,
 				6821D85B28591C01008D4128 /* Game */,
 				6845558B283D7F22004AD3FB /* Platform */,
 				6845559C283D8044004AD3FB /* macOS */,
@@ -203,6 +203,14 @@
 			children = (
 			);
 			name = Text;
+			sourceTree = "<group>";
+		};
+		68FC4A0C2861B67C009FC29D /* Assets */ = {
+			isa = PBXGroup;
+			children = (
+				68FC4A0D2861B6F4009FC29D /* CharacterRomPET8x8x256.bin */,
+			);
+			name = Assets;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -284,7 +292,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				68FC4A0A2860EB61009FC29D /* CharacterRomPET8x8x256.bin in Resources */,
+				68FC4A0E2861B6F4009FC29D /* CharacterRomPET8x8x256.bin in Resources */,
 				684555AB283D86C9004AD3FB /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -293,7 +301,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				68FC4A0B2860EB61009FC29D /* CharacterRomPET8x8x256.bin in Resources */,
+				68FC4A0F2861B6F4009FC29D /* CharacterRomPET8x8x256.bin in Resources */,
 				684555AC283D86C9004AD3FB /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
