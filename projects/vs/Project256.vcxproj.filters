@@ -37,6 +37,9 @@
     <Filter Include="Assets">
       <UniqueIdentifier>{8faa85f7-73a2-4454-a8e7-e6ba0c45839c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Math">
+      <UniqueIdentifier>{733ee4ae-ea31-4178-ac0b-47a8e53f0800}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\platform_win32\WinMain.cpp">
@@ -91,6 +94,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\game\Debug\DebugDrawController.hpp">
       <Filter>Header Files\Debug</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\game\Math\Vec2Math.hpp">
+      <Filter>Header Files\Math</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
