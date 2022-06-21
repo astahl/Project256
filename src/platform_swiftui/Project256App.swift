@@ -73,6 +73,7 @@ struct Project256App: App {
                     self.subscriptions.highfrequency?.cancel()
                 }
                 .background(.linearGradient(.init(colors: [Color.cyan, Color.purple]), startPoint: .topLeading, endPoint: .bottomTrailing))
+
                 .overlay(Ellipse().foregroundColor(.gray).opacity(0.3).blur(radius: 100))
                 //.ignoresSafeArea()
                 .onChange(of: gameState.tickTargetHz, perform: {

@@ -49,8 +49,9 @@ struct GameMemory {
     std::array<uint8_t, DrawBufferWidth * DrawBufferHeight> vram;
     std::array<uint32_t, 256> palette;
     std::array<uint8_t, TextLines * TextLineLength> textBuffer;
-    int firstLine;
-    int lastLine;
+    int textFirstLine;
+    int textLastLine;
+    int textScroll;
 
 
     Vec2f birdPosition;
@@ -190,22 +191,11 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
         memory.currentSpriteFrame = 0;
         memory.birdSpeed = 5;
 
-        FILE* x = fopen("Hallo.txt", "w");
-        putc(5, x);
-        fclose(x);
+        int64_t read = platform.readFile("CharacterRomPET8x8x256.bin", memory.characterROM.data(), memory.characterROM.size());
 
-        std::string filename = std::string("CharacterRomPET8x8x256.bin");
-        platform.readFile(filename.c_str(), memory.characterROM.data(), memory.characterROM.size());
-
-        for (auto& c : memory.textBuffer) {
-            c = 32;
-        }
-
-        memory.textBuffer[3 * TextLineLength + 4] = 1;
-        memory.textBuffer[4] = 2;
-        memory.firstLine = 3;
-        memory.lastLine = 3;
-
+        memory.textFirstLine = 3;
+        memory.textLastLine = 3;
+        memory.textScroll = 3;
     }
 
     constant auto whitePixel = [&](const auto& p) { put(memory.vram.data(), p, white); };
@@ -347,11 +337,10 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
     blitSprite(memory.sprite, memory.currentSpriteFrame, memory.vram.data(), DrawBufferWidth, truncate(memory.birdPosition), Vec2i{}, Vec2i{DrawBufferWidth, DrawBufferHeight});
 
     if (memory.charChangeTimer.hasFired(time)) {
-        memory.charChangeTimer = Timer::delay(time, std::chrono::seconds(1));
-        ++memory.currentChar;
+        memory.charChangeTimer = Timer::delay(time, std::chrono::milliseconds(40));
+
+        memory.textBuffer[3 * TextLineLength + (memory.currentChar % TextLineLength)] =++memory.currentChar;
     }
-
-
 
     uint8_t* drawPointer = &memory.vram[(DrawBufferHeight - TextCharacterH) * DrawBufferWidth];
     uint8_t* textPointer = memory.textBuffer.data();
@@ -367,26 +356,27 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
 
     for (int line = 0; line < TextLines; ++line) {
         uint8_t* linePointer = drawPointer;
-        if (line >= memory.firstLine && line <= memory.lastLine) {
+        if (line >= memory.textFirstLine && line <= memory.textLastLine) {
             for (int y = TextCharacterH - 1; y >= 0; --y) {
+                uint64_t* dst = reinterpret_cast<uint64_t*>(linePointer);
                 for (int pos = 0; pos < TextLineLength; ++pos)
                 {
                     const uint8_t t = textPointer[pos];
-                    const uint8_t c = memory.characterROM[y + t * 8];
-                    if (c == 0) {
-                        linePointer += 8;
-                        continue;
-                    }
-                    linePointer[0] = c & mask0 ? 2 : linePointer[0];
-                    linePointer[1] = c & mask1 ? 2 : linePointer[1];
-                    linePointer[2] = c & mask2 ? 2 : linePointer[2];
-                    linePointer[3] = c & mask3 ? 2 : linePointer[3];
-                    linePointer[4] = c & mask4 ? 2 : linePointer[4];
-                    linePointer[5] = c & mask5 ? 2 : linePointer[5];
-                    linePointer[6] = c & mask6 ? 2 : linePointer[6];
-                    linePointer[7] = c & mask7 ? 2 : linePointer[7];
-                    linePointer += 8;
+                    const uint64_t c = memory.characterROM[y + t * 8];
+
+                    uint64_t pixels8 = (c >> 7 & 1) << 0
+                    | (c >> 6 & 1) << 8
+                    | (c >> 5 & 1) << 16
+                    | (c >> 4 & 1) << 24
+                    | (c >> 3 & 1) << 32
+                    | (c >> 2 & 1) << 40
+                    | (c >> 1 & 1) << 48
+                    | (c >> 0 & 1) << 56;
+                    const uint64_t background = ~(pixels8 * 0xFF) / 0xFF;
+                    // colors!
+                    *dst++ = pixels8 * 14 | background * 6;
                 }
+                linePointer += DrawBufferWidth;
             }
         }
         textPointer += TextLineLength;
