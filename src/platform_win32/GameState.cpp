@@ -211,7 +211,6 @@ INT64 readFileDEBUG(const char* filename, unsigned char* buffer, INT64 bufferSiz
     size_t lastSlashPos = pathBuf.find_last_of(L'\\');
     if (lastSlashPos != std::wstring::npos) pathBuf.erase(lastSlashPos + 1);
     std::wstring filePath = pathBuf + wideString;
-
     HANDLE file = CreateFile2(filePath.c_str(), GENERIC_READ, FILE_SHARE_READ, OPEN_EXISTING, NULL);
     if (file == INVALID_HANDLE_VALUE) {
         exit(GetLastError());
@@ -234,12 +233,10 @@ GameOutput GameState::tick() {
     platform.pollXInput(input);
     GameOutput output{};
 
-    PlatformCallbacks callbacks{
-        .readFile = readFileDEBUG
-    };
-
     profiling_time_interval(&GameState::timingData, eTimerTick, eTimingTickSetup);
-    output = doGameThings(&input, memory, callbacks);
+    output = doGameThings(&input, memory, {
+        .readFile = readFileDEBUG
+        });
     profiling_time_interval(&GameState::timingData, eTimerTick, eTimingTickDo);
 
     cleanInput(&input);
