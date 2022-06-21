@@ -190,9 +190,17 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
         std::replace(memory.sprite.data.begin(), memory.sprite.data.end(), static_cast<uint8_t>(1), cyan);
         memory.currentSpriteFrame = 0;
         memory.birdSpeed = 5;
-
-        int64_t read = platform.readFile("CharacterRomPET8x8x256.bin", memory.characterROM.data(), memory.characterROM.size());
-
+        if (platform.readFile) {
+            int64_t read = platform.readFile("CharacterRomPET8x8x256.bin", memory.characterROM.data(), memory.characterROM.size());
+            if (read != 2048)
+            {
+                exit(2);
+            }
+        }
+        else {
+            exit(1);
+        }
+            
         memory.textFirstLine = 3;
         memory.textLastLine = 3;
         memory.textScroll = 3;

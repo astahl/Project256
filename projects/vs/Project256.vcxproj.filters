@@ -34,6 +34,9 @@
     <Filter Include="Source Files\Profiling">
       <UniqueIdentifier>{3d6ed653-ae58-4e89-9f32-cdde7bba52c2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Assets">
+      <UniqueIdentifier>{8faa85f7-73a2-4454-a8e7-e6ba0c45839c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\platform_win32\WinMain.cpp">
@@ -93,6 +96,9 @@
   <ItemGroup>
     <CopyFileToFolders Include="..\..\src\platform_win32\Shader.hlsl">
       <Filter>Source Files\Platform</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="..\..\assets\CharacterRomPET8x8x256.bin">
+      <Filter>Assets</Filter>
     </CopyFileToFolders>
   </ItemGroup>
 </Project>

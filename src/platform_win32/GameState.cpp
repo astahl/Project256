@@ -1,5 +1,7 @@
 #include "GameState.h"
 #include "Xinput.h"
+#include <string>
+
 
 TimingData GameState::timingData{
     .getPlatformTimeMicroseconds = []() {
@@ -197,6 +199,30 @@ GameState::GameState() {
     this->drawBuffer = reinterpret_cast<byte*>(VirtualAlloc(LPVOID(2LL * 1024 * 1024 * 1024 + MemorySize), 4 * DrawBufferHeight * DrawBufferWidth, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
 }
 
+
+INT64 readFileDEBUG(const char* filename, unsigned char* buffer, INT64 bufferSize) {
+
+    int requiredWideLength = MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, filename, -1, NULL, 0);
+    std::wstring wideString(requiredWideLength, L'\0');
+    MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, filename, -1, wideString.data(), static_cast<int>(wideString.size()));
+
+    std::wstring pathBuf(512, L'\0');
+    GetModuleFileName(nullptr, pathBuf.data(), 512);
+    size_t lastSlashPos = pathBuf.find_last_of(L'\\');
+    if (lastSlashPos != std::wstring::npos) pathBuf.erase(lastSlashPos + 1);
+    std::wstring filePath = pathBuf + wideString;
+
+    HANDLE file = CreateFile2(filePath.c_str(), GENERIC_READ, FILE_SHARE_READ, OPEN_EXISTING, NULL);
+    if (file == INVALID_HANDLE_VALUE) {
+        exit(GetLastError());
+    }
+    DWORD read{};
+    if (ReadFile(file, buffer, static_cast<DWORD>(bufferSize), &read, NULL)) {
+        return read;
+    }
+    exit(GetLastError());
+}
+
 GameOutput GameState::tick() {
     profiling_time_interval(&GameState::timingData, eTimerTickToTick, eTimingTickToTick);
     profiling_time_set(&GameState::timingData, eTimerTickToTick);
@@ -208,8 +234,12 @@ GameOutput GameState::tick() {
     platform.pollXInput(input);
     GameOutput output{};
 
+    PlatformCallbacks callbacks{
+        .readFile = readFileDEBUG
+    };
+
     profiling_time_interval(&GameState::timingData, eTimerTick, eTimingTickSetup);
-    output = doGameThings(&input, memory);
+    output = doGameThings(&input, memory, callbacks);
     profiling_time_interval(&GameState::timingData, eTimerTick, eTimingTickDo);
 
     cleanInput(&input);
