@@ -10,6 +10,7 @@
 #include <array>
 #include <algorithm>
 #include <limits>
+#include <vector>
 
 #include "../defines.h"
 
@@ -239,9 +240,86 @@ findNearest(TColor color, const TColorSpace& colorSpace) {
         ++index;
     }
     return result;
-
 }
 
+struct ColorArgb {
+    union {
+        struct { uint8_t b, g, r, a; };
+        uint32_t value;
+    };
+};
+
+constexpr int min(int left, int right)
+{
+    return (left < right) ? left : right;
+}
+
+constexpr ColorArgb operator+(ColorArgb left, ColorArgb right)
+{
+    return ColorArgb {
+        .b = static_cast<uint8_t>(left.b + min(255 - left.b, right.b)),
+        .g = static_cast<uint8_t>(left.g + min(255 - left.g, right.g)),
+        .r = static_cast<uint8_t>(left.r + min(255 - left.r, right.r)),
+        .a = static_cast<uint8_t>(left.a + min(255 - left.a, right.a)),
+    };
+}
+
+constexpr ColorArgb operator-(ColorArgb left, ColorArgb right)
+{
+    return ColorArgb {
+        .b = static_cast<uint8_t>(left.b - min(left.b, right.b)),
+        .g = static_cast<uint8_t>(left.g - min(left.g, right.g)),
+        .r = static_cast<uint8_t>(left.r - min(left.r, right.r)),
+        .a = static_cast<uint8_t>(left.a - min(left.a, right.a)),
+    };
+}
+
+constexpr ColorArgb shiftRightMult(ColorArgb color, int shift, int mult)
+{
+    return ColorArgb {
+        .b = static_cast<uint8_t>((color.b * mult >> shift)),
+        .g = static_cast<uint8_t>((color.g * mult >> shift)),
+        .r = static_cast<uint8_t>((color.r * mult >> shift)),
+        .a = static_cast<uint8_t>((color.a * mult >> shift)),
+    };
+}
+
+template <int Width, typename TColorSpace, bool Dither = true, typename TIndex = typename TColorSpace::difference_type>
+compiletime void ConvertBitmapFrom32BppToIndex(const uint32_t* source, int width, int height, const TColorSpace& colorSpace, TIndex* destination) {
+    if constexpr (Dither) {
+        constexpr int W = Width + 2;
+        ColorArgb errors[(W) * 2]{};
+        const ColorArgb* src = reinterpret_cast<const ColorArgb*>(source);
+        for (int y = 0; y < height; ++y) {
+            for (int x = 0; x < width; ++x) {
+
+                ColorArgb sourceColor = src[x + y * width];
+                ColorArgb errorAtSource = errors[x + 1];
+                ColorArgb sourceWithError = sourceColor + errorAtSource;
+                auto nearest = findNearest(sourceWithError.value, colorSpace);
+                destination[x + y * width] = nearest.index;
+
+                ColorArgb written{.value = nearest.argb};
+                auto error = sourceWithError - written;
+                errors[x + 2] = shiftRightMult(error, 4, 7) + errors[x + 2];
+                errors[x + W] = shiftRightMult(error, 4, 3) + errors[x + W];
+                errors[x + 1 + W] = shiftRightMult(error, 4, 5) + errors[x + 1 + W];
+                errors[x + 2 + W] = shiftRightMult(error, 4, 1) + errors[x + 2 + W];
+            }
+            for (int x = 0; x < W; ++x) {
+                errors[x] = errors[x + W];
+                errors[x + W] = ColorArgb{};
+            }
+        }
+    } else {
+        for (int y = 0; y < height; ++y)
+            for (int x = 0; x < width; ++x) {
+                uint32_t sourceColor = *(source++);
+                auto nearest = findNearest(sourceColor, colorSpace);
+                *(destination++) = nearest.index;
+            }
+    }
+}
 
 
 

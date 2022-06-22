@@ -10,6 +10,11 @@
 #include <algorithm>
 #include <cassert>
 
+
+template<typename Return, typename ...Args>
+using FunctionPointer = Return (*)(Args...);
+
+
 struct Timer {
     std::chrono::microseconds firesAt;
 
@@ -35,8 +40,6 @@ compiletime void put(uint8_t* drawBuffer, Vec2 position, Color color)
     drawBuffer[static_cast<int>(position.x) + static_cast<int>(position.y) * Pitch] = static_cast<uint8_t>(color);
 }
 
-template<typename Return, typename ...Args>
-using FunctionPointer = Return (*)(Args...);
 
 constant int TextCharacterW = 8;
 constant int TextCharacterH = 8;
@@ -48,12 +51,12 @@ constant int TextLineLength = DrawBufferWidth / TextCharacterW;
 struct GameMemory {
     std::array<uint8_t, DrawBufferWidth * DrawBufferHeight> vram;
     std::array<uint32_t, 256> palette;
+    std::array<uint8_t, TextCharacterBytes * 256> characterROM;
     std::array<uint8_t, TextLines * TextLineLength> textBuffer;
     std::array<uint8_t, TextLines * TextLineLength> textColors;
     int textFirstLine;
     int textLastLine;
     int textScroll;
-
 
     Vec2f birdPosition;
     int birdSpeed;
@@ -65,12 +68,14 @@ struct GameMemory {
     Timer spriteAnimationTimer;
     int currentSpriteFrame;
 
+    std::array<uint32_t, 320 * 256> image;
+    std::array<uint8_t, 320 * 256> imageDecoded;
+
     Vec2i points[2];
     int currentPoint;
 
     Timer charChangeTimer;
     uint8_t currentChar;
-    std::array<uint8_t, TextCharacterBytes * 256> characterROM;
 };
 
 static_assert(sizeof(GameMemory) <= MemorySize, "MemorySize is too small to hold GameMemory struct");
@@ -150,11 +155,15 @@ void birdDirectionChange(GameMemory& memory) {
 
 GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks platform)
 {
+    assert(pInput != nullptr);
+    assert(pMemory != nullptr);
+    assert(platform.readFile != nullptr);
+
     using namespace ranges_at_home;
     using namespace Generators;
 
     GameOutput output{};
-    using Palette = PaletteEGA;
+    using Palette = PaletteEGA ;
     compiletime auto lookupColor = [](auto col) { return static_cast<uint8_t>(findNearest(col, Palette::colors).index); };
     compiletime uint8_t black = lookupColor(Colors::Black);
     compiletime uint8_t cyan = lookupColor(Colors::Cyan);
@@ -173,6 +182,7 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
     if (input.textLength)
         std::cout << input.text_utf8;
 
+    // initialize main memory
     if (input.frameNumber == 0) {
         std::memset(&memory, 0, MemorySize);
         Palette::writeTo(memory.palette.data());
@@ -206,11 +216,22 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
         memory.textLastLine = 0;
         memory.textScroll = 0;
         memset(memory.textColors.data(), 0x01, memory.textColors.size());
+
+        if (platform.readImage) {
+            if (!platform.readImage("test.bmp", memory.image.data(), 320, 256))
+                exit(3);
+        }
+        else {
+            exit(4);
+        }
+
+        ConvertBitmapFrom32BppToIndex<320>(memory.image.data(), 320, 256, Palette::colors, memory.imageDecoded.data());
     }
 
     constant auto whitePixel = [&](const auto& p) { put(memory.vram.data(), p, white); };
     constant auto redPixel = [&](const auto& p) { put(memory.vram.data(), p, red); };
 
+    // handle timers
     const auto time = std::chrono::microseconds(input.upTime_microseconds);
     if (memory.directionChangeTimer.hasFired(time) || memory.birdTarget == round(memory.birdPosition)) {
         memory.directionChangeTimer = Timer::delay(time, std::chrono::seconds(100 / memory.birdSpeed++));
@@ -222,17 +243,38 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
         memory.currentSpriteFrame = (memory.currentSpriteFrame + 1) % decltype(memory.sprite)::frameCount;
     }
 
+
+    if (memory.charChangeTimer.hasFired(time)) {
+        memory.charChangeTimer = Timer::delay(time, std::chrono::milliseconds(40));
+
+        memory.textColors[0 * TextLineLength + (memory.currentChar % TextLineLength)] = memory.currentChar;
+        memory.textBuffer[0 * TextLineLength + (memory.currentChar % TextLineLength)] = memory.currentChar;
+        memory.currentChar++;
+    }
+
+    // clear the screen
     std::memset(memory.vram.data(), (uint8_t)clearColor, DrawBufferWidth * DrawBufferHeight);
 
     // draw the palette in the first rows
-
     for (int y = 0; y < memory.palette.size() / 16; ++y) {
     for (int x = 0; x < DrawBufferWidth; ++x) {
         // uncomment for all 256 colors
         put(memory.vram.data(), Vec2i{ x, y }, (x * 16 / DrawBufferWidth)/* + y * 16*/);
     } }
 
+    for (int y = 0; y < 256; ++y) {
+        for (int x = 0; x < 320; ++x) {
+            put(memory.vram.data(), Vec2i{ x, y + 16}, memory.imageDecoded[x + (256 - y) * 320]);
+        }
+    }
+
+
+    // do some experimentation in the vram
     compiletime auto wrap = [](auto p) { return wrapAround2d(p, Vec2i(), Vec2i{DrawBufferWidth, DrawBufferHeight});};
+
+    if (memory.points[0] != memory.points[1])
+    for (auto p : Generators::Line{memory.points[0], memory.points[1]})
+        whitePixel(p);
 
     if (input.mouse.trackLength) {
         Vec2f mousePosition = input.mouse.track[input.mouse.trackLength - 1];
@@ -296,6 +338,7 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
 
     }
 
+    // write controller state to the screen
     for (int i = 0; i < InputMaxControllers; ++i) {
         auto& controller = input.controllers[i];
         if (!controller.isConnected)
@@ -333,9 +376,6 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
         }
     }
 
-    if (memory.points[0] != memory.points[1])
-    for (auto p : Generators::Line{memory.points[0], memory.points[1]})
-        whitePixel(p);
 
     // update
     memory.birdPosition = memory.birdPosition + static_cast<float>(input.elapsedTime_s) * memory.birdSpeed * normalized(itof(memory.birdTarget) - memory.birdPosition);
@@ -346,14 +386,10 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
     // draw
     blitSprite(memory.sprite, memory.currentSpriteFrame, memory.vram.data(), DrawBufferWidth, truncate(memory.birdPosition), Vec2i{}, Vec2i{DrawBufferWidth, DrawBufferHeight});
 
-    if (memory.charChangeTimer.hasFired(time)) {
-        memory.charChangeTimer = Timer::delay(time, std::chrono::milliseconds(40));
 
-        memory.textColors[0 * TextLineLength + (memory.currentChar % TextLineLength)] = memory.currentChar;
-        memory.textBuffer[0 * TextLineLength + (memory.currentChar % TextLineLength)] = memory.currentChar;
-        memory.currentChar++;
-    }
 
+
+    // draw text buffer
     uint8_t* drawPointer = &memory.vram[(DrawBufferHeight - TextCharacterH) * DrawBufferWidth];
     uint8_t* textPointer = memory.textBuffer.data();
     uint8_t* textColorPointer = memory.textColors.data();
@@ -398,6 +434,8 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
         drawPointer -= DrawBufferWidth * TextCharacterH;
     }
 
+
+
 //        for (uint8_t ascii : "THE QUICK BROWN FOX") {
 //            const uint8_t& c = memory.characterROM[y + (ascii - 'A' + 1) * 8];
 //            linePointer[0] = c >> 6 & 3;
@@ -414,19 +452,8 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
 
 void writeDrawBuffer(void* pMemory, void* buffer)
 {
-    if (buffer == nullptr) {
-        return;
-    }
-    uint32_t* pixel = reinterpret_cast<uint32_t*>(buffer);
-
-    if (pMemory == nullptr) {
-        for (unsigned int y = 0; y < DrawBufferHeight; ++y)
-        for (unsigned int x = 0; x < DrawBufferWidth; ++x)
-        {
-            *pixel++ = 0xFF000000 | ((y % 2) && (x % 2) ? 0xFFFFFF : y) ; // argb
-        }
-        return;
-    }
+    assert(buffer != nullptr);
+    assert(pMemory != nullptr);
 
     GameMemory& memory = *reinterpret_cast<GameMemory*>(pMemory);
     uint8_t* vram = memory.vram.data();
@@ -450,29 +477,22 @@ void writeDrawBuffer(void* pMemory, void* buffer)
             dst += 4;
         }
     }
-//    else if (false) {
-//        // why is this slower?!??!
-//        constexpr int count = DrawBufferWidth * DrawBufferHeight;
-//        struct bytes_v8 { uint8_t a, b, c, d, e, f, g, h; };
-//        struct uint32_v2 { uint32_t a, b; };
-//        bytes_v8* src = reinterpret_cast<bytes_v8*>(vram);
-//        uint32_v2* dst = reinterpret_cast<uint32_v2*>(buffer);
-//        const uint32_t* palette = memory.palette;
-//        for (int i = 0; i < count; i += 8) {
-//            auto src8 = *src++;
-//
-//            *dst = { palette[src8.a], palette[src8.b] };
-//            *(dst + 1) = { palette[src8.c], palette[src8.d] };
-//            *(dst + 2) = { palette[src8.e], palette[src8.f] };
-//            *(dst + 3) = { palette[src8.g], palette[src8.h] };
-//            dst += 4;
-//        }
-//    }
     else {
+        uint32_t* pixel = reinterpret_cast<uint32_t*>(buffer);
+
         for (unsigned y = 0; y < DrawBufferHeight; ++y)
         for (unsigned x = 0; x < DrawBufferWidth; ++x)
             *pixel++ = memory.palette[*vram++];
     }
+
+    uint32_t* pixel = reinterpret_cast<uint32_t*>(buffer);
+    for (int y = 0; y < 256; ++y) {
+        for (int x = 0; x < 320; ++x) {
+            auto col = memory.image[x + (256 - y) * 320];
+            pixel[x + 320 + (y + 16) * DrawBufferWidth] = col;
+        }
+    }
+
 }
 
 }

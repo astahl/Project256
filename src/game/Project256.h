@@ -145,6 +145,7 @@ struct GameInput {
 
 struct PlatformCallbacks {
     long long (*readFile)(const char*, unsigned char*, long long);
+    _Bool (*readImage)(const char*, unsigned int*, int, int);
 };
 
 struct Rumble {

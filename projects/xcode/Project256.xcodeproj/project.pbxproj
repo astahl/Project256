@@ -36,6 +36,8 @@
 		68D205DF2855EE3800CB4213 /* GameState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 685035D528428EE200355252 /* GameState.swift */; };
 		68FC4A0E2861B6F4009FC29D /* CharacterRomPET8x8x256.bin in Resources */ = {isa = PBXBuildFile; fileRef = 68FC4A0D2861B6F4009FC29D /* CharacterRomPET8x8x256.bin */; };
 		68FC4A0F2861B6F4009FC29D /* CharacterRomPET8x8x256.bin in Resources */ = {isa = PBXBuildFile; fileRef = 68FC4A0D2861B6F4009FC29D /* CharacterRomPET8x8x256.bin */; };
+		68FC4A112863A6C9009FC29D /* test.bmp in Resources */ = {isa = PBXBuildFile; fileRef = 68FC4A102863A6C9009FC29D /* test.bmp */; };
+		68FC4A122863A6C9009FC29D /* test.bmp in Resources */ = {isa = PBXBuildFile; fileRef = 68FC4A102863A6C9009FC29D /* test.bmp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -64,6 +66,7 @@
 		68D205D62854EE2F00CB4213 /* Timings.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Timings.h; sourceTree = "<group>"; };
 		68D205D9285516A900CB4213 /* RangesAtHome.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = RangesAtHome.hpp; sourceTree = "<group>"; };
 		68FC4A0D2861B6F4009FC29D /* CharacterRomPET8x8x256.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; name = CharacterRomPET8x8x256.bin; path = ../../assets/CharacterRomPET8x8x256.bin; sourceTree = "<group>"; };
+		68FC4A102863A6C9009FC29D /* test.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; name = test.bmp; path = ../../assets/test.bmp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -208,6 +211,7 @@
 		68FC4A0C2861B67C009FC29D /* Assets */ = {
 			isa = PBXGroup;
 			children = (
+				68FC4A102863A6C9009FC29D /* test.bmp */,
 				68FC4A0D2861B6F4009FC29D /* CharacterRomPET8x8x256.bin */,
 			);
 			name = Assets;
@@ -292,6 +296,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				68FC4A112863A6C9009FC29D /* test.bmp in Resources */,
 				68FC4A0E2861B6F4009FC29D /* CharacterRomPET8x8x256.bin in Resources */,
 				684555AB283D86C9004AD3FB /* Assets.xcassets in Resources */,
 			);
@@ -301,6 +306,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				68FC4A122863A6C9009FC29D /* test.bmp in Resources */,
 				68FC4A0F2861B6F4009FC29D /* CharacterRomPET8x8x256.bin in Resources */,
 				684555AC283D86C9004AD3FB /* Assets.xcassets in Resources */,
 			);

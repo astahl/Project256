@@ -133,6 +133,27 @@ func loadDataDEBUG(filenamePtr: UnsafePointer<CChar>?, destination: UnsafeMutabl
     return min(bufferSize, Int64(data!.count))
 }
 
+func loadImageDEBUG(filenamePtr: UnsafePointer<CChar>?, destination: UnsafeMutablePointer<UInt32>?, width: Int32, height: Int32) -> Bool {
+    let filename = String(cString: filenamePtr!)
+    let url = Bundle.main.url(forResource: filename, withExtension: nil)
+    let image = CIImage.init(contentsOf: url!)!
+    let cgImage = image.cgImage ?? {
+        let context = CIContext()
+        return context.createCGImage(image, from: image.extent)!
+    }()
+    let targetColorSpace = CGColorSpace.init(name: CGColorSpace.sRGB)!;
+    guard let context = CGContext.init(data: destination, width: Int(width), height: Int(height), bitsPerComponent: 8, bytesPerRow: 4 * Int(width), space: targetColorSpace, bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue) else {
+        return false
+    }
+
+    context.draw(cgImage, in: CGRect(x: 0, y: 0, width: Int(width), height: Int(height)))
+    let buffer = UnsafeMutableBufferPointer(start: destination, count: Int(width * height))
+    for i in 0..<buffer.count {
+        buffer[i] = buffer[i].bigEndian
+    }
+    return true
+}
+
 
 class GameState : ObservableObject {
     static var timingData = TimingData()
@@ -304,7 +325,7 @@ class GameState : ObservableObject {
         // TODO finalize inputs
         profiling_time_interval(&GameState.timingData, eTimerTick, eTimingTickSetup)
 
-        let platformCallbacks = PlatformCallbacks(readFile: loadDataDEBUG(filenamePtr:destination:bufferSize:))
+        let platformCallbacks = PlatformCallbacks(readFile: loadDataDEBUG(filenamePtr:destination:bufferSize:), readImage: loadImageDEBUG(filenamePtr:destination:width:height:))
 
         let output = doGameThings(&self.input, self.memory, platformCallbacks)
         profiling_time_interval(&GameState.timingData, eTimerTick, eTimingTickDo)
