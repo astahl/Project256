@@ -27,7 +27,6 @@
     <ClCompile Include="..\..\src\platform_win32\WinMain.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\src\game\Debug\DebugDrawController.hpp" />
     <ClInclude Include="..\..\src\game\defines.h" />
     <ClInclude Include="..\..\src\game\Drawing\Generators.hpp" />
     <ClInclude Include="..\..\src\game\Drawing\Palettes.hpp" />
