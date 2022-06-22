@@ -49,6 +49,7 @@ struct GameMemory {
     std::array<uint8_t, DrawBufferWidth * DrawBufferHeight> vram;
     std::array<uint32_t, 256> palette;
     std::array<uint8_t, TextLines * TextLineLength> textBuffer;
+    std::array<uint8_t, TextLines * TextLineLength> textColors;
     int textFirstLine;
     int textLastLine;
     int textScroll;
@@ -153,7 +154,7 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
     using namespace Generators;
 
     GameOutput output{};
-    using Palette = PaletteC64;
+    using Palette = PaletteEGA;
     compiletime auto lookupColor = [](auto col) { return static_cast<uint8_t>(findNearest(col, Palette::colors).index); };
     compiletime uint8_t black = lookupColor(Colors::Black);
     compiletime uint8_t cyan = lookupColor(Colors::Cyan);
@@ -201,9 +202,10 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
             exit(1);
         }
             
-        memory.textFirstLine = 3;
-        memory.textLastLine = 3;
-        memory.textScroll = 3;
+        memory.textFirstLine = 0;
+        memory.textLastLine = 0;
+        memory.textScroll = 0;
+        memset(memory.textColors.data(), 0x01, memory.textColors.size());
     }
 
     constant auto whitePixel = [&](const auto& p) { put(memory.vram.data(), p, white); };
@@ -347,11 +349,14 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
     if (memory.charChangeTimer.hasFired(time)) {
         memory.charChangeTimer = Timer::delay(time, std::chrono::milliseconds(40));
 
-        memory.textBuffer[3 * TextLineLength + (memory.currentChar % TextLineLength)] =++memory.currentChar;
+        memory.textColors[0 * TextLineLength + (memory.currentChar % TextLineLength)] = memory.currentChar;
+        memory.textBuffer[0 * TextLineLength + (memory.currentChar % TextLineLength)] = memory.currentChar;
+        memory.currentChar++;
     }
 
     uint8_t* drawPointer = &memory.vram[(DrawBufferHeight - TextCharacterH) * DrawBufferWidth];
     uint8_t* textPointer = memory.textBuffer.data();
+    uint8_t* textColorPointer = memory.textColors.data();
 
     compiletime uint8_t mask0 = 1 << 7;
     compiletime uint8_t mask1 = 1 << 6;
@@ -371,23 +376,25 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
                 {
                     const uint8_t t = textPointer[pos];
                     const uint64_t c = memory.characterROM[y + t * 8];
-
-                    uint64_t pixels8 = (c >> 7 & 1) << 0
-                    | (c >> 6 & 1) << 8
-                    | (c >> 5 & 1) << 16
-                    | (c >> 4 & 1) << 24
-                    | (c >> 3 & 1) << 32
-                    | (c >> 2 & 1) << 40
-                    | (c >> 1 & 1) << 48
-                    | (c >> 0 & 1) << 56;
+                    const uint8_t color = textColorPointer[pos];
+                    uint64_t pixels8 =
+                          (c & mask0) >> 7
+                        | (c & mask1) << 2
+                        | (c & mask2) << 11
+                        | (c & mask3) << 20
+                        | (c & mask4) << 29
+                        | (c & mask5) << 38
+                        | (c & mask6) << 47
+                        | (c & mask7) << 56;
                     const uint64_t background = ~(pixels8 * 0xFF) / 0xFF;
-                    // colors!
-                    *dst++ = pixels8 * 14 | background * 6;
+                    // colors! top nibble is background, bottom nibble foreground
+                    *dst++ = pixels8 * (color & 0xF) | background * (color >> 4);
                 }
                 linePointer += DrawBufferWidth;
             }
         }
         textPointer += TextLineLength;
+        textColorPointer += TextLineLength;
         drawPointer -= DrawBufferWidth * TextCharacterH;
     }
 

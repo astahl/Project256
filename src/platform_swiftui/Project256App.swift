@@ -74,7 +74,7 @@ struct Project256App: App {
                 }
                 .background(.linearGradient(.init(colors: [Color.cyan, Color.purple]), startPoint: .topLeading, endPoint: .bottomTrailing))
 
-                .overlay(Ellipse().foregroundColor(.gray).opacity(0.3).blur(radius: 100))
+                //.overlay(Ellipse().foregroundColor(.gray).opacity(0.3).blur(radius: 100))
                 //.ignoresSafeArea()
                 .onChange(of: gameState.tickTargetHz, perform: {
                     newTickTarget in
