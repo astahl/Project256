@@ -156,7 +156,7 @@ constexpr vec2_t<R> operator*(Scalar left, Vec right)
         .y = left * right.y };
 }
 
-template<typename Scalar, typename Vec,  typename R = decltype(Scalar{} * vec2_scalar_t<Vec>{})>
+template<typename Scalar, typename Vec,  typename R = decltype(vec2_scalar_t<Vec>{} / Scalar{})>
 constexpr vec2_t<R> operator/(Vec left, Scalar right)
 {
     return vec2_t<R>{
@@ -178,18 +178,9 @@ Vec2i round(Vec2f vec) {
 }
 #endif
 
-
 constexpr Vec2f itof(Vec2i vec) {
     return Vec2f{ static_cast<float>(vec.x), static_cast<float>(vec.y) };
 }
-
-//template<typename Vec>
-//constexpr Vec2f& operator=(Vec2f& left, Vec right)
-//{
-//    left.x = right.x;
-//    left.y = right.y;
-//    return left;
-//}
 
 constexpr Vec2i operator%(Vec2i left, Vec2i right) {
     return Vec2i{left.x % right.x, left.y % right.y};
@@ -201,6 +192,15 @@ constexpr Vec2i operator%(Vec2i left, int right) {
 
 Vec2i rand2d() {
     return Vec2i{rand(), rand()};
+}
+
+Vec2f vec2FromAngleOffX(float angleInRad) {
+    return Vec2f{ cos(angleInRad), -sin(angleInRad) };
+}
+
+Vec2f randomDirection2d() {
+    const float angle = 6.28318530717f * std::rand() / RAND_MAX;
+    return vec2FromAngleOffX(angle);
 }
 
 template<typename T, typename U1, typename U2>
