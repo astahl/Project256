@@ -18,6 +18,9 @@ using is_vec2 = std::bool_constant<std::disjunction_v<std::is_same<T, Vec2i>, st
 template <typename T>
 const bool is_vec2_v = is_vec2<T>::value;
 
+template <typename ...T>
+using enable_for_vec_t = std::enable_if_t<std::conjunction_v<is_vec2<T>...>, bool>;
+
 template <typename T>
 struct vec2 {};
 
@@ -41,17 +44,17 @@ constexpr R dot(V left, W right) {
     return left.x * right.x + left.y * right.y;
 }
 
-template<typename V, typename = std::enable_if_t<is_vec2_v<V>>>
+template<typename V, enable_for_vec_t<V> = true>
 constexpr float length(V vec) {
     return sqrtf(static_cast<float>(dot(vec, vec)));
 }
 
-template<typename V, std::enable_if_t<is_vec2_v<V>, bool> = true>
+template<typename V, enable_for_vec_t<V> = true>
 auto atan2(V vec) {
     return std::atan2(vec.y, vec.x);
 }
 
-template<typename V, typename R = vec2_t<decltype(vec2_scalar_t<V>{} / float{})>, typename = std::enable_if_t<is_vec2_v<V>>>
+template<typename V, typename R = vec2_t<decltype(vec2_scalar_t<V>{} / float{})>, enable_for_vec_t<V> = true>
 constexpr R normalized(V vec) {
     auto leng = length(vec);
     if (leng == 0.0) return R{1.0f, 0.0f};
@@ -69,7 +72,7 @@ enum class Vec2SwizzleMask : uint8_t {
     SwapNegate = 7
 };
 
-template<Vec2SwizzleMask mask, typename V, typename = std::enable_if_t<is_vec2_v<V>>>
+template<Vec2SwizzleMask mask, typename V, enable_for_vec_t<V> = true>
 constexpr V swizzled(V vec) {
     V result{};
     if constexpr ((static_cast<uint8_t>(mask) & static_cast<uint8_t>(Vec2SwizzleMask::Swap)) == static_cast<uint8_t>(Vec2SwizzleMask::Swap)) {
@@ -101,45 +104,45 @@ constexpr vec2_t<R> operator*(V left, W right) {
     return vec2_t<R>{left.x * right.x, left.y * right.y};
 }
 
-template<typename Vec1, typename Vec2, std::enable_if_t<std::conjunction_v<is_vec2<Vec1>, is_vec2<Vec2>>, bool> = true>
+template<typename Vec1, typename Vec2, enable_for_vec_t<Vec1, Vec2> = true>
 constexpr bool operator<(Vec1 left, Vec2 right)
 {
     return left.x < right.x && left.y < right.y;
 }
 
-template<typename T, typename = std::enable_if_t<is_vec2_v<T>>>
+template<typename T, enable_for_vec_t<T> = true>
 constexpr T operator-(T vec)
 {
     return T{ -vec.x, -vec.y };
 }
 
 
-template<typename Vec1, typename Vec2, std::enable_if_t<std::conjunction_v<is_vec2<Vec1>, is_vec2<Vec2>>, bool> = true>
+template<typename Vec1, typename Vec2, enable_for_vec_t<Vec1, Vec2> = true>
 constexpr bool operator<=(Vec1 left, Vec2 right)
 {
     return left.x <= right.x && left.y <= right.y;
 }
 
-template<typename Vec1, typename Vec2, std::enable_if_t<std::conjunction_v<is_vec2<Vec1>, is_vec2<Vec2>>, bool> = true>
+template<typename Vec1, typename Vec2, enable_for_vec_t<Vec1, Vec2> = true>
 constexpr bool operator>(Vec1 left, Vec2 right)
 {
     return left.x > right.x && left.y > right.y;
 }
 
-template<typename Vec1, typename Vec2, std::enable_if_t<std::conjunction_v<is_vec2<Vec1>, is_vec2<Vec2>>, bool> = true>
+template<typename Vec1, typename Vec2, enable_for_vec_t<Vec1, Vec2> = true>
 constexpr bool operator>=(Vec1 left, Vec2 right)
 {
     return left.x >= right.x && left.y >= right.y;
 }
 
 
-template<typename Vec1, typename Vec2, std::enable_if_t<std::conjunction_v<is_vec2<Vec1>, is_vec2<Vec2>>, bool> = true>
+template<typename Vec1, typename Vec2, enable_for_vec_t<Vec1, Vec2> = true>
 constexpr bool operator==(Vec1 left, Vec2 right )
 {
     return left.x == right.x && left.y == right.y;
 }
 
-template<typename Vec1, typename Vec2, std::enable_if_t<std::conjunction_v<is_vec2<Vec1>, is_vec2<Vec2>>, bool> = true>
+template<typename Vec1, typename Vec2, enable_for_vec_t<Vec1, Vec2> = true>
 constexpr bool operator!=(Vec1 left, Vec2 right )
 {
     return !(left == right);
@@ -153,7 +156,7 @@ constexpr vec2_t<R> operator*(Scalar left, Vec right)
         .y = left * right.y };
 }
 
-template<typename Scalar, typename Vec,  typename R = decltype(Scalar{} * vec2_scalar_t<Vec>{})>
+template<typename Scalar, typename Vec,  typename R = decltype(vec2_scalar_t<Vec>{} / Scalar{})>
 constexpr vec2_t<R> operator/(Vec left, Scalar right)
 {
     return vec2_t<R>{
@@ -175,18 +178,9 @@ Vec2i round(Vec2f vec) {
 }
 #endif
 
-
 constexpr Vec2f itof(Vec2i vec) {
     return Vec2f{ static_cast<float>(vec.x), static_cast<float>(vec.y) };
 }
-
-//template<typename Vec>
-//constexpr Vec2f& operator=(Vec2f& left, Vec right)
-//{
-//    left.x = right.x;
-//    left.y = right.y;
-//    return left;
-//}
 
 constexpr Vec2i operator%(Vec2i left, Vec2i right) {
     return Vec2i{left.x % right.x, left.y % right.y};
@@ -198,6 +192,15 @@ constexpr Vec2i operator%(Vec2i left, int right) {
 
 Vec2i rand2d() {
     return Vec2i{rand(), rand()};
+}
+
+Vec2f vec2FromAngleOffX(float angleInRad) {
+    return Vec2f{ cos(angleInRad), -sin(angleInRad) };
+}
+
+Vec2f randomDirection2d() {
+    const float angle = 6.28318530717f * std::rand() / RAND_MAX;
+    return vec2FromAngleOffX(angle);
 }
 
 template<typename T, typename U1, typename U2>
@@ -294,7 +297,7 @@ constexpr Matrix<float, 2, 2> makeRotation2d(float angle) {
     return result;
 }
 
-template<typename Vec1, typename Vec2, std::enable_if_t<std::conjunction_v<is_vec2<Vec1>, is_vec2<Vec2>>, bool> = true>
+template<typename Vec1, typename Vec2, enable_for_vec_t<Vec1, Vec2> = true>
 constexpr bool isFurtherClockwise(const Vec1& vec1, const Vec2 vec2) {
     return dot(swizzled<Vec2SwizzleMask::SwapNegateX>(vec1), vec2) < 0;
 }

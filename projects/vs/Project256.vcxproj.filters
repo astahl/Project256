@@ -19,9 +19,6 @@
     <Filter Include="Header Files\Platform">
       <UniqueIdentifier>{7adc4c76-d84e-4309-b655-a8edeb530ff6}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Debug">
-      <UniqueIdentifier>{b7f94ce7-8d41-40c9-9dd3-dcb04ae1b0d7}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\Drawing">
       <UniqueIdentifier>{3c40c6e5-13a2-4167-8206-0c1aff137e95}</UniqueIdentifier>
     </Filter>
@@ -36,6 +33,9 @@
     </Filter>
     <Filter Include="Assets">
       <UniqueIdentifier>{8faa85f7-73a2-4454-a8e7-e6ba0c45839c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Math">
+      <UniqueIdentifier>{733ee4ae-ea31-4178-ac0b-47a8e53f0800}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -89,8 +89,8 @@
     <ClInclude Include="..\..\src\game\Profiling\Timings.h">
       <Filter>Header Files\Profiling</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\game\Debug\DebugDrawController.hpp">
-      <Filter>Header Files\Debug</Filter>
+    <ClInclude Include="..\..\src\game\Math\Vec2Math.hpp">
+      <Filter>Header Files\Math</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
