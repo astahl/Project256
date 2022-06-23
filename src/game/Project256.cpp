@@ -49,8 +49,8 @@ constant int TextLineLength = DrawBufferWidth / TextCharacterW;
 
 
 struct GameMemory {
-    std::array<uint8_t, DrawBufferWidth * DrawBufferHeight> vram;
-    std::array<uint32_t, 256> palette;
+    alignas(128) std::array<uint8_t, DrawBufferWidth * DrawBufferHeight> vram;
+    alignas(128) std::array<uint32_t, 256> palette;
     std::array<uint8_t, TextCharacterBytes * 256> characterROM;
     std::array<uint8_t, TextLines * TextLineLength> textBuffer;
     std::array<uint8_t, TextLines * TextLineLength> textColors;
@@ -257,7 +257,7 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
 
     for (int y = 0; y < 256; ++y) {
         for (int x = 0; x < 320; ++x) {
-            put(memory.vram.data(), Vec2i{ x, y + 64}, memory.imageDecoded[x + (255 - y) * 320]);
+            put(memory.vram.data(), Vec2i{ x + memory.currentChar % 100, y + 64}, memory.imageDecoded[x + (255 - y) * 320]);
         }
     }
 
