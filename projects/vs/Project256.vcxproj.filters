@@ -100,10 +100,8 @@
     <CopyFileToFolders Include="..\..\assets\CharacterRomPET8x8x256.bin">
       <Filter>Assets</Filter>
     </CopyFileToFolders>
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="..\..\assets\test.bmp">
+    <CopyFileToFolders Include="..\..\assets\test.bmp">
       <Filter>Assets</Filter>
-    </Image>
+    </CopyFileToFolders>
   </ItemGroup>
 </Project>
