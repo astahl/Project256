@@ -193,6 +193,13 @@ compiletime uint32_t makeARGB(uint8_t red, uint8_t green, uint8_t blue, uint8_t 
     static_cast<uint32_t>(green) << 8 | blue;
 }
 
+compiletime uint32_t makeARGB(double red, double green, double blue, double alpha = 1.0)
+{
+    return static_cast<uint32_t>(alpha * 255) << 24 |
+    static_cast<uint32_t>(red * 255) << 16 |
+    static_cast<uint32_t>(green * 255) << 8 | static_cast<uint32_t>(blue * 255);
+}
+
 compiletime std::array<float, 4> toFP32(uint32_t color) {
     return {
         static_cast<float>((0xFF'00'00'00 & color) >> 24) / 255.0f,
@@ -205,11 +212,20 @@ compiletime std::array<float, 4> toFP32(uint32_t color) {
 template<uint8_t InputBitDepthPerChannel>
 compiletime uint32_t expandTo8Bit(uint32_t input, uint8_t alpha = 255)
 {
-    constexpr int moveUpBy = 8 - InputBitDepthPerChannel;
     constexpr uint32_t componentMask = 0xFF & ~(0xFF << InputBitDepthPerChannel);
-    uint8_t blue = (input & componentMask) << moveUpBy;
-    uint8_t green = ((input >> InputBitDepthPerChannel) & componentMask) << moveUpBy;
-    uint8_t red = ((input >> (2*InputBitDepthPerChannel)) & componentMask) << moveUpBy;
+    double blue = static_cast<double>(input & componentMask) / componentMask;
+    double green = static_cast<double>((input >> InputBitDepthPerChannel) & componentMask) / componentMask;
+    double red = static_cast<double>((input >> (2*InputBitDepthPerChannel)) & componentMask) / componentMask;
+    return makeARGB(red, green, blue, static_cast<double>(alpha) / 255);
+}
+
+template<uint8_t OutputBitDepthPerChannel>
+compiletime uint32_t quantizeToXBit(uint32_t input, uint8_t alpha = 255)
+{
+    constexpr int moveDownBy = 8 - OutputBitDepthPerChannel;
+    uint8_t blue = ((input) & 0xFF) >> moveDownBy;
+    uint8_t green = ((input >> 8) & 0xFF) >> moveDownBy;
+    uint8_t red = ((input >> 16) & 0xFF) >> moveDownBy;
     return makeARGB(red, green, blue, alpha);
 }
 
@@ -363,6 +379,9 @@ struct PaletteAppleII {
     }
 };
 
+
+
+
 compiletime uint32_t egaTo8Bit(uint8_t input) {
     uint8_t swizzledTo2bpc =
     (input & 0b000001) << 1 |
@@ -392,6 +411,92 @@ struct PaletteEGA {
         }
         return result;
     }();
+
+    compiletime void writeTo(uint32_t* destination) {
+        for (size_t i = 0; i < count; ++i) {
+            destination[i] = colors[i];
+        }
+    }
+};
+
+
+template <typename T>
+constexpr T lerp(int t, int steps, T from, T to) {
+    return from + (t * (to - from)) / steps;
+}
+
+struct PaletteVGA {
+    compiletime size_t count = 256;
+
+    compiletime std::array<uint32_t, 256> colors =  [](){
+        std::array<uint32_t, 256> result{};
+        uint8_t pos = 0;
+        for(auto colorSpaceIndex : {0, 1, 2, 3, 4, 5, 20, 7, 56, 57, 58, 59, 60, 61, 62, 63})
+        {
+            result[pos++] = egaTo8Bit(static_cast<uint8_t>(colorSpaceIndex));
+        }
+        for(auto grayValue : { 0x00, 0x10, 0x20, 0x35, 0x45, 0x55, 0x65, 0x75, 0x8A, 0x9A, 0xAA, 0xBA, 0xCA, 0xDF, 0xEF, 0xFF }) {
+            result[pos++] = 0x010101 * grayValue | 0xFF000000;
+        }
+        double red[6] = {0.0, 0.917, 0.917, 1.0, 0.44, 0.44};
+        double green[6] = {0.0, 0.2, 0.2, 1.0, 1.0, 1.0};
+        double blue[6] = {1.0, 1.0, 0.14, 0.33, 0.3, 1.0};
+
+        double ranges[] = {
+            0.0, 1.0, 0.5, 1.0, 0.75, 1.0,
+            0.0, 0.44, 0.22, 0.44, 0.33, 0.44,
+            0.0, 0.25, 0.13, 0.25, 0.18, 0.25,
+        };
+        for (int rangeIdx = 0; rangeIdx < 9; ++rangeIdx) {
+            double spread = ranges[2 * rangeIdx + 1] - ranges[2 * rangeIdx];
+            double bias = ranges[2 * rangeIdx];
+
+            // this is still a bit buggy, off by one errors probably :(
+            for(int i = 0; i < 24; ++i) {
+                double r{}, g{}, b{};
+                int from{}, to{}, steps{1}, offset{};
+                if (i < 4) {
+                    steps = 4; offset = 0;
+                    from = 0; to = 1;
+                } else if (i < 8) {
+                    steps = 4; offset = 4;
+                    from = 1; to = 2;
+                } else if (i < 12) {
+                    steps = 4; offset = 8;
+                    from = 2; to = 3;
+                } else if (i < 16) {
+                    steps = 4; offset = 12;
+                    from = 3; to = 4;
+                } else if (i < 20) {
+                    steps = 4; offset = 16;
+                    from = 4; to = 5;
+                } else {
+                    steps = 4; offset = 20;
+                    from = 5; to = 0;
+                }
+
+                r = lerp(i - offset, steps, red[from], red[to]);
+                g = lerp(i - offset, steps, green[from], green[to]);
+                b = lerp(i - offset, steps, blue[from], blue[to]);
+
+                r = r * spread + bias;
+                g = g * spread + bias;
+                b = b * spread + bias;
+
+                result[pos++] = expandTo8Bit<6>(
+                static_cast<uint32_t>(r * 0b111111) << 12
+                | static_cast<uint32_t>(g * 0b111111) << 6
+                | static_cast<uint32_t>(b * 0b111111));
+            }
+        }
+
+        while (pos) {
+            result[pos++] = 0xFF000000;
+        }
+
+        return result;
+    }();
+
 
     compiletime void writeTo(uint32_t* destination) {
         for (size_t i = 0; i < count; ++i) {

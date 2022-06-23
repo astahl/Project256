@@ -163,7 +163,7 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
     using namespace Generators;
 
     GameOutput output{};
-    using Palette = PaletteEGA ;
+    using Palette = PaletteVGA ;
     compiletime auto lookupColor = [](auto col) { return static_cast<uint8_t>(findNearest(col, Palette::colors).index); };
     compiletime uint8_t black = lookupColor(Colors::Black);
     compiletime uint8_t cyan = lookupColor(Colors::Cyan);
@@ -255,18 +255,18 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
     // clear the screen
     std::memset(memory.vram.data(), (uint8_t)clearColor, DrawBufferWidth * DrawBufferHeight);
 
-    // draw the palette in the first rows
-    for (int y = 0; y < memory.palette.size() / 16; ++y) {
-    for (int x = 0; x < DrawBufferWidth; ++x) {
-        // uncomment for all 256 colors
-        put(memory.vram.data(), Vec2i{ x, y }, (x * 16 / DrawBufferWidth)/* + y * 16*/);
-    } }
-
     for (int y = 0; y < 256; ++y) {
         for (int x = 0; x < 320; ++x) {
-            put(memory.vram.data(), Vec2i{ x, y + 16}, memory.imageDecoded[x + (255 - y) * 320]);
+            put(memory.vram.data(), Vec2i{ x, y + 64}, memory.imageDecoded[x + (255 - y) * 320]);
         }
     }
+
+    // draw the palette in the first rows
+    for (int y = 0; y < memory.palette.size() / 2; ++y) {
+    for (int x = 0; x < DrawBufferWidth; ++x) {
+        // uncomment for all 256 colors
+        put(memory.vram.data(), Vec2i{ x, y }, (x * 16 / DrawBufferWidth) + y / 8 * 16);
+    } }
 
 
     // do some experimentation in the vram
@@ -457,6 +457,14 @@ void writeDrawBuffer(void* pMemory, void* buffer)
 
     GameMemory& memory = *reinterpret_cast<GameMemory*>(pMemory);
     uint8_t* vram = memory.vram.data();
+
+    // draw the palette (must be 512 x 512)
+//    for (int y = 0; y < DrawBufferHeight; ++y) {
+//    for (int x = 0; x < DrawBufferWidth; ++x) {
+//        put(vram, Vec2i{ x, y }, (x * 16 / DrawBufferWidth) + (DrawBufferHeight - 1 - y) / 32 * 16);
+//    } }
+
+
     if constexpr (DrawBufferWidth % 8 == 0)
     {
         constexpr int count = DrawBufferWidth * DrawBufferHeight;
@@ -484,6 +492,8 @@ void writeDrawBuffer(void* pMemory, void* buffer)
         for (unsigned x = 0; x < DrawBufferWidth; ++x)
             *pixel++ = memory.palette[*vram++];
     }
+
+
 
     //uint32_t* pixel = reinterpret_cast<uint32_t*>(buffer);
     //for (int y = 0; y < 256; ++y) {

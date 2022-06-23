@@ -7,13 +7,13 @@
 
 // global static constants
 
-constant long MemorySize = 640 * 1024; // 640kbytes
+constant long MemorySize = 640 * 1024 * 2; // 640kbytes
 
-constant unsigned DrawBufferWidth = 640;
-constant unsigned DrawBufferHeight = 350;
+constant unsigned DrawBufferWidth = 512;
+constant unsigned DrawBufferHeight = 512;
 
 constant unsigned DrawAspectH = 4;
-constant unsigned DrawAspectV = 3;
+constant unsigned DrawAspectV = 4;
 
 constant unsigned InputMouseMaxTrackLength = 32;
 
