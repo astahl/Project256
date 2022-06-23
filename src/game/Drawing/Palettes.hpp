@@ -242,11 +242,9 @@ findNearest(TColor color, const TColorSpace& colorSpace) {
     return result;
 }
 
-struct ColorArgb {
-    union {
-        struct { uint8_t b, g, r, a; };
-        uint32_t value;
-    };
+union ColorArgb {
+    struct Components { uint8_t b, g, r, a; } components;
+    uint32_t value;
 };
 
 constexpr int min(int left, int right)
@@ -257,35 +255,41 @@ constexpr int min(int left, int right)
 constexpr ColorArgb operator+(ColorArgb left, ColorArgb right)
 {
     return ColorArgb {
-        .b = static_cast<uint8_t>(left.b + min(255 - left.b, right.b)),
-        .g = static_cast<uint8_t>(left.g + min(255 - left.g, right.g)),
-        .r = static_cast<uint8_t>(left.r + min(255 - left.r, right.r)),
-        .a = static_cast<uint8_t>(left.a + min(255 - left.a, right.a)),
+        .components {
+            .b = static_cast<uint8_t>(left.components.b + min(255 - left.components.b, right.components.b)),
+            .g = static_cast<uint8_t>(left.components.g + min(255 - left.components.g, right.components.g)),
+            .r = static_cast<uint8_t>(left.components.r + min(255 - left.components.r, right.components.r)),
+            .a = static_cast<uint8_t>(left.components.a + min(255 - left.components.a, right.components.a)),
+         }
     };
 }
 
 constexpr ColorArgb operator-(ColorArgb left, ColorArgb right)
 {
     return ColorArgb {
-        .b = static_cast<uint8_t>(left.b - min(left.b, right.b)),
-        .g = static_cast<uint8_t>(left.g - min(left.g, right.g)),
-        .r = static_cast<uint8_t>(left.r - min(left.r, right.r)),
-        .a = static_cast<uint8_t>(left.a - min(left.a, right.a)),
+        .components {
+            .b = static_cast<uint8_t>(left.components.b - min(left.components.b, right.components.b)),
+            .g = static_cast<uint8_t>(left.components.g - min(left.components.g, right.components.g)),
+            .r = static_cast<uint8_t>(left.components.r - min(left.components.r, right.components.r)),
+            .a = static_cast<uint8_t>(left.components.a - min(left.components.a, right.components.a)),
+        }
     };
 }
 
 constexpr ColorArgb shiftRightMult(ColorArgb color, int shift, int mult)
 {
     return ColorArgb {
-        .b = static_cast<uint8_t>((color.b * mult >> shift)),
-        .g = static_cast<uint8_t>((color.g * mult >> shift)),
-        .r = static_cast<uint8_t>((color.r * mult >> shift)),
-        .a = static_cast<uint8_t>((color.a * mult >> shift)),
+        .components {
+            .b = static_cast<uint8_t>((color.components.b * mult >> shift)),
+            .g = static_cast<uint8_t>((color.components.g * mult >> shift)),
+            .r = static_cast<uint8_t>((color.components.r * mult >> shift)),
+            .a = static_cast<uint8_t>((color.components.a * mult >> shift)),
+        }
     };
 }
 
-template <int Width, typename TColorSpace, bool Dither = true, typename TIndex = typename TColorSpace::difference_type>
-compiletime void ConvertBitmapFrom32BppToIndex(const uint32_t* source, int width, int height, const TColorSpace& colorSpace, TIndex* destination) {
+template <int Width, typename TColorSpace, typename T, bool Dither = true, typename TIndex = typename TColorSpace::difference_type>
+compiletime void ConvertBitmapFrom32BppToIndex(const uint32_t* source, int width, int height, const TColorSpace& colorSpace, T* destination) {
     if constexpr (Dither) {
         constexpr int W = Width + 2;
         ColorArgb errors[(W) * 2]{};
@@ -297,7 +301,7 @@ compiletime void ConvertBitmapFrom32BppToIndex(const uint32_t* source, int width
                 ColorArgb errorAtSource = errors[x + 1];
                 ColorArgb sourceWithError = sourceColor + errorAtSource;
                 auto nearest = findNearest(sourceWithError.value, colorSpace);
-                destination[x + y * width] = nearest.index;
+                destination[x + y * width] = static_cast<T>(nearest.index);
 
                 ColorArgb written{.value = nearest.argb};
                 auto error = sourceWithError - written;
@@ -325,6 +329,7 @@ compiletime void ConvertBitmapFrom32BppToIndex(const uint32_t* source, int width
 
 struct PaletteAppleII {
 
+    using index_type = uint8_t;
     compiletime size_t count = 16;
 
     enum class Color : uint8_t {
@@ -397,6 +402,7 @@ struct PaletteEGA {
 
 
 struct PaletteCGA {
+    using index_type = uint8_t;
 
     enum class Color : uint8_t {
         black, blue, green, cyan, red, magenta, brown, lightGray,
@@ -463,7 +469,7 @@ struct PaletteCGA {
 
 
 struct PaletteC64 {
-
+    using index_type = uint8_t;
     compiletime size_t count = 16;
 
     compiletime std::array<uint32_t,16> colors = {
