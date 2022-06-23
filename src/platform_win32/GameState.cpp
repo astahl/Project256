@@ -1,7 +1,9 @@
 #include "GameState.h"
 #include "Xinput.h"
+#include "wincodec.h"
 #include <string>
 
+#include <wrl.h>
 
 TimingData GameState::timingData{
     .getPlatformTimeMicroseconds = []() {
@@ -222,6 +224,70 @@ INT64 readFileDEBUG(const char* filename, unsigned char* buffer, INT64 bufferSiz
     exit(GetLastError());
 }
 
+
+bool readImageDEBUG(const char* filename, unsigned int* buffer, int width, int height)
+{
+    int requiredWideLength = MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, filename, -1, NULL, 0);
+    std::wstring wideString(requiredWideLength, L'\0');
+    MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, filename, -1, wideString.data(), static_cast<int>(wideString.size()));
+
+    std::wstring pathBuf(512, L'\0');
+    GetModuleFileName(nullptr, pathBuf.data(), 512);
+    size_t lastSlashPos = pathBuf.find_last_of(L'\\');
+    if (lastSlashPos != std::wstring::npos) pathBuf.erase(lastSlashPos + 1);
+    std::wstring filePath = pathBuf + wideString;
+
+    // Initialize COM
+    HRESULT hr = CoInitialize(NULL);
+    if (!SUCCEEDED(hr))
+        return false;
+
+    using Microsoft::WRL::ComPtr;
+
+    // The factory pointer
+    ComPtr<IWICImagingFactory> pFactory = NULL;
+
+    hr = CoCreateInstance(CLSID_WICImagingFactory, NULL,
+        CLSCTX_INPROC_SERVER,
+        IID_PPV_ARGS(&pFactory));
+    if (!SUCCEEDED(hr))
+        return false;
+
+    // Create a decoder
+    ComPtr<IWICBitmapDecoder> pDecoder = NULL;
+
+    hr = pFactory->CreateDecoderFromFilename(
+        filePath.c_str(),                      // Image to be decoded
+        NULL,                            // Do not prefer a particular vendor
+        GENERIC_READ,                    // Desired read access to the file
+        WICDecodeMetadataCacheOnDemand,  // Cache metadata when needed
+        &pDecoder                        // Pointer to the decoder
+    );
+
+    if (!SUCCEEDED(hr))
+        return false;
+
+    // Retrieve the first frame of the image from the decoder
+    ComPtr<IWICBitmapFrameDecode> pFrame = NULL;
+    hr = pDecoder->GetFrame(0, &pFrame);
+    if (!SUCCEEDED(hr))
+        return false;
+
+    WICRect rect{
+        .Width = width,
+        .Height = height,
+    };
+
+    int pitch = width * 4;
+    int size = pitch * height;
+
+    hr = pFrame->CopyPixels(&rect, pitch, size, reinterpret_cast<BYTE*>(buffer));
+    if (!SUCCEEDED(hr))
+        return false;
+    return true;
+}
+
+
 GameOutput GameState::tick() {
     profiling_time_interval(&GameState::timingData, eTimerTickToTick, eTimingTickToTick);
     profiling_time_set(&GameState::timingData, eTimerTickToTick);
@@ -235,7 +301,8 @@ GameOutput GameState::tick() {
 
     profiling_time_interval(&GameState::timingData, eTimerTick, eTimingTickSetup);
     output = doGameThings(&input, memory, {
-        .readFile = readFileDEBUG
+        .readFile = readFileDEBUG,
+        .readImage = readImageDEBUG,
         });
     profiling_time_interval(&GameState::timingData, eTimerTick, eTimingTickDo);
 

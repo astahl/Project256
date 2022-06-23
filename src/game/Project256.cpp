@@ -264,7 +264,7 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
 
     for (int y = 0; y < 256; ++y) {
         for (int x = 0; x < 320; ++x) {
-            put(memory.vram.data(), Vec2i{ x, y + 16}, memory.imageDecoded[x + (256 - y) * 320]);
+            put(memory.vram.data(), Vec2i{ x, y + 16}, memory.imageDecoded[x + (255 - y) * 320]);
         }
     }
 
@@ -485,13 +485,13 @@ void writeDrawBuffer(void* pMemory, void* buffer)
             *pixel++ = memory.palette[*vram++];
     }
 
-    uint32_t* pixel = reinterpret_cast<uint32_t*>(buffer);
-    for (int y = 0; y < 256; ++y) {
-        for (int x = 0; x < 320; ++x) {
-            auto col = memory.image[x + (256 - y) * 320];
-            pixel[x + 320 + (y + 16) * DrawBufferWidth] = col;
-        }
-    }
+    //uint32_t* pixel = reinterpret_cast<uint32_t*>(buffer);
+    //for (int y = 0; y < 256; ++y) {
+    //    for (int x = 0; x < 320; ++x) {
+    //        auto col = memory.image[x + (256 - y) * 320];
+    //        pixel[x + 320 + (y + 16) * DrawBufferWidth] = col;
+    //    }
+    //}
 
 }
 
