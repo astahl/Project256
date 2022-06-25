@@ -35,11 +35,6 @@ static const std::array<std::array<char, 16>, TimingIntervalCount> sIntervalName
 
 globalvar std::shared_mutex Mutex{};
 
-void profiling_time_initialise(TimingData* data) {
-    std::unique_lock lock{Mutex};
-    data->zero = data->getPlatformTimeMicroseconds();
-}
-
 void profiling_time_set(TimingData* data, TimingTimer timer)
 {
     std::unique_lock lock{Mutex};

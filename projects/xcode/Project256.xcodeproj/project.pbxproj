@@ -17,6 +17,8 @@
 		685035D4283F9D4F00355252 /* Project256.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 68455589283D7F08004AD3FB /* Project256.cpp */; };
 		685035D92842921900355252 /* DrawBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 685035D82842921900355252 /* DrawBuffer.swift */; };
 		685035DA2842921900355252 /* DrawBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 685035D82842921900355252 /* DrawBuffer.swift */; };
+		6859DD0228673522009137CC /* GameSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6859DD0128673522009137CC /* GameSettings.swift */; };
+		6859DD0328673522009137CC /* GameSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6859DD0128673522009137CC /* GameSettings.swift */; };
 		689A250D284BE37D0086DD58 /* Palettes.hpp in Sources */ = {isa = PBXBuildFile; fileRef = 689A250B284BE37D0086DD58 /* Palettes.hpp */; };
 		689E03232857A61D00DF8738 /* GameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 689E03222857A61D00DF8738 /* GameView.swift */; };
 		689E03242857A61D00DF8738 /* GameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 689E03222857A61D00DF8738 /* GameView.swift */; };
@@ -54,6 +56,7 @@
 		684555AA283D86C9004AD3FB /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		685035D528428EE200355252 /* GameState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameState.swift; sourceTree = "<group>"; };
 		685035D82842921900355252 /* DrawBuffer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawBuffer.swift; sourceTree = "<group>"; };
+		6859DD0128673522009137CC /* GameSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameSettings.swift; sourceTree = "<group>"; };
 		689A250B284BE37D0086DD58 /* Palettes.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Palettes.hpp; sourceTree = "<group>"; };
 		689E03222857A61D00DF8738 /* GameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameView.swift; sourceTree = "<group>"; };
 		689E03252857A67600DF8738 /* DrawBufferView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawBufferView.swift; sourceTree = "<group>"; };
@@ -197,6 +200,7 @@
 			children = (
 				685035D528428EE200355252 /* GameState.swift */,
 				685035D82842921900355252 /* DrawBuffer.swift */,
+				6859DD0128673522009137CC /* GameSettings.swift */,
 			);
 			path = Model;
 			sourceTree = "<group>";
@@ -321,6 +325,7 @@
 			files = (
 				685035D92842921900355252 /* DrawBuffer.swift in Sources */,
 				685035D3283F9D4E00355252 /* Project256.cpp in Sources */,
+				6859DD0228673522009137CC /* GameSettings.swift in Sources */,
 				68D205DC2855EAAF00CB4213 /* MetalView.swift in Sources */,
 				68D205CC28512A0000CB4213 /* Generators.hpp in Sources */,
 				6819ACC5283EDFFC00CCBFD5 /* MetalViewShader.metal in Sources */,
@@ -344,6 +349,7 @@
 				68D205CD28512A0000CB4213 /* Generators.hpp in Sources */,
 				6819ACC6283EDFFC00CCBFD5 /* MetalViewShader.metal in Sources */,
 				689E03242857A61D00DF8738 /* GameView.swift in Sources */,
+				6859DD0328673522009137CC /* GameSettings.swift in Sources */,
 				68D205D82854EE2F00CB4213 /* Timings.cpp in Sources */,
 				6845559F283D8044004AD3FB /* Project256App.swift in Sources */,
 				68D205DE2855EE3700CB4213 /* GameState.swift in Sources */,

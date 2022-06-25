@@ -154,9 +154,18 @@ func loadImageDEBUG(filenamePtr: UnsafePointer<CChar>?, destination: UnsafeMutab
     return true
 }
 
+func timestamp() -> Int64 {
+    var time = timeval()
+    gettimeofday(&time, nil)
+    return Int64(time.tv_sec) * 1_000_000 + Int64(time.tv_usec)
+}
 
 class GameState : ObservableObject {
-    static var timingData = TimingData()
+    static var timingData: ProfilingTime? = {
+        var value = ProfilingTime()
+        value.getPlatformTimeMicroseconds = timestamp
+        return value
+    }()
     let memory = UnsafeMutableRawPointer.allocate(byteCount: MemorySize, alignment: 128)
     var input = GameInput()
     let frameTime = Chronometer()
@@ -164,19 +173,9 @@ class GameState : ObservableObject {
     var frameNumber: UInt64 = 0
     var upTime_microseconds: Int64 = 0
     var drawBuffer = DrawBuffer()
-    @Published var tickScale: Double = 1.0
-    @Published var timeScale: Double = 1.0
-    @Published var tickTargetHz: Double = 100.0
-    @Published var frameTargetHz: FPSTargets = ._60
+    
 
     init() {
-        GameState.timingData.getPlatformTimeMicroseconds = {
-            var time = timeval()
-            gettimeofday(&time, nil)
-            return Int64(time.tv_sec) * 1_000_000 + Int64(time.tv_usec)
-        }
-
-        profiling_time_initialise(&GameState.timingData)
     }
 
     func addInputText(_ text: String) {
@@ -308,27 +307,27 @@ class GameState : ObservableObject {
 
 
 
-    func tick() {
+    func tick(settings: GameSettings) {
         setupControllers()
         pollControllers()
-        profiling_time_interval(&GameState.timingData, eTimerTickToTick, eTimingTickToTick)
-        profiling_time_set(&GameState.timingData, eTimerTickToTick)
-        profiling_time_set(&GameState.timingData, eTimerTick)
+        GameState.timingData?.interval(timer: eTimerTickToTick, interval: eTimingTickToTick)
+        GameState.timingData?.startTimer(eTimerTickToTick)
+        GameState.timingData?.startTimer(eTimerTick)
 
         self.input.frameNumber = self.frameNumber
         self.frameNumber += 1
         let frameTime = self.frameTime.elapsed()
-        self.upTime_microseconds += Int64(Double(frameTime.microseconds) * timeScale)
+        self.upTime_microseconds += Int64(Double(frameTime.microseconds) * settings.timeScale)
 
         self.input.upTime_microseconds = self.upTime_microseconds
-        self.input.elapsedTime_s = frameTime.seconds * tickScale
+        self.input.elapsedTime_s = frameTime.seconds * settings.tickScale
         // TODO finalize inputs
-        profiling_time_interval(&GameState.timingData, eTimerTick, eTimingTickSetup)
+        GameState.timingData?.interval(timer: eTimerTick, interval: eTimingTickSetup)
 
         let platformCallbacks = PlatformCallbacks(readFile: loadDataDEBUG(filenamePtr:destination:bufferSize:), readImage: loadImageDEBUG(filenamePtr:destination:width:height:))
 
         let output = doGameThings(&self.input, self.memory, platformCallbacks)
-        profiling_time_interval(&GameState.timingData, eTimerTick, eTimingTickDo)
+        GameState.timingData?.interval(timer: eTimerTick, interval: eTimingTickDo)
 
         if output.shouldQuit {
             exit(0)
@@ -345,6 +344,6 @@ class GameState : ObservableObject {
         }
         #endif
         cleanInput(&input)
-        profiling_time_interval(&GameState.timingData, eTimerTick, eTimingTickPost)
+        GameState.timingData?.interval(timer: eTimerTick, interval: eTimingTickPost)
     }
 }

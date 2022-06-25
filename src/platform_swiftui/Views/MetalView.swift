@@ -84,11 +84,11 @@ class MyMTKView : MTKView {
 
     override func draw(_ dirtyRect: CGRect) {
 
-        profiling_time_set(&GameState.timingData, eTimerDraw)
+        GameState.timingData?.startTimer(eTimerDraw)
         if let newDrawBuffer = self.beforeDrawHandler?(self.drawBuffer) {
             self.drawBuffer = newDrawBuffer
         }
-        profiling_time_interval(&GameState.timingData, eTimerDraw, eTimingDrawBefore)
+        GameState.timingData?.interval(timer: eTimerDraw, interval: eTimingDrawBefore)
         updateViewport(withDrawableSize: drawableSize)
 
         guard let renderPassDescriptor = self.currentRenderPassDescriptor else {
@@ -108,7 +108,7 @@ class MyMTKView : MTKView {
         }
 
         encoder.label = "MyEncoder"
-        profiling_time_interval(&GameState.timingData, eTimerDraw, eTimingDrawWaitAndSetup)
+        GameState.timingData?.interval(timer: eTimerDraw, interval: eTimingDrawWaitAndSetup)
 
         encoder.setViewport(self.viewport)
         if let pipelineState = self.pipelineState {
@@ -122,16 +122,16 @@ class MyMTKView : MTKView {
             encoder.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
 
             encoder.endEncoding()
-            profiling_time_interval(&GameState.timingData, eTimerDraw, eTimingDrawEncoding)
+            GameState.timingData?.interval(timer: eTimerDraw, interval: eTimingDrawEncoding)
         }
         if let drawable = self.currentDrawable {
             #if os(macOS)
             drawable.addPresentedHandler() {
                 drawble in
-                profiling_time_interval(&GameState.timingData, eTimerFrameToFrame, eTimingFrameToFrame)
+                GameState.timingData?.interval(timer: eTimerFrameToFrame, interval: eTimingFrameToFrame)
 
-                profiling_time_set(&GameState.timingData, eTimerFrameToFrame)
-                profiling_time_interval(&GameState.timingData, eTimerDraw, eTimingDrawPresent)
+                GameState.timingData?.startTimer(eTimerFrameToFrame)
+                GameState.timingData?.interval(timer: eTimerDraw, interval: eTimingDrawPresent)
             }
             #endif
             commandBuffer.present(drawable)

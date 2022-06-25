@@ -34,24 +34,28 @@ enum TimingInterval {
     TimingIntervalCount
 };
 
+typedef int64_t (*PlatformTimeMicrosecondsCallback)();
+
 struct TimingData {
-    int64_t (*getPlatformTimeMicroseconds)();
-    int64_t zero;
+    PlatformTimeMicrosecondsCallback getPlatformTimeMicroseconds;
     int64_t timers[TimingTimerCount];
     int64_t intervals[TimingIntervalCount];
     int intervalCount[TimingIntervalCount];
-};
+} CF_SWIFT_NAME(ProfilingTime);
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void profiling_time_initialise(struct TimingData* data);
-void profiling_time_set(struct TimingData* data, enum TimingTimer timer);
-void profiling_time_interval(struct TimingData* data, enum TimingTimer timer, enum TimingInterval interval);
-int profiling_time_print(struct TimingData* data, char* buffer, int bufferSize);
-void profiling_time_clear(struct TimingData* data);
+void profiling_time_set(struct TimingData* data, enum TimingTimer timer)
+    CF_SWIFT_NAME(ProfilingTime.startTimer(self:_:));
+void profiling_time_interval(struct TimingData* data, enum TimingTimer timer, enum TimingInterval interval)
+    CF_SWIFT_NAME(ProfilingTime.interval(self:timer:interval:));
+int profiling_time_print(struct TimingData* data, char* buffer, int bufferSize)
+    CF_SWIFT_NAME(ProfilingTime.printTo(self:buffer:size:));
+void profiling_time_clear(struct TimingData* data)
+    CF_SWIFT_NAME(ProfilingTime.clear(self:));
 
 
 #ifdef __cplusplus

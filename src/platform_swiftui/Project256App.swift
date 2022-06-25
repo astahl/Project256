@@ -37,6 +37,7 @@ struct Project256App: App {
 
     @State var profilingString: String = .init()
     @State var gameState: GameState
+    @State var gameSettings: GameSettings
 
     var profilingBuffer = UnsafeMutableBufferPointer<CChar>.allocate(capacity: 1000)
     var subscriptions: AppSubscriptions
@@ -44,28 +45,29 @@ struct Project256App: App {
     init() {
         gameState = GameState()
         subscriptions = AppSubscriptions()
+        gameSettings = GameSettings()
     }
 
     func doTick(_ _: Date) {
-        gameState.tick()
+        gameState.tick(settings: gameSettings)
     }
 
     var body: some Scene {
         WindowGroup {
             ZStack {
-                GameView(gameState: gameState)
+                GameView(state: gameState, settings: gameSettings)
                 .onAppear {
-                    self.subscriptions.highfrequency = Timer.publish(every: 1 / gameState.tickTargetHz, on: .main, in: .common)
+                    self.subscriptions.highfrequency = Timer.publish(every: 1 / gameSettings.tickTargetHz, on: .main, in: .common)
                         .autoconnect()
                         .sink(receiveValue: self.doTick)
                     self.subscriptions.profiling = Timer.publish(every: 1.0, on: .main, in: .default)
                         .autoconnect()
                         .sink {
                             date in
-                            let length = profiling_time_print(&GameState.timingData, profilingBuffer.baseAddress!, Int32(profilingBuffer.count))
-                            profilingString = String.init(bytesNoCopy: profilingBuffer.baseAddress!, length: Int(length), encoding: .ascii, freeWhenDone: false)!
+                            let length = GameState.timingData?.printTo(buffer: profilingBuffer.baseAddress!, size: Int32(profilingBuffer.count))
+                            profilingString = String.init(bytesNoCopy: profilingBuffer.baseAddress!, length: Int(length!), encoding: .ascii, freeWhenDone: false)!
 
-                            profiling_time_clear(&GameState.timingData)
+                            GameState.timingData?.clear()
                         }
                 }
                 .onDisappear {
@@ -76,7 +78,7 @@ struct Project256App: App {
 
                 //.overlay(Ellipse().foregroundColor(.gray).opacity(0.3).blur(radius: 100))
                 //.ignoresSafeArea()
-                .onChange(of: gameState.tickTargetHz, perform: {
+                .onChange(of: gameSettings.tickTargetHz, perform: {
                     newTickTarget in
 
                     self.subscriptions.highfrequency?.cancel()
@@ -100,28 +102,28 @@ struct Project256App: App {
         #if os(macOS)
         Settings {
             List {
-                Slider(value: $gameState.tickScale, in: 0...5, step: 0.1) {
-                    Text("Tick Scale \(gameState.tickScale)")
+                Slider(value: $gameSettings.tickScale, in: 0...5, step: 0.1) {
+                    Text("Tick Scale \(gameSettings.tickScale)")
                 } minimumValueLabel: {
                     Text("0")
                 } maximumValueLabel: {
                     Text("5")
                 }
-                Slider(value: $gameState.timeScale, in: 0...5, step: 0.1) {
-                    Text("Time Scale \(gameState.timeScale)")
+                Slider(value: $gameSettings.timeScale, in: 0...5, step: 0.1) {
+                    Text("Time Scale \(gameSettings.timeScale)")
                 }  minimumValueLabel: {
                     Text("0")
                 } maximumValueLabel: {
                     Text("5")
                 }
-                Slider(value: $gameState.tickTargetHz, in: 0...200, step: 5) {
-                    Text("Tick Hz \(gameState.tickTargetHz)")
+                Slider(value: $gameSettings.tickTargetHz, in: 0...200, step: 5) {
+                    Text("Tick Hz \(gameSettings.tickTargetHz)")
                 } minimumValueLabel: {
                     Text("0")
                 } maximumValueLabel: {
                     Text("200")
                 }
-                Picker("FPS Target", selection: $gameState.frameTargetHz) {
+                Picker("FPS Target", selection: $gameSettings.frameTargetHz) {
                     ForEach(FPSTargets.allCases) {
                         fps in
                         Text(fps.rawValue.formatted())
