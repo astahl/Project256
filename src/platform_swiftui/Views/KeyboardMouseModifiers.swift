@@ -15,8 +15,8 @@ extension NSPoint {
 
 class KbMFirstResponderView : NSView{
     enum KeyboardEvent {
-        case Down (keyCode: CGKeyCode, characters: String?)
-        case Up (keyCode: CGKeyCode, characters: String?)
+        case Down (keyCode: CGKeyCode, characters: String?, modifierFlags: NSEvent.ModifierFlags)
+        case Up (keyCode: CGKeyCode, characters: String?, modifierFlags: NSEvent.ModifierFlags)
     }
 
     enum MouseButton : Int {
@@ -42,19 +42,26 @@ class KbMFirstResponderView : NSView{
     var moveEventHandler: MouseMoveHandler?
     var clickEventHandler: MouseClickHandler?
 
-
     override func viewDidMoveToWindow() {
         self.window?.acceptsMouseMovedEvents = true
     }
     
     override var acceptsFirstResponder: Bool { get { true } }
 
+    override func becomeFirstResponder() -> Bool {
+        return super.becomeFirstResponder()
+    }
+
+    override func resignFirstResponder() -> Bool {
+        return super.resignFirstResponder()
+    }
+
     override func keyDown(with event: NSEvent) {
-        self.keyboardHandler?(.Down(keyCode: event.keyCode, characters: event.characters))
+        self.keyboardHandler?(.Down(keyCode: event.keyCode, characters: event.characters, modifierFlags: event.modifierFlags))
     }
 
     override func keyUp(with event: NSEvent) {
-        self.keyboardHandler?(.Up(keyCode: event.keyCode, characters: event.characters))
+        self.keyboardHandler?(.Up(keyCode: event.keyCode, characters: event.characters, modifierFlags: event.modifierFlags))
     }
 
     override func mouseMoved(with event: NSEvent) {
@@ -141,34 +148,35 @@ struct KbMFirstResponderViewRepresentable : NSViewRepresentable {
 
 
 struct KeyboardAndMouseModifier : ViewModifier {
-    var keyboard: KbMFirstResponderView.KeyboardHandler?
-    var move: KbMFirstResponderView.MouseMoveHandler?
-    var click: KbMFirstResponderView.MouseClickHandler?
+    var representable: KbMFirstResponderViewRepresentable
+
+    init(keyboard: KbMFirstResponderView.KeyboardHandler?,
+         move: KbMFirstResponderView.MouseMoveHandler?,
+         click: KbMFirstResponderView.MouseClickHandler?) {
+        self.representable = KbMFirstResponderViewRepresentable(keyboard: keyboard, move: move, click: click)
+    }
 
     func body(content: Content) -> some View {
-        return ZStack {
-            content
-            KbMFirstResponderViewRepresentable(keyboard: keyboard, move: move, click: click)
-        }
+        content.overlay(content: { self.representable })
     }
 }
 
 
 extension View {
     func keyboard(_ handler: @escaping KbMFirstResponderView.KeyboardHandler) -> some View {
-        modifier(KeyboardAndMouseModifier(keyboard: handler))
+        return modifier(KeyboardAndMouseModifier(keyboard: handler, move: nil, click: nil))
     }
 
     func mouseMove(_ move: @escaping KbMFirstResponderView.MouseMoveHandler) -> some View {
-        modifier(KeyboardAndMouseModifier(move: move))
+        return modifier(KeyboardAndMouseModifier(keyboard: nil, move: move, click: nil))
     }
 
     func mouseClick(_ click: @escaping KbMFirstResponderView.MouseClickHandler) -> some View {
-        modifier(KeyboardAndMouseModifier(click: click))
+        return modifier(KeyboardAndMouseModifier(keyboard: nil, move: nil, click: click))
     }
 
     func keyboardAndMouse(keyboard: KbMFirstResponderView.KeyboardHandler?, move: KbMFirstResponderView.MouseMoveHandler?, click: KbMFirstResponderView.MouseClickHandler?)-> some View {
-        modifier(KeyboardAndMouseModifier(keyboard: keyboard, move: move, click: click))
+        return modifier(KeyboardAndMouseModifier(keyboard: keyboard, move: move, click: click))
     }
 }
 

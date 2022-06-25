@@ -9,11 +9,11 @@
 
 constant long MemorySize = 640 * 1024 * 2; // 640kbytes
 
-constant unsigned DrawBufferWidth = 512;
-constant unsigned DrawBufferHeight = 512;
+constant unsigned DrawBufferWidth = 320;
+constant unsigned DrawBufferHeight = 200;
 
 constant unsigned DrawAspectH = 4;
-constant unsigned DrawAspectV = 4;
+constant unsigned DrawAspectV = 3;
 
 constant unsigned InputMouseMaxTrackLength = 32;
 

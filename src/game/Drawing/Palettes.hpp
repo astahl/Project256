@@ -380,6 +380,42 @@ struct PaletteAppleII {
 };
 
 
+struct PaletteHercules {
+    compiletime size_t count = 2;
+
+    enum class Color : uint8_t {
+        black, white
+    };
+
+    compiletime std::array<uint32_t,2> colors = {
+        0xFF000000,
+        0xFFFFFFFF
+    };
+
+    compiletime void writeTo(uint32_t* destination) {
+        for (size_t i = 0; i < count; ++i) {
+            destination[i] = colors[i];
+        }
+    }
+};
+
+struct PaletteGameboy {
+    compiletime size_t count = 4;
+
+    compiletime std::array<uint32_t,4> colors = {
+        0xFF000000,
+        0xFF565656,
+        0xFFACACAC,
+        0xFFFFFFFF
+    };
+
+    compiletime void writeTo(uint32_t* destination) {
+        for (size_t i = 0; i < count; ++i) {
+            destination[i] = colors[i];
+        }
+    }
+};
+
 
 
 compiletime uint32_t egaTo8Bit(uint8_t input) {

@@ -47,6 +47,25 @@ constant int TextCharacterBytes = 8;
 constant int TextLines = DrawBufferHeight / TextCharacterH;
 constant int TextLineLength = DrawBufferWidth / TextCharacterW;
 
+compiletime std::array<uint8_t, 256> CharacterTable = []() {
+    std::array<uint8_t, 256> result{};
+    for (size_t i = 0; i < result.size(); ++i) result[i] = 0xFF;// map any unknown to checkerboard
+    // PET 0x20 - 0x3F is equal to ascii
+    for (char c = ' '; c <= '?'; ++c) {
+        result[c] = c;
+    }
+    // Ascii Uppercase is at beginning of character rom
+    for (char c = '@'; c <= ']'; ++c) {
+        result[c] = c - '@';
+    }
+    // Ascii lowercase (0x60 - 0x7A) is in 0xC0 - 0xDA of character rom
+    for (char c = 'a'; c <= 'z'; ++c) {
+        result[c] = c + 0x60;
+    }
+
+    return result;
+}();
+
 
 struct GameMemory {
     alignas(128) std::array<uint8_t, DrawBufferWidth * DrawBufferHeight> vram;
@@ -57,6 +76,7 @@ struct GameMemory {
     int textFirstLine;
     int textLastLine;
     int textScroll;
+    int textCursorPosition;
 
     Vec2f birdPosition;
     int birdSpeed;
@@ -74,8 +94,8 @@ struct GameMemory {
     Vec2i points[2];
     int currentPoint;
 
-    Timer charChangeTimer;
-    uint8_t currentChar;
+    Timer timerCursorBlink;
+    bool isCursorOn;
 };
 
 static_assert(sizeof(GameMemory) <= MemorySize, "MemorySize is too small to hold GameMemory struct");
@@ -104,6 +124,7 @@ Vec2f clipSpaceDrawBufferScale(unsigned int viewportWidth, unsigned int viewport
         .y = static_cast<float>(heightOnTarget) / viewportHeight,
     };
 }
+
 
 void cleanInput(GameInput* input) {
     for (int i = 0; i < InputMaxControllers; ++i) {
@@ -163,7 +184,7 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
     using namespace Generators;
 
     GameOutput output{};
-    using Palette = PaletteVGA ;
+    using Palette = PaletteVGA;
     compiletime auto lookupColor = [](auto col) { return static_cast<uint8_t>(findNearest(col, Palette::colors).index); };
     compiletime uint8_t black = lookupColor(Colors::Black);
     compiletime uint8_t cyan = lookupColor(Colors::Cyan);
@@ -172,6 +193,10 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
     compiletime uint8_t white = lookupColor(Colors::White);
     compiletime uint8_t green = lookupColor(Colors::Green);
 
+    compiletime auto clip = [=](const auto& p) {
+        return (Vec2i{0,0} <= p) && (p < BufferSize);
+    };
+
     auto clearColor = black;
     if (pInput->closeRequested) {
         clearColor = white;
@@ -179,12 +204,12 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
 
     GameMemory& memory = *reinterpret_cast<GameMemory*>(pMemory);
     GameInput& input = *pInput;
-    if (input.textLength)
-        std::cout << input.text_utf8;
 
     // initialize main memory
     if (input.frameNumber == 0) {
         std::memset(&memory, 0, MemorySize);
+
+        std::memset(memory.palette.data(), 0xFF, memory.palette.size() * 4);
         Palette::writeTo(memory.palette.data());
         memory.birdPosition = itof(Center);
         memory.timerCallback = birdDirectionChange;
@@ -213,9 +238,10 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
         }
             
         memory.textFirstLine = 0;
-        memory.textLastLine = 0;
+        memory.textLastLine = 4;
         memory.textScroll = 0;
-        memset(memory.textColors.data(), 0x01, memory.textColors.size());
+        std::memset(memory.textColors.data(), white, memory.textColors.size());
+        std::memset(memory.textBuffer.data(), CharacterTable[' '], memory.textBuffer.size());
 
         if (platform.readImage) {
             if (!platform.readImage("test.bmp", memory.image.data(), 320, 256))
@@ -244,21 +270,20 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
     }
 
 
-    if (memory.charChangeTimer.hasFired(time)) {
-        memory.charChangeTimer = Timer::delay(time, std::chrono::milliseconds(40));
-
-        memory.textColors[0 * TextLineLength + (memory.currentChar % TextLineLength)] = memory.currentChar;
-        memory.textBuffer[0 * TextLineLength + (memory.currentChar % TextLineLength)] = memory.currentChar;
-        memory.currentChar++;
-    }
+//    if (memory.charChangeTimer.hasFired(time)) {
+//        memory.charChangeTimer = Timer::delay(time, std::chrono::milliseconds(40));
+//
+//        memory.textColors[0 * TextLineLength + (memory.currentChar % TextLineLength)] = memory.currentChar;
+//        memory.textBuffer[0 * TextLineLength + (memory.currentChar % TextLineLength)] = memory.currentChar;
+//        memory.currentChar++;
+//    }
 
     // clear the screen
     std::memset(memory.vram.data(), (uint8_t)clearColor, DrawBufferWidth * DrawBufferHeight);
 
-    for (int y = 0; y < 256; ++y) {
-        for (int x = 0; x < 320; ++x) {
-            put(memory.vram.data(), Vec2i{ x + memory.currentChar % 100, y + 64}, memory.imageDecoded[x + (255 - y) * 320]);
-        }
+    // draw the testimage
+    for (auto p : (Generators::Rectangle{Vec2i{0,0}, Vec2i{320, 256}} | filter(clip))) {
+        put(memory.vram.data(), p, memory.imageDecoded[p.x + (255 - p.y) * 320]);
     }
 
     // draw the palette in the first rows
@@ -267,6 +292,77 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
         // uncomment for all 256 colors
         put(memory.vram.data(), Vec2i{ x, y }, (x * 16 / DrawBufferWidth) + y / 8 * 16);
     } }
+
+
+    for (int i = 0; i < input.textLength; ++i) {
+        uint8_t inputChar = input.text_utf8[i];
+        if ((inputChar & 0b10000000) == 0) {
+            // input is ASCII (top bit is zero)
+            switch (inputChar) {
+                case 0x7F: // Delete == backspace on modern keyboards
+                case 0x08: // backspace
+                    if (memory.textCursorPosition > 0) {
+                        memory.textBuffer[--memory.textCursorPosition] = CharacterTable[' '];
+                    }
+                    break;
+                case 0x09: // tab
+                    memory.textCursorPosition += 4 - ((memory.textCursorPosition) % 4);
+                    break;
+                case 0x19: // untab
+                    memory.textCursorPosition -= 4 - ((memory.textCursorPosition) % 4);
+                    break;
+                case 0x0D: // Carriage Return (Enter on mac)
+                {
+                    int lineNumber = memory.textCursorPosition / TextLineLength;
+                    memory.textCursorPosition = (lineNumber + 1) * TextLineLength;
+                    break;
+                }
+                default: {
+                    uint8_t outputChar = CharacterTable[inputChar];
+                    if (outputChar != 0xFF) {
+                        memory.textBuffer[memory.textCursorPosition++] = CharacterTable[inputChar];
+                    } else {
+                        char upper = inputChar >> 4;
+                        char lower = inputChar & 0xF;
+                        memory.textBuffer[memory.textCursorPosition++] = CharacterTable[upper > 9 ? (upper - 10) + 'a' : upper + '0'];
+                        memory.textBuffer[memory.textCursorPosition++] = CharacterTable[lower > 9 ? (lower - 10) + 'a' : lower + '0'];
+                    }
+                }
+            }
+        } else {
+            // chomp through UTF-8 encoding
+
+            int onesCount = 0;
+            for (;((inputChar & (0b10000000 >> onesCount)) != 0) && onesCount <= 5; ++onesCount) {
+                // just chomping through bits until I find a zero, don't mind me!
+            }
+            assert(onesCount > 1);
+                // starting with 10 is invalid for the first chunk of a utf8 code
+            assert(onesCount != 5);
+                // this should not happen in a utf-8 string
+            // the resulting unicode codepoint
+            uint32_t code = (0b01111111 >> onesCount) & inputChar;
+            while ((++i < input.textLength) && (--onesCount > 0)) {
+                code <<= 6;
+                inputChar = input.text_utf8[i];
+                code |= inputChar & 0b00111111;
+            }
+
+            switch (code) {
+                // MacBook Arrow Keys
+                case 0xF700: memory.textCursorPosition -= TextLineLength; break;
+                case 0xF701: memory.textCursorPosition += TextLineLength; break;
+                case 0xF702: memory.textCursorPosition -= 1; break;
+                case 0xF703: memory.textCursorPosition += 1; break;
+                // macbook fn + backspace = delete?
+                case 0xF728: memory.textBuffer[memory.textCursorPosition] = CharacterTable[' ']; break;
+                default:
+                    printf("%x\n", code);
+            }
+
+        }
+        memory.textCursorPosition = std::clamp(memory.textCursorPosition, 0, (memory.textLastLine - memory.textFirstLine + 1) * TextLineLength);
+    }
 
 
     // do some experimentation in the vram
@@ -283,9 +379,7 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
         auto offset = [=](const auto& p) {
             return p + position;
         };
-        compiletime auto clip = [=](const auto& p) {
-            return (Vec2i{0,0} <= p) && (p < BufferSize);
-        };
+
 
         if (input.mouse.buttonLeft.endedDown) {
             memory.points[memory.currentPoint] = position;
@@ -403,6 +497,7 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
     compiletime uint8_t mask6 = 1 << 1;
     compiletime uint8_t mask7 = 1 << 0;
 
+    int cursorPosition = memory.textCursorPosition;
     for (int line = 0; line < TextLines; ++line) {
         uint8_t* linePointer = drawPointer;
         if (line >= memory.textFirstLine && line <= memory.textLastLine) {
@@ -431,10 +526,20 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
         }
         textPointer += TextLineLength;
         textColorPointer += TextLineLength;
+        cursorPosition -= TextLineLength;
         drawPointer -= DrawBufferWidth * TextCharacterH;
     }
 
+    if (memory.timerCursorBlink.hasFired(time)) {
+        memory.timerCursorBlink = Timer::delay(time, std::chrono::milliseconds(200));
+        memory.isCursorOn = !memory.isCursorOn;
+    }
 
+    if (memory.isCursorOn) {
+        int cursorY = (TextLines - 1) - memory.textCursorPosition / TextLineLength;
+        int cursorX = memory.textCursorPosition % TextLineLength;
+        (Rectangle{{cursorX * TextCharacterW, cursorY * TextCharacterH}, {(cursorX + 1) * TextCharacterW - 1, (cursorY + 1) * TextCharacterH - 1}} | forEach(whitePixel)).run();
+    }
 
 //        for (uint8_t ascii : "THE QUICK BROWN FOX") {
 //            const uint8_t& c = memory.characterROM[y + (ascii - 'A' + 1) * 8];

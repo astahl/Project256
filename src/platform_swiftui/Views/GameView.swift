@@ -29,8 +29,9 @@ struct GameView: View {
         #if os(macOS)
             .keyboardAndMouse(keyboard: {
                 switch $0 {
-                case .Down(_, let characters?):
+                case .Down(_, let characters?, let modifiers):
                     gameState.addInputText(characters)
+                    print(modifiers)
                 default:
                     break
                 }
