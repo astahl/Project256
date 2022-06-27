@@ -51,7 +51,7 @@ struct PlatformInput {
     WindowsKeyEvent keyEvents[MaxKeyEventCount]{};
     int keyEventCount = 0;
 
-    constant int MaxCharCount = 16;
+    constant int MaxCharCount = 256;
     wchar_t wideCharacters[MaxCharCount]{};
     int wideCharactersCount = 0;
 

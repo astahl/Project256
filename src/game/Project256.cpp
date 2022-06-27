@@ -66,24 +66,39 @@ compiletime std::array<uint8_t, 256> CharacterTable = []() {
     return result;
 }();
 
-template <typename Pixel, size_t Width, size_t Height>
+template <typename Pixel, size_t Width, size_t Height, size_t Pitch = Width>
 struct Image {
-    std::array<Pixel, Width * Height> pixels;
+
+    std::array<Pixel, Pitch * Height> pixels;
 
     constexpr Pixel* data() {
         return pixels.data();
     }
 
     constexpr size_t size() const {
-        return Width * Height;
+        return pixels.size();
     }
 
     constexpr Pixel& at(size_t x, size_t y) {
-        return pixels.at(x + y * Width);
+        assert(x < Width);
+        assert(y < Height);
+        return pixels.at(x + y * Pitch);
+    }
+
+    constexpr Pixel& at(Vec2i pos) {
+        assert(pos.x >= 0);
+        assert(pos.y >= 0);
+        return at(static_cast<size_t>(pos.x), static_cast<size_t>(pos.y));
     }
 
     constexpr Pixel& atYFlipped(size_t x, size_t y) {
         return at(x, ((Height - 1) - y));
+    }
+
+    constexpr Pixel& atYFlipped(Vec2i pos) {
+        assert(pos.x >= 0);
+        assert(pos.y >= 0);
+        return atYFlipped(pos.x, pos.y);
     }
 
     constexpr size_t height() const {
@@ -92,6 +107,35 @@ struct Image {
 
     constexpr size_t width() const {
         return Width;
+    }
+
+    constexpr size_t pitch() const {
+        return Pitch;
+    }
+
+    template<bool FlipY = false, size_t DestWidth, size_t DestHeight, size_t DestPitch>
+    void wideCopy(Image<Pixel, DestWidth, DestHeight, DestPitch>& destination)
+    {
+        using WideType = uint64_t;
+        constexpr size_t stride = sizeof(WideType) / sizeof(Pixel);
+        constexpr size_t minHeight = min(Height, DestHeight);
+        constexpr size_t minWidth = min(Width, DestWidth);
+        static_assert(stride > 1);
+        static_assert(minWidth % stride == 0);,
+        for (size_t y = 0; y < minHeight; ++y) {
+            WideType* dst = reinterpret_cast<WideType*>(destination.data() + y * DestPitch);
+            WideType* src;
+            if constexpr (FlipY) {
+                src = reinterpret_cast<WideType*>(data() + (Height - 1 - y) * Pitch);
+            }
+            else {
+                src = reinterpret_cast<WideType*>(data() + y * Pitch);
+            }
+            for (size_t x = 0; x < minWidth; x += stride) {
+                *dst = *src;
+                ++dst; ++src;
+            }
+        }
     }
 };
 
@@ -349,9 +393,11 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
     std::memset(memory.vram.data(), (uint8_t)clearColor, DrawBufferWidth * DrawBufferHeight);
 
     // draw the testimage
-    for (auto p : (Generators::Rectangle{Vec2i{0,0}, Vec2i{320, 256}} | filter(clip))) {
-        put(memory.vram.data(), p, memory.imageDecoded.atYFlipped(p.x, p.y));
-    }
+    memory.imageDecoded.wideCopy<true>(memory.vram);
+
+    //for (auto p : (Generators::Rectangle{Vec2i{0,0}, Vec2i{320, 256}} | filter(clip))) {
+    //    memory.vram.at(p) = memory.imageDecoded.atYFlipped(p);
+    //}
 
     // draw the palette in the first rows
     for (int y = 0; y < memory.palette.size() / 2; ++y) {
