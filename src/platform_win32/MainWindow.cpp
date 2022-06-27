@@ -167,6 +167,11 @@ void MainWindow::onKey(WORD virtualKeyCode, WORD keyFlags, WORD repeatCount)
     mGameState->platform.pushKeyEvent(keyEvent);
 }
 
+void MainWindow::onChar(wchar_t wideCharacter)
+{
+    mGameState->platform.pushChar(wideCharacter);
+}
+
 void MainWindow::onActiveChange(bool willBeActive)
 {
     //XInputEnable(willBeActive);
@@ -265,6 +270,9 @@ LRESULT CALLBACK MainWindow::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPA
         [[fallthrough]];
     case WM_SYSKEYUP:
         window->onKey(LOWORD(wParam), HIWORD(lParam), LOWORD(lParam));
+        break;
+    case WM_CHAR:
+        window->onChar(static_cast<wchar_t>(wParam));
         break;
     case WM_ACTIVATE:
         switch (wParam) {
