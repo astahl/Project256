@@ -9,8 +9,11 @@
 
 #pragma once
 
+#include "../defines.h"
 #include <cstdint>
+#include <cassert>
 #include <optional>
+#include <utility>
 
 enum class ILBMMasking: uint8_t {
     None = 0,
@@ -70,6 +73,8 @@ enum class endian
     native = __BYTE_ORDER__
 #endif
 };
+#else
+using endian = std::endian;
 #endif
 
 template <typename T, endian Endianness = endian::native>
@@ -91,8 +96,8 @@ struct Endian {
     }
 
     T native() const {
-        Endian<T, endian::native> value(*this);
-        return value.value;
+        Endian<T, endian::native> val(*this);
+        return val.value;
     }
 };
 

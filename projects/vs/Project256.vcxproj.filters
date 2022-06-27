@@ -92,6 +92,9 @@
     <ClInclude Include="..\..\src\game\Math\Vec2Math.hpp">
       <Filter>Header Files\Math</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\game\Drawing\InterleavedBitmaps.hpp">
+      <Filter>Header Files\Drawing</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="..\..\src\platform_win32\Shader.hlsl">
@@ -101,6 +104,12 @@
       <Filter>Assets</Filter>
     </CopyFileToFolders>
     <CopyFileToFolders Include="..\..\assets\test.bmp">
+      <Filter>Assets</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="..\..\assets\Faufau.ilbm">
+      <Filter>Assets</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="..\..\assets\Faufau.brush">
       <Filter>Assets</Filter>
     </CopyFileToFolders>
   </ItemGroup>
