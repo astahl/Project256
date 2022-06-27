@@ -8,6 +8,7 @@
 import Foundation
 import SwiftUI
 import GameController
+import Combine
 
 extension GameButton {
     mutating func press() {
@@ -173,6 +174,7 @@ class GameState : ObservableObject {
     var frameNumber: UInt64 = 0
     var upTime_microseconds: Int64 = 0
     var drawBuffer = DrawBuffer()
+    var controllerSubscription: AnyCancellable?;
     
 
     init() {
@@ -208,7 +210,44 @@ class GameState : ObservableObject {
         }
     }
 
+    func handleExtendedGamepadValueChange(gamepad: GCExtendedGamepad, element: GCControllerElement) {
+        print(element)
+    }
+
+    func dpadHandler(dpad: GCControllerDirectionPad, x: Float, y: Float)            {
+
+        input.controllers.1.dPad.latches = true
+        input.controllers.1.dPad.end = Vec2f(x: x, y: y)
+        input.controllers.1.dPad.analogToDigital(deadZone: 0.0)
+    }
+
+    func leftStickHandler(dpad: GCControllerDirectionPad, x: Float, y: Float)            {
+        input.controllers.1.isActive = true
+        input.controllers.1.isConnected = true
+        input.controllers.1.stickLeft.latches = true
+        input.controllers.1.stickLeft.end = Vec2f(x: x, y: y)
+        input.controllers.1.stickLeft.analogToDigital(deadZone: 0.0)
+    }
+
     func setupControllers() {
+        GCController.shouldMonitorBackgroundEvents = true
+
+        self.controllerSubscription = NotificationCenter.default.publisher(for: .GCControllerDidBecomeCurrent)
+            .flatMap({ ($0.object as? GCController).publisher })
+            .flatMap({ $0.extendedGamepad.publisher })
+            .flatMap({
+                gamepad in Timer.publish(every: 0.001, on: .current, in: .common)
+                    .autoconnect()
+                    .map({ _ in gamepad.capture() })
+            })
+            .sink(receiveValue: {
+                extendedGamepad in
+                self.input.controllers.1.isActive = true
+                self.input.controllers.1.isConnected = true
+                print(extendedGamepad.lastEventTimestamp)
+                print(extendedGamepad.leftThumbstick.xAxis.value)
+            })
+
         if let keyboard = GCKeyboard.coalesced {
 
             if input.controllers.0.subType.rawValue == 0 {
@@ -278,38 +317,12 @@ class GameState : ObservableObject {
     }
 
 
-    func pollControllers() {
-
-
-        if let controller = GCController.current {
-            input.controllerCount = 2
-
-            func dpadHandler(dpad: GCControllerDirectionPad, x: Float, y: Float)            {
-
-                input.controllers.1.dPad.latches = true
-                input.controllers.1.dPad.end = Vec2f(x: x, y: y)
-                input.controllers.1.dPad.analogToDigital(deadZone: 0.0)
-            }
-
-            func leftStickHandler(dpad: GCControllerDirectionPad, x: Float, y: Float)            {
-
-                input.controllers.1.stickLeft.latches = true
-                input.controllers.1.stickLeft.end = Vec2f(x: x, y: y)
-                input.controllers.1.stickLeft.analogToDigital(deadZone: 0.0)
-            }
-            if let extendedGamepad = controller.extendedGamepad {
-                if extendedGamepad.leftThumbstick.valueChangedHandler == nil {
-                    extendedGamepad.leftThumbstick.valueChangedHandler = leftStickHandler(dpad:x:y:)
-                }
-            }
-        }
-    }
-
 
 
     func tick(settings: GameSettings) {
-        setupControllers()
-        pollControllers()
+        if (self.frameNumber == 0) {
+            setupControllers()
+        }
         GameState.timingData?.interval(timer: eTimerTickToTick, interval: eTimingTickToTick)
         GameState.timingData?.startTimer(eTimerTickToTick)
         GameState.timingData?.startTimer(eTimerTick)

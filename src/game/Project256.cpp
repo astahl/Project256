@@ -1,15 +1,15 @@
-#include "Project256.h"
 #include <cstdint>
+#include "Project256.h"
 #include "Drawing/Palettes.hpp"
 #include "Drawing/Generators.hpp"
 #include "Drawing/Sprites.hpp"
+#include "Drawing/InterleavedBitmaps.hpp"
 #include "Math/Vec2Math.hpp"
 #include "FML/RangesAtHome.hpp"
 #include <iostream>
 #include <chrono>
 #include <algorithm>
 #include <cassert>
-
 
 template<typename Return, typename ...Args>
 using FunctionPointer = Return (*)(Args...);
@@ -69,7 +69,7 @@ compiletime std::array<uint8_t, 256> CharacterTable = []() {
 
 struct GameMemory {
     alignas(128) std::array<uint8_t, DrawBufferWidth * DrawBufferHeight> vram;
-    alignas(128) std::array<uint32_t, 256> palette;
+    alignas(128) std::array<uint32_t, 32> palette;
     std::array<uint8_t, TextCharacterBytes * 256> characterROM;
     std::array<uint8_t, TextLines * TextLineLength> textBuffer;
     std::array<uint8_t, TextLines * TextLineLength> textColors;
@@ -90,6 +90,9 @@ struct GameMemory {
 
     std::array<uint32_t, 320 * 256> image;
     std::array<uint8_t, 320 * 256> imageDecoded;
+
+    std::array<uint8_t, 15 * 16> faufauDecoded;
+
 
     Vec2i points[2];
     int currentPoint;
@@ -184,7 +187,7 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
     using namespace Generators;
 
     GameOutput output{};
-    using Palette = PaletteVGA;
+    using Palette = PaletteEGA;
     compiletime auto lookupColor = [](auto col) { return static_cast<uint8_t>(findNearest(col, Palette::colors).index); };
     compiletime uint8_t black = lookupColor(Colors::Black);
     compiletime uint8_t cyan = lookupColor(Colors::Cyan);
@@ -243,6 +246,47 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
         std::memset(memory.textColors.data(), white, memory.textColors.size());
         std::memset(memory.textBuffer.data(), CharacterTable[' '], memory.textBuffer.size());
 
+
+
+
+        std::vector<uint8_t> dpdata(422);
+        size_t read = platform.readFile("Faufau.brush", dpdata.data(), dpdata.size());
+        ILBMDataParser<endian::big> parser{.data = dpdata.data(), .dataSize = static_cast<int>(read)};
+        parser.isValid();
+        auto header = parser.getHeader();
+        printf("w: %d, h: %d", header.width.value, header.height.value);
+        auto colorMap = parser.getColorMap();
+        for (int i = 0; i < colorMap.size; ++i) {
+            auto color = colorMap.colors[i];
+            memory.palette[i] = makeARGB(color.red, color.green, color.blue);
+        }
+        printf("%ld", colorMap.size);
+        auto grab = parser.getGrab();
+        if (grab) {
+            printf("grab x: %d, y: %d", grab->pointX.native(), grab->pointY.native());
+        }
+        int width = header.width.native();
+        int height = header.height.native();
+        int planeCount = header.planeCount;
+        auto body = parser.getBody();
+        for (int y = 0; y < height; ++y) {
+            for (int p = planeCount - 1; p >= 0; --p) {
+                for (int x = 0; x < width; x += 8) {
+                    uint8_t *ptr = &memory.faufauDecoded[x + y * width];
+                    int byteposition = x / 8 + p * width / 8 + y * planeCount * width / 8;
+                    uint8_t src = body.data[byteposition];
+                    *(ptr + 0) = (*(ptr + 0) << 1) | ((src >> 7) & 1);
+                    *(ptr + 1) = (*(ptr + 1) << 1) | ((src >> 6) & 1);
+                    *(ptr + 2) = (*(ptr + 2) << 1) | ((src >> 5) & 1);
+                    *(ptr + 3) = (*(ptr + 3) << 1) | ((src >> 4) & 1);
+                    *(ptr + 4) = (*(ptr + 4) << 1) | ((src >> 3) & 1);
+                    *(ptr + 5) = (*(ptr + 5) << 1) | ((src >> 2) & 1);
+                    *(ptr + 6) = (*(ptr + 6) << 1) | ((src >> 1) & 1);
+                    *(ptr + 7) = (*(ptr + 7) << 1) | ((src >> 0) & 1);
+                }
+            }
+        }
+
         if (platform.readImage) {
             if (!platform.readImage("test.bmp", memory.image.data(), 320, 256))
                 exit(3);
@@ -251,7 +295,8 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
             exit(4);
         }
 
-        ConvertBitmapFrom32BppToIndex<320>(memory.image.data(), 320, 256, Palette::colors, memory.imageDecoded.data());
+        ConvertBitmapFrom32BppToIndex<320>(memory.image.data(), 320, 256, memory.palette, memory.imageDecoded.data());
+
     }
 
     constant auto whitePixel = [&](const auto& p) { put(memory.vram.data(), p, white); };
@@ -292,6 +337,11 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
         // uncomment for all 256 colors
         put(memory.vram.data(), Vec2i{ x, y }, (x * 16 / DrawBufferWidth) + y / 8 * 16);
     } }
+
+    // draw faufau testimage
+    for (auto p : (Generators::Rectangle{Vec2i{0,0}, Vec2i{16, 15}} | filter(clip))) {
+        put(memory.vram.data(), p, memory.faufauDecoded[p.x + (15 - p.y) * 16]);
+    }
 
 
     for (int i = 0; i < input.textLength; ++i) {

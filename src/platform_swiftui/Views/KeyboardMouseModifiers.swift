@@ -7,13 +7,14 @@
 
 import Foundation
 import SwiftUI
+import GameController
 
 #if os(macOS)
 extension NSPoint {
     var cgPoint: CGPoint { get { .init(x: self.x, y: self.y) }}
 }
 
-class KbMFirstResponderView : NSView{
+class KbMFirstResponderView : NSView {
     enum KeyboardEvent {
         case Down (keyCode: CGKeyCode, characters: String?, modifierFlags: NSEvent.ModifierFlags)
         case Up (keyCode: CGKeyCode, characters: String?, modifierFlags: NSEvent.ModifierFlags)

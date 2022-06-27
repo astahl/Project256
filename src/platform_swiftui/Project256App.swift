@@ -88,7 +88,6 @@ struct Project256App: App {
                             .sink(receiveValue: self.doTick)
                     }
                 })
-
                 HStack {
                     Text(profilingString)
                         .font(.body.monospaced())
