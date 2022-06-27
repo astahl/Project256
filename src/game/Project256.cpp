@@ -121,7 +121,7 @@ struct Image {
         constexpr size_t minHeight = min(Height, DestHeight);
         constexpr size_t minWidth = min(Width, DestWidth);
         static_assert(stride > 1);
-        static_assert(minWidth % stride == 0);,
+        static_assert(minWidth % stride == 0);
         for (size_t y = 0; y < minHeight; ++y) {
             WideType* dst = reinterpret_cast<WideType*>(destination.data() + y * DestPitch);
             WideType* src;
@@ -335,20 +335,23 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
         int height = header.height.native();
         int planeCount = header.planeCount;
         auto body = parser.getBody();
+        assert(width % 8 == 0);
         for (int y = 0; y < height; ++y) {
             for (int p = planeCount - 1; p >= 0; --p) {
                 for (int x = 0; x < width; x += 8) {
-                    uint8_t *ptr = &memory.faufauDecoded.at(x, y);
+                    uint64_t *ptr = reinterpret_cast<uint64_t*>(&memory.faufauDecoded.at(x, y));
                     int byteposition = x / 8 + p * width / 8 + y * planeCount * width / 8;
-                    uint8_t src = body.data[byteposition];
-                    *(ptr + 0) = (*(ptr + 0) << 1) | ((src >> 7) & 1);
-                    *(ptr + 1) = (*(ptr + 1) << 1) | ((src >> 6) & 1);
-                    *(ptr + 2) = (*(ptr + 2) << 1) | ((src >> 5) & 1);
-                    *(ptr + 3) = (*(ptr + 3) << 1) | ((src >> 4) & 1);
-                    *(ptr + 4) = (*(ptr + 4) << 1) | ((src >> 3) & 1);
-                    *(ptr + 5) = (*(ptr + 5) << 1) | ((src >> 2) & 1);
-                    *(ptr + 6) = (*(ptr + 6) << 1) | ((src >> 1) & 1);
-                    *(ptr + 7) = (*(ptr + 7) << 1) | ((src >> 0) & 1);
+                    uint64_t src = body.data[byteposition];
+                    *ptr <<= 1;
+                    uint64_t spread = ((src >> 7) & 1) << 0
+                        | ((src >> 6) & 1) << 8
+                        | ((src >> 5) & 1) << 16
+                        | ((src >> 4) & 1) << 24
+                        | ((src >> 3) & 1) << 32
+                        | ((src >> 2) & 1) << 40
+                        | ((src >> 1) & 1) << 48
+                        | ((src >> 0) & 1) << 56;
+                    *ptr |= spread;
                 }
             }
         }
