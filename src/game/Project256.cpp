@@ -66,9 +66,37 @@ compiletime std::array<uint8_t, 256> CharacterTable = []() {
     return result;
 }();
 
+template <typename Pixel, size_t Width, size_t Height>
+struct Image {
+    std::array<Pixel, Width * Height> pixels;
+
+    constexpr Pixel* data() {
+        return pixels.data();
+    }
+
+    constexpr size_t size() const {
+        return Width * Height;
+    }
+
+    constexpr Pixel& at(size_t x, size_t y) {
+        return pixels.at(x + y * Width);
+    }
+
+    constexpr Pixel& atYFlipped(size_t x, size_t y) {
+        return at(x, ((Height - 1) - y));
+    }
+
+    constexpr size_t height() const {
+        return Height;
+    }
+
+    constexpr size_t width() const {
+        return Width;
+    }
+};
 
 struct GameMemory {
-    alignas(128) std::array<uint8_t, DrawBufferWidth * DrawBufferHeight> vram;
+    alignas(128) Image<uint8_t, DrawBufferWidth, DrawBufferHeight> vram;
     alignas(128) std::array<uint32_t, 32> palette;
     std::array<uint8_t, TextCharacterBytes * 256> characterROM;
     std::array<uint8_t, TextLines * TextLineLength> textBuffer;
@@ -88,11 +116,9 @@ struct GameMemory {
     Timer spriteAnimationTimer;
     int currentSpriteFrame;
 
-    std::array<uint32_t, 320 * 256> image;
-    std::array<uint8_t, 320 * 256> imageDecoded;
-
-    std::array<uint8_t, 15 * 16> faufauDecoded;
-
+    Image<uint32_t, 320, 256> image;
+    Image<uint8_t, 320, 256> imageDecoded;
+    Image<uint8_t, 16, 15> faufauDecoded;
 
     Vec2i points[2];
     int currentPoint;
@@ -246,9 +272,6 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
         std::memset(memory.textColors.data(), white, memory.textColors.size());
         std::memset(memory.textBuffer.data(), CharacterTable[' '], memory.textBuffer.size());
 
-
-
-
         std::vector<uint8_t> dpdata(422);
         size_t read = platform.readFile("Faufau.brush", dpdata.data(), dpdata.size());
         ILBMDataParser<endian::big> parser{.data = dpdata.data(), .dataSize = static_cast<int>(read)};
@@ -260,7 +283,6 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
             auto color = colorMap.colors[i];
             memory.palette[i] = makeARGB(color.red, color.green, color.blue);
         }
-        printf("%ld", colorMap.size);
         auto grab = parser.getGrab();
         if (grab) {
             printf("grab x: %d, y: %d", grab->pointX.native(), grab->pointY.native());
@@ -272,7 +294,7 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
         for (int y = 0; y < height; ++y) {
             for (int p = planeCount - 1; p >= 0; --p) {
                 for (int x = 0; x < width; x += 8) {
-                    uint8_t *ptr = &memory.faufauDecoded[x + y * width];
+                    uint8_t *ptr = &memory.faufauDecoded.at(x, y);
                     int byteposition = x / 8 + p * width / 8 + y * planeCount * width / 8;
                     uint8_t src = body.data[byteposition];
                     *(ptr + 0) = (*(ptr + 0) << 1) | ((src >> 7) & 1);
@@ -328,7 +350,7 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
 
     // draw the testimage
     for (auto p : (Generators::Rectangle{Vec2i{0,0}, Vec2i{320, 256}} | filter(clip))) {
-        put(memory.vram.data(), p, memory.imageDecoded[p.x + (255 - p.y) * 320]);
+        put(memory.vram.data(), p, memory.imageDecoded.atYFlipped(p.x, p.y));
     }
 
     // draw the palette in the first rows
@@ -339,12 +361,12 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
     } }
 
     // draw faufau testimage
-    for (auto p : (Generators::Rectangle{Vec2i{0,0}, Vec2i{16, 15}} | filter(clip))) {
-        put(memory.vram.data(), p, memory.faufauDecoded[p.x + (15 - p.y) * 16]);
+    for (auto p : (Generators::Rectangle{Vec2i{0,0}, Vec2i{15, 14}} | filter(clip))) {
+        put(memory.vram.data(), p, memory.faufauDecoded.atYFlipped(p.x, p.y));
     }
 
 
-    for (int i = 0; i < input.textLength; ++i) {
+    for (unsigned int i = 0; i < input.textLength; ++i) {
         uint8_t inputChar = input.text_utf8[i];
         if ((inputChar & 0b10000000) == 0) {
             // input is ASCII (top bit is zero)
@@ -530,11 +552,8 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
     // draw
     blitSprite(memory.sprite, memory.currentSpriteFrame, memory.vram.data(), DrawBufferWidth, truncate(memory.birdPosition), Vec2i{}, Vec2i{DrawBufferWidth, DrawBufferHeight});
 
-
-
-
     // draw text buffer
-    uint8_t* drawPointer = &memory.vram[(DrawBufferHeight - TextCharacterH) * DrawBufferWidth];
+    uint8_t* drawPointer = &memory.vram.at(0, memory.vram.height() - TextCharacterH);
     uint8_t* textPointer = memory.textBuffer.data();
     uint8_t* textColorPointer = memory.textColors.data();
 

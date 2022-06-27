@@ -37,6 +37,10 @@ void PlatformInput::pushKeyEvent(WindowsKeyEvent keyEvent)
     keyEventCount++;
 }
 
+void PlatformInput::pushChar(wchar_t wideCharacter) {
+    this->wideCharacters[wideCharactersCount++] = wideCharacter;
+}
+
 
 
 
@@ -142,6 +146,10 @@ void PlatformInput::updateGameInput(GameInput& gameInput) {
         kbm.isActive |= isAction;
     }
     keyEventCount = 0;
+
+    gameInput.textLength = WideCharToMultiByte(CP_UTF8, 0, wideCharacters, wideCharactersCount, gameInput.text_utf8, InputMaxTextLength, 0, 0);
+    wideCharactersCount = 0;
+
 
     kbm.stickRight.end = gameInput.mouse.relativeMovement;
     kbm.triggerLeft.trigger = gameInput.mouse.buttonLeft;

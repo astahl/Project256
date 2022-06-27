@@ -50,6 +50,11 @@ struct PlatformInput {
     constant int MaxKeyEventCount = 16;
     WindowsKeyEvent keyEvents[MaxKeyEventCount]{};
     int keyEventCount = 0;
+
+    constant int MaxCharCount = 16;
+    wchar_t wideCharacters[MaxCharCount]{};
+    int wideCharactersCount = 0;
+
     uint64_t frameCount{};
     int64_t upTime{};
     Vec2i lastCursorPosition{};
@@ -57,6 +62,7 @@ struct PlatformInput {
     bool forceCursor{};
 
     void pushKeyEvent(WindowsKeyEvent keyEvent);
+    void pushChar(wchar_t wideCharacter);
     void updateGameInput(GameInput& gameInput);
     void pollXInput(GameInput& gameInput);
 };
