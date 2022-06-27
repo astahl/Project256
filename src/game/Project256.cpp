@@ -140,6 +140,7 @@ struct Image {
 };
 
 struct GameMemory {
+    std::array<uint8_t, 1024 * 1024> scratch;
     alignas(128) Image<uint8_t, DrawBufferWidth, DrawBufferHeight> vram;
     alignas(128) std::array<uint32_t, 32> palette;
     std::array<uint8_t, TextCharacterBytes * 256> characterROM;
@@ -160,7 +161,6 @@ struct GameMemory {
     Timer spriteAnimationTimer;
     int currentSpriteFrame;
 
-    Image<uint32_t, 320, 256> image;
     Image<uint8_t, 320, 256> imageDecoded;
     Image<uint8_t, 16, 15> faufauDecoded;
 
@@ -316,9 +316,8 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
         std::memset(memory.textColors.data(), white, memory.textColors.size());
         std::memset(memory.textBuffer.data(), CharacterTable[' '], memory.textBuffer.size());
 
-        std::vector<uint8_t> dpdata(422);
-        size_t read = platform.readFile("Faufau.brush", dpdata.data(), dpdata.size());
-        ILBMDataParser<endian::big> parser{.data = dpdata.data(), .dataSize = static_cast<int>(read)};
+        size_t read = platform.readFile("Faufau.brush", memory.scratch.data(), memory.scratch.size());
+        ILBMDataParser<endian::big> parser{.data = memory.scratch.data(), .dataSize = static_cast<int>(read)};
         parser.isValid();
         auto header = parser.getHeader();
         printf("w: %d, h: %d", header.width.value, header.height.value);
@@ -357,14 +356,14 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
         }
 
         if (platform.readImage) {
-            if (!platform.readImage("test.bmp", memory.image.data(), 320, 256))
+            if (!platform.readImage("test.bmp", reinterpret_cast<uint32_t*>(memory.scratch.data()), 320, 256))
                 exit(3);
         }
         else {
             exit(4);
         }
 
-        ConvertBitmapFrom32BppToIndex<320>(memory.image.data(), 320, 256, memory.palette, memory.imageDecoded.data());
+        ConvertBitmapFrom32BppToIndex<320>(reinterpret_cast<uint32_t*>(memory.scratch.data()), 320, 256, memory.palette, memory.imageDecoded.data());
 
     }
 
@@ -383,24 +382,11 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
         memory.currentSpriteFrame = (memory.currentSpriteFrame + 1) % decltype(memory.sprite)::frameCount;
     }
 
-
-//    if (memory.charChangeTimer.hasFired(time)) {
-//        memory.charChangeTimer = Timer::delay(time, std::chrono::milliseconds(40));
-//
-//        memory.textColors[0 * TextLineLength + (memory.currentChar % TextLineLength)] = memory.currentChar;
-//        memory.textBuffer[0 * TextLineLength + (memory.currentChar % TextLineLength)] = memory.currentChar;
-//        memory.currentChar++;
-//    }
-
     // clear the screen
     std::memset(memory.vram.data(), (uint8_t)clearColor, DrawBufferWidth * DrawBufferHeight);
 
     // draw the testimage
     memory.imageDecoded.wideCopy<true>(memory.vram);
-
-    //for (auto p : (Generators::Rectangle{Vec2i{0,0}, Vec2i{320, 256}} | filter(clip))) {
-    //    memory.vram.at(p) = memory.imageDecoded.atYFlipped(p);
-    //}
 
     // draw the palette in the first rows
     for (int y = 0; y < memory.palette.size() / 2; ++y) {
@@ -410,10 +396,7 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
     } }
 
     // draw faufau testimage
-    for (auto p : (Generators::Rectangle{Vec2i{0,0}, Vec2i{15, 14}} | filter(clip))) {
-        put(memory.vram.data(), p, memory.faufauDecoded.atYFlipped(p.x, p.y));
-    }
-
+    memory.faufauDecoded.wideCopy<true>(memory.vram);
 
     for (unsigned int i = 0; i < input.textLength; ++i) {
         uint8_t inputChar = input.text_utf8[i];
@@ -500,7 +483,6 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
         auto offset = [=](const auto& p) {
             return p + position;
         };
-
 
         if (input.mouse.buttonLeft.endedDown) {
             memory.points[memory.currentPoint] = position;

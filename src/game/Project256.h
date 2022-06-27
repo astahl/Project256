@@ -7,7 +7,7 @@
 
 // global static constants
 
-constant long MemorySize = 640 * 1024 * 2; // 640kbytes
+constant long MemorySize = 1024 * 1024 * 8; // 8 MBytes
 
 constant unsigned DrawBufferWidth = 320;
 constant unsigned DrawBufferHeight = 200;

@@ -130,8 +130,9 @@ func loadDataDEBUG(filenamePtr: UnsafePointer<CChar>?, destination: UnsafeMutabl
     let filename = String(cString: filenamePtr!)
     let url = Bundle.main.url(forResource: filename, withExtension: nil)
     let data = try? Data(contentsOf: url!)
-    data!.copyBytes(to: destination!, count: Int(bufferSize))
-    return min(bufferSize, Int64(data!.count))
+    let count = min(bufferSize, Int64(data!.count))
+    data!.copyBytes(to: destination!, count: Int(count))
+    return count
 }
 
 func loadImageDEBUG(filenamePtr: UnsafePointer<CChar>?, destination: UnsafeMutablePointer<UInt32>?, width: Int32, height: Int32) -> Bool {
