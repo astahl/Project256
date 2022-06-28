@@ -226,7 +226,7 @@ struct ILBMDataParser {
         auto chunkPrelude = reinterpret_cast<const ILBMChunkPrelude<E>*>(data + offset);
         Endian<int> chunkLength = chunkPrelude->chunkLength;
         while (offset < dataSize && !ILBMCompareNames(chunkPrelude->chunkName, name) && chunkLength.value != 0) {
-            offset += chunkLength.value + CHUNK_PRELUDE_SIZE;
+            offset += chunkLength.value + CHUNK_PRELUDE_SIZE + (chunkLength.value % 2);
             chunkPrelude = reinterpret_cast<const ILBMChunkPrelude<E>*>(data + offset);
             chunkLength = chunkPrelude->chunkLength;
         }
