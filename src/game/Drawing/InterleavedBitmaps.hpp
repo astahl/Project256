@@ -86,6 +86,7 @@ struct Endian {
         if constexpr (Endianness == OtherEndianness) {
             value = other.value;
         } else {
+            // todo this is very lazy but it works
             uint8_t* ptr = reinterpret_cast<uint8_t*>(&value);
             const uint8_t* otherPtr = reinterpret_cast<const uint8_t*>(&other.value);
 
