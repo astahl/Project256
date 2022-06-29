@@ -77,6 +77,11 @@ enum class endian
 using endian = std::endian;
 #endif
 
+template <size_t ...I>
+compiletime void doSwizzle(uint8_t* dst, const uint8_t* src, std::index_sequence<I...> i) {
+    ((dst[I] = src[i.size() - 1 - I]), ...);
+}
+
 template <typename T, endian Endianness = endian::native>
 struct Endian {
     T value{};
@@ -86,13 +91,9 @@ struct Endian {
         if constexpr (Endianness == OtherEndianness) {
             value = other.value;
         } else {
-            // todo this is very lazy but it works
             uint8_t* ptr = reinterpret_cast<uint8_t*>(&value);
             const uint8_t* otherPtr = reinterpret_cast<const uint8_t*>(&other.value);
-
-            for (int i = 0; i < sizeof(T); ++i) {
-                ptr[i] = otherPtr[sizeof(T) - 1 - i];
-            }
+            doSwizzle(ptr, otherPtr, std::make_index_sequence<sizeof(T)>());
         }
     }
 
