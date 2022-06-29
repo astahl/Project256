@@ -162,7 +162,7 @@ struct GameMemory {
     int currentSpriteFrame;
 
     Image<uint8_t, 320, 256> imageDecoded;
-    Image<uint8_t, 16, 15> faufauDecoded;
+    Image<uint8_t, 32, 24> faufauDecoded;
 
     Vec2i points[2];
     int currentPoint;
@@ -311,7 +311,7 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
         }
             
         memory.textFirstLine = 0;
-        memory.textLastLine = 4;
+        memory.textLastLine = 0;
         memory.textScroll = 0;
         std::memset(memory.textColors.data(), white, memory.textColors.size());
         std::memset(memory.textBuffer.data(), CharacterTable[' '], memory.textBuffer.size());
@@ -326,34 +326,9 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
             auto color = colorMap.colors[i];
             memory.palette[i] = makeARGB(color.red, color.green, color.blue);
         }
-        auto grab = parser.getGrab();
-        if (grab) {
-            printf("grab x: %d, y: %d", grab->pointX.native(), grab->pointY.native());
-        }
-        int width = header.width.native();
-        int height = header.height.native();
-        int planeCount = header.planeCount;
-        auto body = parser.getBody();
-        assert(width % 8 == 0);
-        for (int y = 0; y < height; ++y) {
-            for (int p = planeCount - 1; p >= 0; --p) {
-                for (int x = 0; x < width; x += 8) {
-                    uint64_t *ptr = reinterpret_cast<uint64_t*>(&memory.faufauDecoded.at(x, y));
-                    int byteposition = x / 8 + p * width / 8 + y * planeCount * width / 8;
-                    uint64_t src = body.data[byteposition];
-                    *ptr <<= 1;
-                    uint64_t spread = ((src >> 7) & 1) << 0
-                        | ((src >> 6) & 1) << 8
-                        | ((src >> 5) & 1) << 16
-                        | ((src >> 4) & 1) << 24
-                        | ((src >> 3) & 1) << 32
-                        | ((src >> 2) & 1) << 40
-                        | ((src >> 1) & 1) << 48
-                        | ((src >> 0) & 1) << 56;
-                    *ptr |= spread;
-                }
-            }
-        }
+        parser.deinterleaveInto(memory.faufauDecoded.data(), memory.faufauDecoded.size(), memory.faufauDecoded.pitch());
+        parser.deinterleaveInto(&memory.faufauDecoded.at(16,8), memory.faufauDecoded.size() - 16, memory.faufauDecoded.pitch());
+       
 
         if (platform.readImage) {
             if (!platform.readImage("test.bmp", reinterpret_cast<uint32_t*>(memory.scratch.data()), 320, 256))
@@ -641,17 +616,6 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
         (Rectangle{{cursorX * TextCharacterW, cursorY * TextCharacterH}, {(cursorX + 1) * TextCharacterW - 1, (cursorY + 1) * TextCharacterH - 1}} | forEach(whitePixel)).run();
     }
 
-//        for (uint8_t ascii : "THE QUICK BROWN FOX") {
-//            const uint8_t& c = memory.characterROM[y + (ascii - 'A' + 1) * 8];
-//            linePointer[0] = c >> 6 & 3;
-//            linePointer[1] = c >> 4 & 3;
-//            linePointer[2] = c >> 2 & 3;
-//            linePointer[3] = c >> 0 & 3;
-//
-//            linePointer += 4;
-//        }
-    //    drawPointer += DrawBufferWidth;
-
     return output;
 }
 
@@ -662,12 +626,6 @@ void writeDrawBuffer(void* pMemory, void* buffer)
 
     GameMemory& memory = *reinterpret_cast<GameMemory*>(pMemory);
     uint8_t* vram = memory.vram.data();
-
-    // draw the palette (must be 512 x 512)
-//    for (int y = 0; y < DrawBufferHeight; ++y) {
-//    for (int x = 0; x < DrawBufferWidth; ++x) {
-//        put(vram, Vec2i{ x, y }, (x * 16 / DrawBufferWidth) + (DrawBufferHeight - 1 - y) / 32 * 16);
-//    } }
 
 
     if constexpr (DrawBufferWidth % 8 == 0)
@@ -697,17 +655,6 @@ void writeDrawBuffer(void* pMemory, void* buffer)
         for (unsigned x = 0; x < DrawBufferWidth; ++x)
             *pixel++ = memory.palette[*vram++];
     }
-
-
-
-    //uint32_t* pixel = reinterpret_cast<uint32_t*>(buffer);
-    //for (int y = 0; y < 256; ++y) {
-    //    for (int x = 0; x < 320; ++x) {
-    //        auto col = memory.image[x + (256 - y) * 320];
-    //        pixel[x + 320 + (y + 16) * DrawBufferWidth] = col;
-    //    }
-    //}
-
 }
 
 }
