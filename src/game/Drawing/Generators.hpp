@@ -252,6 +252,77 @@ struct HLine {
 };
 
 
+
+struct VLine {
+
+    struct Sentinel {};
+
+    struct Iterator {
+        int mCount;
+        Vec2i mCurrentPosition;
+
+        constexpr Vec2i operator*() const {
+            return mCurrentPosition;
+        }
+
+        constexpr Iterator& operator++() {
+            mCurrentPosition.y += 1;
+            mCount -= 1;
+            return *this;
+        }
+
+        constexpr bool operator!=(const Sentinel&) const {
+            return mCount > 0;
+        }
+    };
+
+
+    Vec2i mFrom{};
+    int mCount{};
+
+    using iterator = Iterator;
+
+    constexpr VLine(Vec2i from, Vec2i to)
+    {
+        int distance = to.y - from.y;
+        if (distance > 0){
+            mCount = distance;
+            mFrom = from;
+        } else {
+            mCount = -distance;
+            mFrom = to;
+        }
+        mCount += 1;
+    }
+
+    constexpr VLine(Vec2i from, int length)
+    {
+        mFrom = from;
+        if (length > 0){
+            mCount = length;
+        } else {
+            mCount = -length;
+            mFrom.y += length  + 1;
+        }
+    }
+
+    constexpr Iterator begin() const {
+        return Iterator{
+            .mCount = mCount,
+            .mCurrentPosition = mFrom,
+        };
+    }
+
+    constexpr Sentinel end() const {
+        return Sentinel{};
+    }
+
+    constexpr size_t size() const {
+        return mCount;
+    }
+};
+
+
 struct Circle {
     int mRadius;
     Vec2i mCenter{};

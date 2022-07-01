@@ -476,11 +476,11 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
                 put(memory.vram.data(), wrap(p), green);
         }
 
-        compiletime auto crossGenerator = (HLine{{3, 0}, {-3, 0}} ^ HLine{{3, 1}, -7} ^ Line{{0, 4}, {0, -3}});
+        compiletime auto crossGenerator = (HLine{{-3, 0}, 7} ^ VLine{{0, -3}, 7});
         compiletime auto cross = (crossGenerator | toArray<size(crossGenerator)>{}).run();
         (cross | atMouse | wrapped | forEach(whitePixel)).run();
 
-        compiletime auto circleGenerator = Circle{.mRadius = 10};
+        compiletime auto circleGenerator = Circle{.mRadius = 4};
         compiletime auto circle = (circleGenerator | toArray<size(circleGenerator)>{}).run();
         (circle | atMouse | wrapped | forEach(whitePixel)).run();
 
