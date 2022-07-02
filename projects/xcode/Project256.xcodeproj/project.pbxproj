@@ -69,6 +69,7 @@
 		689E03252857A67600DF8738 /* DrawBufferView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawBufferView.swift; sourceTree = "<group>"; };
 		689E03282857BEF300DF8738 /* KeyboardMouseModifiers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardMouseModifiers.swift; sourceTree = "<group>"; };
 		68A8725D28591EBB0033DBCB /* defines.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = defines.h; sourceTree = "<group>"; };
+		68BB1CB928709174009B02CA /* Images.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Images.hpp; sourceTree = "<group>"; };
 		68D205CB28512A0000CB4213 /* Generators.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Generators.hpp; sourceTree = "<group>"; };
 		68D205D12854101100CB4213 /* Vec2Math.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Vec2Math.hpp; sourceTree = "<group>"; };
 		68D205D42854DACF00CB4213 /* Sprites.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Sprites.hpp; sourceTree = "<group>"; };
@@ -119,6 +120,7 @@
 				68D205CB28512A0000CB4213 /* Generators.hpp */,
 				68D205D42854DACF00CB4213 /* Sprites.hpp */,
 				685741BC2868E53900B13B23 /* InterleavedBitmaps.hpp */,
+				68BB1CB928709174009B02CA /* Images.hpp */,
 			);
 			path = Drawing;
 			sourceTree = "<group>";

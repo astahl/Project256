@@ -18,6 +18,9 @@ template <typename...> struct WhichType;
 class Something {};
 
 
+template <typename T, typename U>
+using is_not_same = std::bool_constant<std::negation_v<std::is_same_v<T, U>>>;
+
 template <typename T, size_t N = 0>
 struct iterator {};
 
@@ -110,6 +113,21 @@ constexpr size_t size(const T& t) { return t.size(); }
 
 template <typename T, size_t N = std::extent_v<T>, typename U = T[N]>
 constexpr size_t size(const U& t) { return N; }
+
+template <typename T, typename U>
+using is_notequal_testable = std::bool_constant<std::is_same_v<bool, decltype(T{} != U{})>>;
+
+template <typename T>
+using is_iterable = std::bool_constant<std::conjunction_v<is_notequal_testable<iterator_t<T>, sentinel_t<T>>>>;
+
+template <typename T>
+using is_range = std::conjunction<is_iterable<T>>;
+
+template <typename T>
+constant bool is_range_v = is_range<T>::value;
+
+template <typename ...T>
+using enable_for_range_t = std::enable_if_t<std::conjunction_v<is_range_v<std::decay_t<T>>...>, bool>;
 
 
 
@@ -556,6 +574,60 @@ struct flatten_view {
     }
 };
 
+
+
+template<typename T, typename U>
+struct pairwise_view {
+    using InputIteratorLeft = iterator_t<const T>;
+    using InputSentinelLeft = sentinel_t<const T>;
+    using InputValueLeft = iter_value_t<const T>;
+    using InputIteratorRight = iterator_t<const U>;
+    using InputSentinelRight = sentinel_t<const U>;
+    using InputValueRight = iter_value_t<const U>;
+
+    const T& mInputRangeLeft;
+    const U& mInputRangeRight;
+
+    struct Sentinel {};
+
+    struct Iterator {
+        InputIteratorLeft mInputItLeft;
+        InputSentinelLeft mEndLeft;
+        InputIteratorRight mInputItRight;
+        InputSentinelRight mEndRight;
+
+        constexpr Iterator& operator++() {
+            ++mInputItLeft;
+            ++mInputItRight;
+            return *this;
+        }
+
+        constexpr std::tuple<InputValueLeft, InputValueRight> operator*() const {
+            return std::make_tuple(*mInputItLeft, *mInputItRight);
+        }
+
+        constexpr bool operator!=(const Sentinel&) const {
+            return mInputItLeft != mEndLeft && mInputItRight != mEndRight;
+        }
+    };
+
+    constexpr Iterator begin() const {
+        const auto beginLeft = ranges_at_home::begin(mInputRangeLeft);
+        const auto endLeft= ranges_at_home::end(mInputRangeLeft);
+        const auto beginRight = ranges_at_home::begin(mInputRangeRight);
+        const auto endRight = ranges_at_home::end(mInputRangeRight);
+        return {.mInputItLeft = beginLeft, .mEndLeft = endLeft, .mInputItRight = beginRight, .mEndRight = endRight};
+    }
+
+    constexpr Sentinel end() const {
+        return {};
+    }
+
+    constexpr size_t size() const {
+        return std::min(ranges_at_home::size(mInputRangeLeft), ranges_at_home::size(mInputRangeRight));
+    }
+};
+
 template <typename Func>
 struct transform final {
 
@@ -819,6 +891,12 @@ template <typename T, typename U, std::enable_if_t<
 constexpr concatenator<T, U> operator^(T&& left, U&& right)
 {
     return concatenator<T, U> {static_cast<T&&>(left), static_cast<U&&>(right)};
+}
+
+template <typename T, typename U>
+constexpr pairwise_view<T, U> pairwise(T&& left, U&& right) {
+    return pairwise_view<T, U>{static_cast<T&&>(left), static_cast<U&&>(right)};
+
 }
 
 }

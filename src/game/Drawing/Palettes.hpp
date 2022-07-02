@@ -263,7 +263,8 @@ union ColorArgb {
     uint32_t value;
 };
 
-constexpr int min(int left, int right)
+template <typename T, typename U>
+constexpr auto min(T left, U right)
 {
     return (left < right) ? left : right;
 }

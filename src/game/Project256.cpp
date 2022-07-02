@@ -4,6 +4,7 @@
 #include "Drawing/Generators.hpp"
 #include "Drawing/Sprites.hpp"
 #include "Drawing/InterleavedBitmaps.hpp"
+#include "Drawing/Images.hpp"
 #include "Math/Vec2Math.hpp"
 #include "FML/RangesAtHome.hpp"
 #include <iostream>
@@ -43,7 +44,6 @@ compiletime void put(uint8_t* drawBuffer, Vec2 position, Color color)
 
 constant int TextCharacterW = 8;
 constant int TextCharacterH = 8;
-constant int TextCharacterBytes = 8;
 constant int TextLines = DrawBufferHeight / TextCharacterH;
 constant int TextLineLength = DrawBufferWidth / TextCharacterW;
 
@@ -67,81 +67,14 @@ compiletime std::array<uint8_t, 256> CharacterTable = []() {
 }();
 
 
-template <typename Pixel, size_t Width, size_t Height, size_t Pitch = Width>
-struct Image {
-
-    std::array<Pixel, Pitch * Height> pixels;
-
-    constexpr Pixel* data() {
-        return pixels.data();
-    }
-
-    constexpr size_t size() const {
-        return pixels.size();
-    }
-
-    constexpr Pixel& at(size_t x, size_t y) {
-        assert(x < Width);
-        assert(y < Height);
-        return pixels.at(x + y * Pitch);
-    }
-
-    constexpr Pixel& at(Vec2i pos) {
-        assert(pos.x >= 0);
-        assert(pos.y >= 0);
-        return at(static_cast<size_t>(pos.x), static_cast<size_t>(pos.y));
-    }
-
-    constexpr Pixel& atYFlipped(size_t x, size_t y) {
-        return at(x, ((Height - 1) - y));
-    }
-
-    constexpr Pixel& atYFlipped(Vec2i pos) {
-        assert(pos.x >= 0);
-        assert(pos.y >= 0);
-        return atYFlipped(pos.x, pos.y);
-    }
-
-    constexpr size_t height() const {
-        return Height;
-    }
-
-    constexpr size_t width() const {
-        return Width;
-    }
-
-    constexpr size_t pitch() const {
-        return Pitch;
-    }
-
-    template<bool FlipY = false, size_t DestWidth, size_t DestHeight, size_t DestPitch>
-    constexpr void copy(Image<Pixel, DestWidth, DestHeight, DestPitch>& destination)
-    {
-        constexpr size_t minHeight = min(Height, DestHeight);
-        constexpr size_t lineWidth = min(Width, DestWidth) * sizeof(Pixel);
-
-        for (size_t y = 0; y < minHeight; ++y) {
-            void* src = nullptr;
-            if constexpr (FlipY) {
-                src = &atYFlipped(0, y);
-            }
-            else {
-                src = &at(y);
-            }
-
-            memcpy(&destination.at(0, y), src, lineWidth);
-        }
-    }
-};
-
 struct GameMemory {
     std::array<uint8_t, 1024 * 1024> scratch;
     // video
-    alignas(128) Image<uint8_t, DrawBufferWidth, DrawBufferHeight> vram;
-    alignas(128) std::array<uint32_t, 32> palette;
+    alignas(128) Image<uint8_t, DrawBufferWidth, DrawBufferHeight, ImageOrigin::BottomLeft> vram;
+    alignas(128) std::array<uint32_t, 256> palette;
 
     // text
-    std::array<uint8_t, TextCharacterBytes * 256> characterROM;
+    BitmapImage<TextCharacterW, TextCharacterH * 256> characterROM;
     std::array<uint8_t, TextLines * TextLineLength> textBuffer;
     std::array<uint8_t, TextLines * TextLineLength> textColors;
     int textFirstLine;
@@ -162,9 +95,9 @@ struct GameMemory {
     int currentSpriteFrame;
 
     // images
-    Image<uint8_t, 320, 256> imageDecoded;
-    Image<uint8_t, 320, 256> faubigDecoded;
-    Image<uint8_t, 32, 24> faufauDecoded;
+    Image<uint8_t, 320, 256, ImageOrigin::TopLeft> imageDecoded;
+    Image<uint8_t, 320, 256, ImageOrigin::TopLeft> faubigDecoded;
+    Image<uint8_t, 32, 24, ImageOrigin::TopLeft> faufauDecoded;
 
     // mouse clicks
     Vec2i points[2];
@@ -258,7 +191,7 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
     using namespace Generators;
 
     GameOutput output{};
-    using Palette = PaletteEGA;
+    using Palette = PaletteVGA;
     compiletime auto lookupColor = [](auto col) { return static_cast<uint8_t>(findNearest(col, Palette::colors).index); };
     compiletime uint8_t black = lookupColor(Colors::Black);
     compiletime uint8_t cyan = lookupColor(Colors::Cyan);
@@ -301,7 +234,7 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
         memory.currentSpriteFrame = 0;
         memory.birdSpeed = 5;
         if (platform.readFile) {
-            int64_t read = platform.readFile("CharacterRomPET8x8x256.bin", memory.characterROM.data(), memory.characterROM.size());
+            int64_t read = platform.readFile("CharacterRomPET8x8x256.bin", memory.characterROM.bytes(), memory.characterROM.bytesSize());
             if (read != 2048)
             {
                 exit(2);
@@ -328,7 +261,7 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
             memory.palette[i] = makeARGB(color.red, color.green, color.blue);
         }
         parser.deinterleaveInto(memory.faufauDecoded.data(), memory.faufauDecoded.size(), memory.faufauDecoded.pitch());
-        parser.deinterleaveInto(&memory.faufauDecoded.at(16,8), memory.faufauDecoded.size() - 16, memory.faufauDecoded.pitch());
+        parser.deinterleaveInto(&memory.faufauDecoded.pixel(16,8), memory.faufauDecoded.size() - 16, memory.faufauDecoded.pitch());
         }
 
         {
@@ -369,17 +302,22 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
     std::memset(memory.vram.data(), (uint8_t)clearColor, DrawBufferWidth * DrawBufferHeight);
 
     // draw the testimage
-    memory.imageDecoded.copy<true>(memory.vram);
+    imageCopy(memory.imageDecoded, memory.vram);
 
+
+    
     // draw the palette in the first rows
-    for (int y = 0; y < memory.palette.size() / 2; ++y) {
-    for (int x = 0; x < DrawBufferWidth; ++x) {
-        // uncomment for all 256 colors
-        put(memory.vram.data(), Vec2i{ x, y }, (x * 16 / DrawBufferWidth) + y / 8 * 16);
-    } }
+//    for (int y = 0; y < memory.palette.size() / 2; ++y) {
+//    for (int x = 0; x < DrawBufferWidth; ++x) {
+//        put(memory.vram.data(), Vec2i{ x, y }, (x * 16 / DrawBufferWidth) + y / 8 * 16);
+//    } }
 
     // draw faufau testimage
-    memory.faufauDecoded.copy<true>(memory.vram);
+    imageCopy(memory.faufauDecoded, memory.vram);
+
+    auto subImage = makeSubImage(memory.faufauDecoded, 0, 0, 16, 16);
+    auto subImage2 = makeSubImage(memory.vram, 100, 100, 16, 16);
+    imageBlitWithTransparentColor(subImage, subImage2, 0);
 
     for (unsigned int i = 0; i < input.textLength; ++i) {
         uint8_t inputChar = input.text_utf8[i];
@@ -567,18 +505,9 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
     blitSprite(memory.sprite, memory.currentSpriteFrame, memory.vram.data(), DrawBufferWidth, truncate(memory.birdPosition), Vec2i{}, Vec2i{DrawBufferWidth, DrawBufferHeight});
 
     // draw text buffer
-    uint8_t* drawPointer = &memory.vram.at(0, memory.vram.height() - TextCharacterH);
+    uint8_t* drawPointer = memory.vram.line(memory.vram.height() - TextCharacterH).firstPixel;
     uint8_t* textPointer = memory.textBuffer.data();
     uint8_t* textColorPointer = memory.textColors.data();
-
-    compiletime uint8_t mask0 = 1 << 7;
-    compiletime uint8_t mask1 = 1 << 6;
-    compiletime uint8_t mask2 = 1 << 5;
-    compiletime uint8_t mask3 = 1 << 4;
-    compiletime uint8_t mask4 = 1 << 3;
-    compiletime uint8_t mask5 = 1 << 2;
-    compiletime uint8_t mask6 = 1 << 1;
-    compiletime uint8_t mask7 = 1 << 0;
 
     int cursorPosition = memory.textCursorPosition;
     for (int line = 0; line < TextLines; ++line) {
@@ -589,17 +518,8 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
                 for (int pos = 0; pos < TextLineLength; ++pos)
                 {
                     const uint8_t t = textPointer[pos];
-                    const uint64_t c = memory.characterROM[y + t * 8];
                     const uint8_t color = textColorPointer[pos];
-                    uint64_t pixels8 =
-                          (c & mask0) >> 7
-                        | (c & mask1) << 2
-                        | (c & mask2) << 11
-                        | (c & mask3) << 20
-                        | (c & mask4) << 29
-                        | (c & mask5) << 38
-                        | (c & mask6) << 47
-                        | (c & mask7) << 56;
+                    uint64_t pixels8 = spread(memory.characterROM.pixel(0, t * 8 + y));
                     const uint64_t background = ~(pixels8 * 0xFF) / 0xFF;
                     // colors! top nibble is background, bottom nibble foreground
                     *dst++ = pixels8 * (color & 0xF) | background * (color >> 4);
@@ -634,26 +554,27 @@ void writeDrawBuffer(void* pMemory, void* buffer)
 
     GameMemory& memory = *reinterpret_cast<GameMemory*>(pMemory);
     uint8_t* vram = memory.vram.data();
-
+    uint32_t* drawBuffer = reinterpret_cast<uint32_t*>(buffer);
 
     if constexpr (DrawBufferWidth % 8 == 0)
     {
-        constexpr int count = DrawBufferWidth * DrawBufferHeight;
-        uint64_t* src = reinterpret_cast<uint64_t*>(vram);
-        uint64_t* dst = reinterpret_cast<uint64_t*>(buffer);
         const uint32_t* palette = memory.palette.data();
-        for (int i = 0; i < count; i += 8) {
-            const uint64_t sourcePixel8 = *src++;
-            
-            *dst = static_cast<uint64_t>(palette[sourcePixel8 >> 0 & 0xff]) | 
-                static_cast<uint64_t>(palette[sourcePixel8 >> 8 & 0xff]) << 32;
-            *(dst + 1) = static_cast<uint64_t>(palette[sourcePixel8 >> 16 & 0xff]) |
-                static_cast<uint64_t>(palette[sourcePixel8 >> 24 & 0xff]) << 32;
-            *(dst + 2) = static_cast<uint64_t>(palette[sourcePixel8 >> 32 & 0xff]) |
-                static_cast<uint64_t>(palette[sourcePixel8 >> 40 & 0xff]) << 32;
-            *(dst + 3) = static_cast<uint64_t>(palette[sourcePixel8 >> 48 & 0xff]) |
-                static_cast<uint64_t>(palette[sourcePixel8 >> 56 & 0xff]) << 32;
-            dst += 4;
+        for (uint32_t y = 0; y < DrawBufferHeight; ++y) {
+            uint64_t* src = reinterpret_cast<uint64_t*>(vram + y * DrawBufferWidth);
+            uint64_t* dst = reinterpret_cast<uint64_t*>(drawBuffer + y * DrawBufferWidth);
+            for (uint32_t x = 0; x < DrawBufferWidth; x += 8) {
+                const uint64_t sourcePixel8 = *src++;
+
+                *dst = static_cast<uint64_t>(palette[sourcePixel8 >> 0 & 0xff]) |
+                    static_cast<uint64_t>(palette[sourcePixel8 >> 8 & 0xff]) << 32;
+                *(dst + 1) = static_cast<uint64_t>(palette[sourcePixel8 >> 16 & 0xff]) |
+                    static_cast<uint64_t>(palette[sourcePixel8 >> 24 & 0xff]) << 32;
+                *(dst + 2) = static_cast<uint64_t>(palette[sourcePixel8 >> 32 & 0xff]) |
+                    static_cast<uint64_t>(palette[sourcePixel8 >> 40 & 0xff]) << 32;
+                *(dst + 3) = static_cast<uint64_t>(palette[sourcePixel8 >> 48 & 0xff]) |
+                    static_cast<uint64_t>(palette[sourcePixel8 >> 56 & 0xff]) << 32;
+                dst += 4;
+            }
         }
     }
     else {
