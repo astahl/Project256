@@ -100,7 +100,6 @@
 		6821D85B28591C01008D4128 /* Game */ = {
 			isa = PBXGroup;
 			children = (
-				68FC4A082860DDE0009FC29D /* Text */,
 				6821D85F28591D14008D4128 /* Math */,
 				6821D85E28591CDE008D4128 /* Profiling */,
 				6821D85D28591CC7008D4128 /* FML */,
@@ -211,13 +210,6 @@
 				6859DD0128673522009137CC /* GameSettings.swift */,
 			);
 			path = Model;
-			sourceTree = "<group>";
-		};
-		68FC4A082860DDE0009FC29D /* Text */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			name = Text;
 			sourceTree = "<group>";
 		};
 		68FC4A0C2861B67C009FC29D /* Assets */ = {

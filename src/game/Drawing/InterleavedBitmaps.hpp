@@ -302,13 +302,12 @@ struct ILBMDataParser {
         assert(bufferPitch >= width);
         assert(bufferSize >= height * bufferPitch);
         uint8_t* linePtr = buffer;
+        const uint8_t* srcPtr = body.data;
         for (int y = 0; y < height; ++y) {
-            for (int p = planeCount - 1; p >= 0; --p) {
+            for (int p = 0; p < planeCount; ++p) {
                 uint64_t* dst = reinterpret_cast<uint64_t*>(linePtr);
                 for (int x = 0; x < width; x += 8) {
-                    int byteposition = x / 8 + p * width / 8 + y * planeCount * width / 8;
-                    uint64_t src = body.data[byteposition];
-                    *dst <<= 1;
+                    uint64_t src = *srcPtr; // overprovision to allow shifts without warning
                     uint64_t spread = ((src >> 7) & 1) << 0
                         | ((src >> 6) & 1) << 8
                         | ((src >> 5) & 1) << 16
@@ -317,8 +316,72 @@ struct ILBMDataParser {
                         | ((src >> 2) & 1) << 40
                         | ((src >> 1) & 1) << 48
                         | ((src >> 0) & 1) << 56;
-                    *dst |= spread;
-                    dst += 1;
+                    *dst |= (spread << p);
+                    ++dst;
+                    ++srcPtr;
+                }
+            }
+            linePtr += bufferPitch;
+        }
+    }
+
+    void inflateAndDeinterleaveInto(uint8_t* buffer, size_t bufferSize, size_t bufferPitch) {
+        auto header = this->getHeader();
+        assert(header.compression == ILBMCompression::ByteRun1);
+
+        const int width = header.width.native();
+        const int wordsPerRow = (width + 15) / 16;
+        const int height = header.height.native();
+        int planeCount = header.planeCount;
+        auto body = this->getBody();
+        assert(width % 8 == 0);
+        assert(bufferPitch >= width);
+        assert(bufferSize >= height * bufferPitch);
+        uint8_t* linePtr = buffer;
+        const uint8_t* srcPtr = body.data;
+        for (int y = 0; y < height; ++y) {
+            for (int p = 0; p < planeCount; ++p) {
+                uint64_t* dst = reinterpret_cast<uint64_t*>(linePtr);
+                // decode each row separately
+                int bytesLeftInRowToDecode = wordsPerRow * 2;
+                while (bytesLeftInRowToDecode > 0) {
+                    int8_t currentDecodeByte = *srcPtr;
+
+                    while (currentDecodeByte == -128) {
+                        ++srcPtr;
+                        currentDecodeByte = *srcPtr;
+                    };
+                    ++srcPtr;
+                    uint8_t currentSrcByte = *srcPtr;
+
+                    int count = currentDecodeByte;
+                    if (currentDecodeByte < 0) {
+                        count = (-currentDecodeByte + 1);
+                    } else {
+                        count = currentDecodeByte + 1;
+                    }
+                    while (count > 0 && bytesLeftInRowToDecode > 0) {
+                        uint64_t src = currentSrcByte; // overprovision to allow shifts without warning
+                        uint64_t spread = ((src >> 7) & 1) << 0
+                            | ((src >> 6) & 1) << 8
+                            | ((src >> 5) & 1) << 16
+                            | ((src >> 4) & 1) << 24
+                            | ((src >> 3) & 1) << 32
+                            | ((src >> 2) & 1) << 40
+                            | ((src >> 1) & 1) << 48
+                            | ((src >> 0) & 1) << 56;
+                        *dst |= (spread << p);
+                        ++dst;
+                        --bytesLeftInRowToDecode;
+                        count--;
+                        if ( currentDecodeByte >= 0 ) {
+                            ++srcPtr;
+                            currentSrcByte = *srcPtr;
+                        }
+                    }
+                    if ( currentDecodeByte < 0 ) {
+                        ++srcPtr;
+                    }
                 }
             }
             linePtr += bufferPitch;
