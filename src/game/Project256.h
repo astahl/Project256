@@ -3,8 +3,6 @@
 
 #include "defines.h"
 
-#include "Profiling/Timings.h"
-
 // global static constants
 
 constant long MemorySize = 1024 * 1024 * 8; // 8 MBytes

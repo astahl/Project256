@@ -9,5 +9,7 @@
 #define BridgeHeader_h
 
 #include "../game/Project256.h"
+#include "../game/Profiling/Timings.h"
 #include "MetalViewShaderTypes.h"
+
 #endif /* BridgeHeader_h */

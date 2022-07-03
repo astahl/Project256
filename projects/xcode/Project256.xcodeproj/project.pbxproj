@@ -51,6 +51,8 @@
 		6819ACC4283EDFFC00CCBFD5 /* MetalViewShader.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = MetalViewShader.metal; sourceTree = "<group>"; };
 		6819ACC7283EE19500CCBFD5 /* MetalViewShaderTypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MetalViewShaderTypes.h; sourceTree = "<group>"; };
 		6819ACC8283EE6CB00CCBFD5 /* BridgeHeader.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BridgeHeader.h; sourceTree = "<group>"; };
+		681C0C502871A6310021710E /* Timers.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Timers.hpp; sourceTree = "<group>"; };
+		681C0C52287228EB0021710E /* TestBed.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = TestBed.hpp; sourceTree = "<group>"; };
 		68455589283D7F08004AD3FB /* Project256.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Project256.cpp; sourceTree = "<group>"; };
 		6845558A283D7F08004AD3FB /* Project256.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Project256.h; sourceTree = "<group>"; };
 		6845558E283D8043004AD3FB /* Project256App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Project256App.swift; sourceTree = "<group>"; };
@@ -98,9 +100,18 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		681C0C512871A6690021710E /* Utility */ = {
+			isa = PBXGroup;
+			children = (
+				681C0C502871A6310021710E /* Timers.hpp */,
+			);
+			path = Utility;
+			sourceTree = "<group>";
+		};
 		6821D85B28591C01008D4128 /* Game */ = {
 			isa = PBXGroup;
 			children = (
+				681C0C512871A6690021710E /* Utility */,
 				6821D85F28591D14008D4128 /* Math */,
 				6821D85E28591CDE008D4128 /* Profiling */,
 				6821D85D28591CC7008D4128 /* FML */,
@@ -108,6 +119,7 @@
 				68455589283D7F08004AD3FB /* Project256.cpp */,
 				6845558A283D7F08004AD3FB /* Project256.h */,
 				68A8725D28591EBB0033DBCB /* defines.h */,
+				681C0C52287228EB0021710E /* TestBed.hpp */,
 			);
 			name = Game;
 			path = ../../src/game;

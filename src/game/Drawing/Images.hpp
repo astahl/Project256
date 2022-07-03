@@ -369,6 +369,11 @@ constexpr ImageView<T, Origin> makeSubImage(T&& image, ptrdiff_t x, ptrdiff_t y,
     };
 }
 
+namespace {
+template <typename T>
+constexpr T min(T a, T b) { return (a < b) ? a : b; }
+}
+
 
 template <typename T, typename U>
 constexpr void imageCopy(const T& source, U&& destination) {

@@ -9,6 +9,8 @@
 #pragma once
 #include <cstdint>
 #include <array>
+#include "../Drawing/Generators.hpp"
+#include "../Math/Vec2Math.hpp"
 
 template<int W, int H, typename T = uint8_t>
 struct Buffer {
