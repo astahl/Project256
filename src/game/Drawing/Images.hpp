@@ -369,12 +369,6 @@ constexpr ImageView<T, Origin> makeSubImage(T&& image, ptrdiff_t x, ptrdiff_t y,
     };
 }
 
-namespace {
-template <typename T>
-constexpr T min(T a, T b) { return (a < b) ? a : b; }
-}
-
-
 template <typename T, typename U>
 constexpr void imageCopy(const T& source, U&& destination) {
     using DestinationType = std::decay_t<U>;
@@ -382,7 +376,7 @@ constexpr void imageCopy(const T& source, U&& destination) {
     auto sourceLines = source.template lines<DestinationType::LineOrder>();
     auto destinationLines = destination.lines();
 
-    const size_t lineWidth = min(sourceLines.length(), destinationLines.length()) * sizeof(Pixel);
+    const size_t lineWidth = std::min(sourceLines.length(), destinationLines.length()) * sizeof(Pixel);
     auto src = sourceLines.begin();
     auto srcEnd = sourceLines.end();
     auto dst = destinationLines.begin();
@@ -401,7 +395,7 @@ constexpr void imageBlitWithTransparentColor(const T& source, U&& destination, C
     auto sourceLines = source.template lines<DestinationType::LineOrder>();
     auto destinationLines = destination.lines();
 
-    const size_t lineWidth = min(sourceLines.length(), destinationLines.length()) * sizeof(Pixel);
+    const size_t lineWidth = std::min(sourceLines.length(), destinationLines.length()) * sizeof(Pixel);
     auto src = sourceLines.begin();
     auto srcEnd = sourceLines.end();
     auto dst = destinationLines.begin();

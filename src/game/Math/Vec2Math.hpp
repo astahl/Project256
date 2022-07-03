@@ -9,6 +9,7 @@
 #include <cmath>
 #include <type_traits>
 #include <utility>
+#include <array>
 
 
 template <typename T>

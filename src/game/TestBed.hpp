@@ -8,29 +8,17 @@
 #pragma once
 
 #include "Project256.h"
-#include "Drawing/Images.hpp"
-#include "Utility/Timers.hpp"
-#include "Drawing/Sprites.hpp"
+#include "FML/RangesAtHome.hpp"
+#include "Drawing/InterleavedBitmaps.hpp"
 #include "Math/Vec2Math.hpp"
+#include "Drawing/Sprites.hpp"
+#include "Utility/Timers.hpp"
+#include "Drawing/Images.hpp"
 #include "Drawing/Palettes.hpp"
 #include "Drawing/Generators.hpp"
-#include "Drawing/InterleavedBitmaps.hpp"
-#include "FML/RangesAtHome.hpp"
 
 
 using DrawBuffer = Image<uint32_t, DrawBufferWidth, DrawBufferHeight>;
-
-
-template<typename Color, typename Vec2 = Vec2i, int Pitch = DrawBufferWidth>
-compiletime void put(uint8_t* drawBuffer, Vec2 position, Color color)
-{
-    assert(drawBuffer != nullptr);
-    assert(position.x >= 0);
-    assert(position.x < DrawBufferWidth);
-    assert(position.y >= 0);
-    assert(position.y < DrawBufferHeight);
-    drawBuffer[static_cast<int>(position.x) + static_cast<int>(position.y) * Pitch] = static_cast<uint8_t>(color);
-}
 
 
 constant int TextCharacterW = 8;
@@ -207,8 +195,8 @@ struct TestBed {
 
         }
 
-        constant auto whitePixel = [&](const auto& p) { put(memory.vram.data(), p, white); };
-        constant auto redPixel = [&](const auto& p) { put(memory.vram.data(), p, red); };
+        constant auto whitePixel = [&](const auto& p) { memory.vram.pixel(p) = white; };
+        constant auto redPixel = [&](const auto& p) { memory.vram.pixel(p) = red; };
 
         // handle timers
         if (memory.directionChangeTimer.hasFired(time) || memory.birdTarget == round(memory.birdPosition)) {
@@ -342,7 +330,7 @@ struct TestBed {
 
             if (input.mouse.buttonLeft.endedDown) {
                 for (auto p : rectangleGenerator | atMouse | clipped)
-                    put(memory.vram.data(), wrap(p), green);
+                    memory.vram.pixel(wrap(p)) = green;
             }
 
             compiletime auto crossGenerator = (HLine{{-3, 0}, 7} ^ VLine{{0, -3}, 7});
@@ -422,7 +410,7 @@ struct TestBed {
         memory.birdPosition = memory.birdPosition + static_cast<float>(input.elapsedTime_s) * memory.birdSpeed * normalized(itof(memory.birdTarget) - memory.birdPosition);
         memory.birdPosition = clamp(memory.birdPosition, Vec2f{}, Vec2f{DrawBufferWidth - 1, DrawBufferHeight - 1});
 
-        put(memory.vram.data(), memory.birdTarget, lightBlue);
+        memory.vram.pixel(memory.birdTarget) = lightBlue;
 
         // draw
         blitSprite(memory.sprite, memory.currentSpriteFrame, memory.vram.data(), DrawBufferWidth, truncate(memory.birdPosition), Vec2i{}, Vec2i{DrawBufferWidth, DrawBufferHeight});
@@ -442,7 +430,7 @@ struct TestBed {
                     {
                         const uint8_t t = textPointer[pos];
                         const uint8_t color = textColorPointer[pos];
-                        uint64_t pixels8 = spread(memory.characterROM.pixel(0, t * 8 + y));
+                        const uint64_t pixels8 = spread(memory.characterROM.pixel(0, t * 8 + y));
                         const uint64_t background = ~(pixels8 * 0xFF) / 0xFF;
                         // colors! top nibble is background, bottom nibble foreground
                         *dst++ = pixels8 * (color & 0xF) | background * (color >> 4);
