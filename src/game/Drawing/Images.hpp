@@ -187,7 +187,7 @@ struct ImageView {
                 .width = width,
             }; }
             constexpr Iterator& operator++() { ++y; return *this; }
-            constexpr bool operator!=(Sentinel) const { return y != height; }
+            constexpr bool operator!=(Sentinel) const { return 0 != height - y; }
         };
         struct FlippedIterator {
             T* iteratorData;
@@ -297,16 +297,18 @@ struct ImageView {
 };
 
 
-template<typename T = uint8_t>
+template<typename T = uint8_t, size_t Width = sizeof(T) * 8>
 struct BitmapCell {
     T bits;
 
-    compiletime std::array<T, sizeof(T) * 8> mask = [](){
-        std::array<T, sizeof(T) * 8> masks{};
-        T mask = 1;
-        for (int i = masks.size() - 1; i >= 0; --i) {
-            masks[i] = mask;
-            mask <<= 1;
+    using MaskArray = std::array<T, Width>;
+
+    compiletime MaskArray mask = []() {
+        MaskArray masks{};
+        T maskBit = 1;
+        for (auto i = Width; i > 0; --i) {
+            masks[i - 1] = maskBit;
+            maskBit <<= 1;
         }
         return masks;
     }();
@@ -336,8 +338,6 @@ using BitmapImage = Image<BitmapCell<T>, Width / (sizeof(T) * 8), Height, O>;
 constexpr uint64_t spread(const BitmapCell<uint8_t>& cell) {
     using Cell = BitmapCell<uint8_t>;
     uint64_t c = cell.bits;
-    Cell::mask[0];
-
     return (c & Cell::mask[0]) >> 7
         | (c & Cell::mask[1]) << 2
         | (c & Cell::mask[2]) << 11
@@ -362,10 +362,10 @@ constexpr ImageView<T, Origin> makeSubImage(T&& image, ptrdiff_t x, ptrdiff_t y,
 
     return ImageView<T, Origin>{
         .image = static_cast<T&&>(image),
-        .mOriginY = y,
-        .mOriginX = x,
         .mWidth = width,
-        .mHeight = height
+        .mHeight = height,
+        .mOriginX = x,
+        .mOriginY = y,
     };
 }
 
@@ -388,9 +388,11 @@ constexpr void imageCopy(const T& source, U&& destination) {
     }
 }
 
-template <typename T, typename U, typename C = typename T::PixelType>
-constexpr void imageBlitWithTransparentColor(const T& source, U&& destination, C transparentColor) {
+template <typename T, typename U>
+constexpr void imageBlitWithTransparentColor(const T& source, U&& destination, typename T::PixelType transparentColor) {
     using DestinationType = std::decay_t<U>;
+    using SourceType = std::decay_t<T>;
+    using SrcPixel = typename SourceType::PixelType;
     using Pixel = typename DestinationType::PixelType;
     auto sourceLines = source.template lines<DestinationType::LineOrder>();
     auto destinationLines = destination.lines();
@@ -403,9 +405,9 @@ constexpr void imageBlitWithTransparentColor(const T& source, U&& destination, C
 
     while (src != srcEnd && dst != dstEnd) {
         for (size_t i = 0; i < lineWidth; ++i) {
-            C srcColor = *((*src).firstPixel + i);
+            SrcPixel srcColor = *((*src).firstPixel + i);
             if (srcColor != transparentColor)
-                *((*dst).firstPixel + i) = srcColor;
+                *((*dst).firstPixel + i) = static_cast<Pixel>(srcColor);
         }
         ++src; ++dst;
     }

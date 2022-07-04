@@ -461,11 +461,11 @@ struct TestBed {
         uint8_t* vram = memory.vram.data();
         uint32_t* drawBuffer = buffer.data();
 
-        constant uint32_t stride = sizeof(uint64_t);
-        constant uint32_t width = DrawBuffer{}.width();
-        constant uint32_t height = DrawBuffer{}.height();
-        constant uint32_t destpitch = DrawBuffer{}.pitch();
-        constant uint32_t vrampitch = decltype(memory.vram){}.pitch();
+        constant auto stride = sizeof(uint64_t);
+        constant auto width = DrawBuffer{}.width();
+        constant auto height = DrawBuffer{}.height();
+        constant auto destpitch = DrawBuffer{}.pitch();
+        constant auto vrampitch = decltype(memory.vram){}.pitch();
         if constexpr (width % stride == 0)
         {
             const uint32_t* palette = memory.palette.data();

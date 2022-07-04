@@ -11,6 +11,8 @@
 #include <vector>
 #include <utility>
 #include <memory>
+#include <type_traits>
+#include <algorithm>
 
 namespace ranges_at_home {
 
@@ -19,7 +21,7 @@ class Something {};
 
 
 template <typename T, typename U>
-using is_not_same = std::bool_constant<std::negation_v<std::is_same_v<T, U>>>;
+using is_not_same = std::bool_constant<std::negation_v<std::is_same<T, U>>>;
 
 template <typename T, size_t N = 0>
 struct iterator {};
@@ -127,7 +129,7 @@ template <typename T>
 constant bool is_range_v = is_range<T>::value;
 
 template <typename ...T>
-using enable_for_range_t = std::enable_if_t<std::conjunction_v<is_range_v<std::decay_t<T>>...>, bool>;
+using enable_for_range_t = std::enable_if_t<std::conjunction_v<is_range<std::decay_t<T>>...>, bool>;
 
 
 

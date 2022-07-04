@@ -2,6 +2,7 @@
 
 #include <Windows.h>
 #include "../game/Project256.h"
+#include "../game/Profiling/Timings.h"
 
 class Chronometer {
     LARGE_INTEGER frequency = {};
