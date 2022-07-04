@@ -301,6 +301,10 @@ struct ILBMDataParser {
         assert(width % 8 == 0);
         assert(bufferPitch >= width);
         assert(bufferSize >= height * bufferPitch);
+#ifdef NDEBUG 
+        // in release build the assert above is removed, so bufferSize becomes unreferenced if we don't do something
+        bufferSize = bufferSize;
+#endif
         uint8_t* linePtr = buffer;
         const uint8_t* srcPtr = body.data;
         for (int y = 0; y < height; ++y) {
@@ -337,6 +341,10 @@ struct ILBMDataParser {
         assert(width % 8 == 0);
         assert(bufferPitch >= width);
         assert(bufferSize >= height * bufferPitch);
+#ifdef NDEBUG 
+        // in release build the assert above is removed, so bufferSize becomes unreferenced if we don't do something
+        bufferSize = bufferSize;
+#endif
         uint8_t* linePtr = buffer;
         const uint8_t* srcPtr = body.data;
         for (int y = 0; y < height; ++y) {
