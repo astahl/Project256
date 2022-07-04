@@ -461,22 +461,27 @@ struct TestBed {
         uint8_t* vram = memory.vram.data();
         uint32_t* drawBuffer = buffer.data();
 
-        if constexpr (DrawBuffer{}.width() % 8 == 0)
+        constant uint32_t stride = sizeof(uint64_t);
+        constant uint32_t width = DrawBuffer{}.width();
+        constant uint32_t height = DrawBuffer{}.height();
+        constant uint32_t destpitch = DrawBuffer{}.pitch();
+        constant uint32_t vrampitch = decltype(memory.vram){}.pitch();
+        if constexpr (width % stride == 0)
         {
             const uint32_t* palette = memory.palette.data();
-            for (uint32_t y = 0; y < DrawBufferHeight; ++y) {
-                uint64_t* src = reinterpret_cast<uint64_t*>(vram + y * DrawBufferWidth);
-                uint64_t* dst = reinterpret_cast<uint64_t*>(drawBuffer + y * DrawBufferWidth);
-                for (uint32_t x = 0; x < DrawBufferWidth; x += 8) {
+            for (uint32_t y = 0; y < height; ++y) {
+                uint64_t* src = reinterpret_cast<uint64_t*>(vram + y * vrampitch);
+                uint64_t* dst = reinterpret_cast<uint64_t*>(drawBuffer + y * destpitch);
+                for (uint32_t x = 0; x < width; x += stride) {
                     const uint64_t sourcePixel8 = *src++;
 
-                    *dst = static_cast<uint64_t>(palette[sourcePixel8 >> 0 & 0xff]) |
+                    dst[0] = static_cast<uint64_t>(palette[sourcePixel8 >> 0 & 0xff]) |
                         static_cast<uint64_t>(palette[sourcePixel8 >> 8 & 0xff]) << 32;
-                    *(dst + 1) = static_cast<uint64_t>(palette[sourcePixel8 >> 16 & 0xff]) |
+                    dst[1] = static_cast<uint64_t>(palette[sourcePixel8 >> 16 & 0xff]) |
                         static_cast<uint64_t>(palette[sourcePixel8 >> 24 & 0xff]) << 32;
-                    *(dst + 2) = static_cast<uint64_t>(palette[sourcePixel8 >> 32 & 0xff]) |
+                    dst[2] = static_cast<uint64_t>(palette[sourcePixel8 >> 32 & 0xff]) |
                         static_cast<uint64_t>(palette[sourcePixel8 >> 40 & 0xff]) << 32;
-                    *(dst + 3) = static_cast<uint64_t>(palette[sourcePixel8 >> 48 & 0xff]) |
+                    dst[3] = static_cast<uint64_t>(palette[sourcePixel8 >> 48 & 0xff]) |
                         static_cast<uint64_t>(palette[sourcePixel8 >> 56 & 0xff]) << 32;
                     dst += 4;
                 }
