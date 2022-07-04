@@ -31,8 +31,8 @@ struct Image {
         using PixelType = T;
         T* firstPixel;
         constexpr T& pixel(ptrdiff_t x) {
-            assert(x < Width);
             assert(x >= 0);
+            assert(static_cast<size_t>(x) < Width);
             return *(firstPixel + x);
         }
         constexpr size_t size() { return Width; }
@@ -163,8 +163,8 @@ struct ImageView {
         T* firstPixel;
         size_t width;
         constexpr T& pixel(ptrdiff_t x) {
-            assert(x < width);
             assert(x >= 0);
+            assert(static_cast<size_t>(x) < width);
             return *(firstPixel + x);
         }
         constexpr size_t size() { return width; }
@@ -405,9 +405,9 @@ constexpr void imageBlitWithTransparentColor(const T& source, U&& destination, t
 
     while (src != srcEnd && dst != dstEnd) {
         for (size_t i = 0; i < lineWidth; ++i) {
-            SrcPixel srcColor = *((*src).firstPixel + i);
+            SrcPixel srcColor = (*src).pixel(i);
             if (srcColor != transparentColor)
-                *((*dst).firstPixel + i) = static_cast<Pixel>(srcColor);
+                (*dst).pixel(i) = static_cast<Pixel>(srcColor);
         }
         ++src; ++dst;
     }
