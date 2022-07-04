@@ -7,15 +7,16 @@
 
 #pragma once
 
-#include "Project256.h"
 #include "FML/RangesAtHome.hpp"
 #include "Drawing/InterleavedBitmaps.hpp"
 #include "Math/Vec2Math.hpp"
 #include "Drawing/Sprites.hpp"
 #include "Utility/Timers.hpp"
+#include "Utility/Text.hpp"
 #include "Drawing/Images.hpp"
 #include "Drawing/Palettes.hpp"
 #include "Drawing/Generators.hpp"
+#include "Project256.h"
 
 
 using DrawBuffer = Image<uint32_t, DrawBufferWidth, DrawBufferHeight>;
@@ -97,6 +98,7 @@ struct TestBed {
 
     static GameOutput doGameThings(TestBedMemory& memory, const GameInput& input, const PlatformCallbacks& callbacks)
     {
+
         using namespace ranges_at_home;
         using namespace Generators;
 
@@ -125,6 +127,7 @@ struct TestBed {
 
         // initialize main memory
         if (input.frameNumber == 0) {
+            printf("libver: %d cpp: %ld", _LIBCPP_STD_VER, __cplusplus);
             std::memset(&memory, 0, MemorySize);
 
             std::memset(memory.palette.data(), 0xFF, memory.palette.size() * 4);
@@ -230,76 +233,64 @@ struct TestBed {
         auto subImage2 = makeSubImage(memory.vram, 100, 100, 16, 16);
         imageBlitWithTransparentColor(subImage, subImage2, 0);
 
-        for (unsigned int i = 0; i < input.textLength; ++i) {
-            uint8_t inputChar = input.text_utf8[i];
-            if ((inputChar & 0b10000000) == 0) {
-                // input is ASCII (top bit is zero)
-                switch (inputChar) {
-                    case 0x7F: // Delete == backspace on modern keyboards
-                    case 0x08: // backspace
-                        if (memory.textCursorPosition > 0) {
-                            memory.textBuffer[--memory.textCursorPosition] = CharacterTable[' '];
-                        }
-                        break;
-                    case 0x09: // tab
-                        memory.textCursorPosition += 4 - ((memory.textCursorPosition) % 4);
-                        break;
-                    case 0x19: // untab
-                        memory.textCursorPosition -= 4 - ((memory.textCursorPosition) % 4);
-                        break;
-                    case 0x0D: // Carriage Return (Enter on mac)
-                    {
-                        int lineNumber = memory.textCursorPosition / TextLineLength;
-                        memory.textCursorPosition = (lineNumber + 1) * TextLineLength;
-                        break;
-                    }
-                    default: {
-                        uint8_t outputChar = CharacterTable[inputChar];
-                        if (outputChar != 0xFF) {
-                            memory.textBuffer[memory.textCursorPosition++] = CharacterTable[inputChar];
-                        } else {
-                            char upper = inputChar >> 4;
-                            char lower = inputChar & 0xF;
-                            memory.textBuffer[memory.textCursorPosition++] = CharacterTable[upper > 9 ? (upper - 10) + 'a' : upper + '0'];
-                            memory.textBuffer[memory.textCursorPosition++] = CharacterTable[lower > 9 ? (lower - 10) + 'a' : lower + '0'];
-                        }
-                    }
-                }
-            } else {
-                // chomp through UTF-8 encoding
+        if (input.textLength) {
+            auto text = array_view<const char>{input.text_utf8, input.textLength};
 
-                int onesCount = 0;
-                for (;((inputChar & (0b10000000 >> onesCount)) != 0) && onesCount <= 5; ++onesCount) {
-                    // just chomping through bits until I find a zero, don't mind me!
-                }
-                assert(onesCount > 1);
-                    // starting with 10 is invalid for the first chunk of a utf8 code
-                assert(onesCount != 5);
-                    // this should not happen in a utf-8 string
-                // the resulting unicode codepoint
-                uint32_t code = (0b01111111 >> onesCount) & inputChar;
-                while ((++i < input.textLength) && (--onesCount > 0)) {
-                    code <<= 6;
-                    inputChar = input.text_utf8[i];
-                    code |= inputChar & 0b00111111;
-                }
-
-                switch (code) {
-                    // MacBook Arrow Keys
-                    case 0xF700: memory.textCursorPosition -= TextLineLength; break;
-                    case 0xF701: memory.textCursorPosition += TextLineLength; break;
-                    case 0xF702: memory.textCursorPosition -= 1; break;
-                    case 0xF703: memory.textCursorPosition += 1; break;
-                    // macbook fn + backspace = delete?
-                    case 0xF728: memory.textBuffer[memory.textCursorPosition] = CharacterTable[' ']; break;
-                    default:
-                        printf("%x\n", code);
+            for (auto utf8 : Utf8CodepointsView<array_view<const char>>{text}) {
+                if (utf8 < 256) {
+                    // input is in 8 bit range
+                    switch (utf8) {
+                        case 0x7F: // Delete == backspace on modern keyboards
+                        case 0x08: // backspace
+                            if (memory.textCursorPosition > 0) {
+                                memory.textBuffer[--memory.textCursorPosition] = CharacterTable[' '];
+                            }
+                            break;
+                        case 0x09: // tab
+                            memory.textCursorPosition += 4 - ((memory.textCursorPosition) % 4);
+                            break;
+                        case 0x19: // untab
+                            memory.textCursorPosition -= 4 - ((memory.textCursorPosition) % 4);
+                            break;
+                        case 0x0D: // Carriage Return (Enter on mac)
+                        {
+                            int lineNumber = memory.textCursorPosition / TextLineLength;
+                            memory.textCursorPosition = (lineNumber + 1) * TextLineLength;
+                            break;
+                        }
+                        default: {
+                            uint8_t outputChar = CharacterTable[utf8];
+                            if (outputChar != 0xFF) {
+                                memory.textBuffer[memory.textCursorPosition++] = outputChar;
+                            } else {
+                                memory.textBuffer[memory.textCursorPosition++] = utf8;
+//                                char upper = utf8 >> 4;
+//                                char lower = utf8 & 0xF;
+//                                memory.textBuffer[memory.textCursorPosition++] = CharacterTable[upper > 9 ? (upper - 10) + 'a' : upper + '0'];
+//                                memory.textBuffer[memory.textCursorPosition++] = CharacterTable[lower > 9 ? (lower - 10) + 'a' : lower + '0'];
+                            }
+                        }
+                    }
+                } else {
+                    switch (utf8) {
+                        // MacBook Arrow Keys
+                        case 0xF700: memory.textCursorPosition -= TextLineLength; break;
+                        case 0xF701: memory.textCursorPosition += TextLineLength; break;
+                        case 0xF702: memory.textCursorPosition -= 1; break;
+                        case 0xF703: memory.textCursorPosition += 1; break;
+                        // macbook fn + backspace = delete?
+                        case 0xF728: memory.textBuffer[memory.textCursorPosition] = CharacterTable[' ']; break;
+                        default:
+                            memory.textBuffer[memory.textCursorPosition++] = utf8 % 256;
+                            printf("%x\n", utf8);
+                    }
                 }
 
             }
+
+
             memory.textCursorPosition = std::clamp(memory.textCursorPosition, 0, (memory.textLastLine - memory.textFirstLine + 1) * TextLineLength);
         }
-
 
         // do some experimentation in the vram
         compiletime auto wrap = [](auto p) { return wrapAround2d(p, Vec2i(), Vec2i{DrawBufferWidth, DrawBufferHeight});};

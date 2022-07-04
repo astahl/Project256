@@ -263,20 +263,14 @@ union ColorArgb {
     uint32_t value;
 };
 
-template <typename T, typename U>
-constexpr auto min(T left, U right)
-{
-    return (left < right) ? left : right;
-}
-
 constexpr ColorArgb operator+(ColorArgb left, ColorArgb right)
 {
     return ColorArgb {
         .components {
-            .b = static_cast<uint8_t>(left.components.b + min(255 - left.components.b, right.components.b)),
-            .g = static_cast<uint8_t>(left.components.g + min(255 - left.components.g, right.components.g)),
-            .r = static_cast<uint8_t>(left.components.r + min(255 - left.components.r, right.components.r)),
-            .a = static_cast<uint8_t>(left.components.a + min(255 - left.components.a, right.components.a)),
+            .b = static_cast<uint8_t>(std::clamp(left.components.b + right.components.b, 0, 255)),
+            .g = static_cast<uint8_t>(std::clamp(left.components.g + right.components.g, 0, 255)),
+            .r = static_cast<uint8_t>(std::clamp(left.components.r + right.components.r, 0, 255)),
+            .a = static_cast<uint8_t>(std::clamp(left.components.a + right.components.a, 0, 255)),
          }
     };
 }
@@ -285,10 +279,10 @@ constexpr ColorArgb operator-(ColorArgb left, ColorArgb right)
 {
     return ColorArgb {
         .components {
-            .b = static_cast<uint8_t>(left.components.b - min(left.components.b, right.components.b)),
-            .g = static_cast<uint8_t>(left.components.g - min(left.components.g, right.components.g)),
-            .r = static_cast<uint8_t>(left.components.r - min(left.components.r, right.components.r)),
-            .a = static_cast<uint8_t>(left.components.a - min(left.components.a, right.components.a)),
+            .b = static_cast<uint8_t>(std::clamp(left.components.b - right.components.b, 0, 255)),
+            .g = static_cast<uint8_t>(std::clamp(left.components.g - right.components.g, 0, 255)),
+            .r = static_cast<uint8_t>(std::clamp(left.components.r - right.components.r, 0, 255)),
+            .a = static_cast<uint8_t>(std::clamp(left.components.a - right.components.a, 0, 255)),
         }
     };
 }

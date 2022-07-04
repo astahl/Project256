@@ -19,7 +19,6 @@ namespace ranges_at_home {
 template <typename...> struct WhichType;
 class Something {};
 
-
 template <typename T, typename U>
 using is_not_same = std::bool_constant<std::negation_v<std::is_same<T, U>>>;
 
@@ -131,7 +130,23 @@ constant bool is_range_v = is_range<T>::value;
 template <typename ...T>
 using enable_for_range_t = std::enable_if_t<std::conjunction_v<is_range<std::decay_t<T>>...>, bool>;
 
+template <typename T>
+struct array_view {
+    T* mPtr;
+    size_t mSize;
 
+    constexpr T* begin() const {
+        return mPtr;
+    }
+
+    constexpr T* end() const {
+        return mPtr + mSize;
+    }
+
+    constexpr size_t size() const {
+        return mSize;
+    }
+};
 
 template<typename T, typename Func>
 struct transform_view final {
