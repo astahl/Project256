@@ -14,10 +14,6 @@
 
 namespace Generators {
 
-template <typename T>
-compiletime T abs(T x) { return x < 0 ? -x : x; }
-template <typename T>
-compiletime void swap(T& x, T& y) { T temp = x; x = y; y = temp; }
 
 struct Rectangle {
     Vec2i bottomLeft{};
@@ -142,12 +138,12 @@ struct Line {
         Vec2i diff = mTo - mFrom;
         if (abs(diff.x) < abs(diff.y)) {
             mSteep = true;
-            swap(mTo.x, mTo.y);
-            swap(mFrom.x, mFrom.y);
+            std::swap(mTo.x, mTo.y);
+            std::swap(mFrom.x, mFrom.y);
         }
 
         if (mFrom.x > mTo.x)
-            swap(mFrom, mTo);
+            std::swap(mFrom, mTo);
 
         mD = mTo - mFrom;
         if (mD.y < 0)

@@ -13,14 +13,10 @@
 
 
 template <typename T>
-using is_vec2 = std::bool_constant<std::disjunction_v<std::is_same<T, Vec2i>, std::is_same<T, Vec2f>>>;
-
-
-template <typename T>
-const bool is_vec2_v = is_vec2<T>::value;
-
-template <typename ...T>
-using enable_for_vec_t = std::enable_if_t<std::conjunction_v<is_vec2<T>...>, bool>;
+concept aVec2 = requires(T v) {
+    v.x;
+    v.y;
+};
 
 template <typename T>
 struct vec2 {};
@@ -36,26 +32,26 @@ struct vec2_scalar {};
 
 template <> struct vec2_scalar<vec2_t<float>> { using type = float; };
 template <> struct vec2_scalar<vec2_t<int>> { using type = int; };
-template <typename T>
+template <aVec2 T>
 using vec2_scalar_t = typename vec2_scalar<T>::type;
 
 
-template<typename V, typename W, typename R = decltype(vec2_scalar_t<V>{} * vec2_scalar_t<W>{})>
+template<aVec2 V, aVec2 W, typename R = decltype(vec2_scalar_t<V>{} * vec2_scalar_t<W>{})>
 constexpr R dot(V left, W right) {
     return left.x * right.x + left.y * right.y;
 }
 
-template<typename V, enable_for_vec_t<V> = true>
+template<aVec2 V>
 constexpr float length(V vec) {
     return sqrtf(static_cast<float>(dot(vec, vec)));
 }
 
-template<typename V, enable_for_vec_t<V> = true>
+template<aVec2 V>
 auto atan2(V vec) {
     return std::atan2(vec.y, vec.x);
 }
 
-template<typename V, typename R = vec2_t<decltype(vec2_scalar_t<V>{} / float{})>, enable_for_vec_t<V> = true>
+template<aVec2 V, aVec2 R = vec2_t<decltype(vec2_scalar_t<V>{} / float{})>>
 constexpr R normalized(V vec) {
     auto leng = length(vec);
     if (leng == 0.0) return R{1.0f, 0.0f};
@@ -73,7 +69,7 @@ enum class Vec2SwizzleMask : uint8_t {
     SwapNegate = 7
 };
 
-template<Vec2SwizzleMask mask, typename V, enable_for_vec_t<V> = true>
+template<Vec2SwizzleMask mask, aVec2 V>
 constexpr V swizzled(V vec) {
     V result{};
     if constexpr ((static_cast<uint8_t>(mask) & static_cast<uint8_t>(Vec2SwizzleMask::Swap)) == static_cast<uint8_t>(Vec2SwizzleMask::Swap)) {
@@ -90,66 +86,66 @@ constexpr V swizzled(V vec) {
     return result;
 }
 
-template<typename V, typename W, typename R = decltype(vec2_scalar_t<V>{} - vec2_scalar_t<W>{})>
+template<aVec2 V, aVec2 W, typename R = decltype(vec2_scalar_t<V>{} - vec2_scalar_t<W>{})>
 constexpr vec2_t<R> operator-(V left, W right) {
     return vec2_t<R>{left.x - right.x, left.y - right.y};
 }
 
-template<typename V, typename W, typename R = decltype(vec2_scalar_t<V>{} + vec2_scalar_t<W>{})>
+template<aVec2 V, aVec2 W, typename R = decltype(vec2_scalar_t<V>{} + vec2_scalar_t<W>{})>
 constexpr vec2_t<R> operator+(V left, W right) {
     return vec2_t<R>{left.x + right.x, left.y + right.y};
 }
 
-template<typename V, typename W, typename R = decltype(vec2_scalar_t<V>{} * vec2_scalar_t<W>{})>
+template<aVec2 V, aVec2 W, typename R = decltype(vec2_scalar_t<V>{} * vec2_scalar_t<W>{})>
 constexpr vec2_t<R> operator*(V left, W right) {
     return vec2_t<R>{left.x * right.x, left.y * right.y};
 }
 
-template<typename Vec1, typename Vec2, enable_for_vec_t<Vec1, Vec2> = true>
-constexpr bool operator<(Vec1 left, Vec2 right)
+template<aVec2 V, aVec2 W>
+constexpr bool operator<(V left, W right)
 {
     return left.x < right.x && left.y < right.y;
 }
 
-template<typename T, enable_for_vec_t<T> = true>
+template<aVec2 T>
 constexpr T operator-(T vec)
 {
     return T{ -vec.x, -vec.y };
 }
 
 
-template<typename Vec1, typename Vec2, enable_for_vec_t<Vec1, Vec2> = true>
-constexpr bool operator<=(Vec1 left, Vec2 right)
+template<aVec2 V, aVec2 W>
+constexpr bool operator<=(V left, W right)
 {
     return left.x <= right.x && left.y <= right.y;
 }
 
-template<typename Vec1, typename Vec2, enable_for_vec_t<Vec1, Vec2> = true>
-constexpr bool operator>(Vec1 left, Vec2 right)
+template<aVec2 V, aVec2 W>
+constexpr bool operator>(V left, W right)
 {
     return left.x > right.x && left.y > right.y;
 }
 
-template<typename Vec1, typename Vec2, enable_for_vec_t<Vec1, Vec2> = true>
-constexpr bool operator>=(Vec1 left, Vec2 right)
+template<aVec2 V, aVec2 W>
+constexpr bool operator>=(V left, W right)
 {
     return left.x >= right.x && left.y >= right.y;
 }
 
 
-template<typename Vec1, typename Vec2, enable_for_vec_t<Vec1, Vec2> = true>
-constexpr bool operator==(Vec1 left, Vec2 right )
+template<aVec2 V, aVec2 W>
+constexpr bool operator==(V left, W right)
 {
     return left.x == right.x && left.y == right.y;
 }
 
-template<typename Vec1, typename Vec2, enable_for_vec_t<Vec1, Vec2> = true>
-constexpr bool operator!=(Vec1 left, Vec2 right )
+template<aVec2 V, aVec2 W>
+constexpr bool operator!=(V left, W right)
 {
     return !(left == right);
 }
 
-template<typename Scalar, typename Vec, typename R = decltype(Scalar{} * vec2_scalar_t<Vec>{}), typename = std::enable_if<std::is_scalar_v<Scalar>>>
+template<typename Scalar, aVec2 Vec, typename R = decltype(Scalar{} * vec2_scalar_t<Vec>{}), typename = std::enable_if<std::is_scalar_v<Scalar>>>
 constexpr vec2_t<R> operator*(Scalar left, Vec right)
 {
     return vec2_t<R>{
@@ -157,7 +153,7 @@ constexpr vec2_t<R> operator*(Scalar left, Vec right)
         .y = left * right.y };
 }
 
-template<typename Scalar, typename Vec,  typename R = decltype(vec2_scalar_t<Vec>{} / Scalar{})>
+template<typename Scalar, aVec2 Vec,  typename R = decltype(vec2_scalar_t<Vec>{} / Scalar{})>
 constexpr vec2_t<R> operator/(Vec left, Scalar right)
 {
     return vec2_t<R>{
@@ -169,15 +165,9 @@ constexpr Vec2i truncate(Vec2f vec) {
     return Vec2i{static_cast<int>(vec.x), static_cast<int>(vec.y)};
 }
 
-#ifndef _WIN64
 constexpr Vec2i round(Vec2f vec) {
     return Vec2i{static_cast<int>(lround(vec.x)), static_cast<int>(lround(vec.y))};
 }
-#else
-Vec2i round(Vec2f vec) {
-    return Vec2i{ static_cast<int>(lround(vec.x)), static_cast<int>(lround(vec.y)) };
-}
-#endif
 
 constexpr Vec2f itof(Vec2i vec) {
     return Vec2f{ static_cast<float>(vec.x), static_cast<float>(vec.y) };
@@ -216,13 +206,13 @@ constexpr T wrapAround(T a, U1 lowerBound, U2 upperBound) {
     return a;
 }
 
-template<typename Vec, typename U1, typename U2>
+template<aVec2 Vec, aVec2 U1, aVec2 U2>
 constexpr Vec wrapAround2d(Vec a, U1 lowerBound, U2 upperBound) {
     return Vec{ wrapAround(a.x, lowerBound.x, upperBound.x),
         wrapAround(a.y, lowerBound.y, upperBound.y) };
 }
 
-template<typename V>
+template<aVec2 V>
 constexpr V clamp(V vec, V upper, V lower) {
     return V { std::clamp(vec.x, upper.x, lower.x), std::clamp(vec.y, upper.y, lower.y)};
 }
@@ -265,7 +255,7 @@ constexpr Matrix<T, 2, 2> makeScale2d(T uniform) {
     return result;
 }
 
-template <typename Vec, typename T = vec2_scalar_t<Vec>>
+template <aVec2 Vec, typename T = vec2_scalar_t<Vec>>
 constexpr auto makeBase2d(Vec base1, Vec base2) {
     using M = Matrix<T, 2, 2>;
     using R = typename M::Row;
@@ -278,12 +268,12 @@ constexpr auto makeBase2d(Vec base1, Vec base2) {
     return result;
 }
 
-template <typename Vec, typename T = vec2_scalar_t<Vec>>
+template <aVec2 Vec, typename T = vec2_scalar_t<Vec>>
 constexpr Matrix<T, 2, 2> makeBase2dX(Vec newBaseX) {
     return makeBase2d(newBaseX, {-newBaseX.y, newBaseX.x});
 }
 
-template <typename Vec, typename T = vec2_scalar_t<Vec>>
+template <aVec2 Vec, typename T = vec2_scalar_t<Vec>>
 constexpr Matrix<T, 2, 2> makeBase2dY(Vec newBaseY) {
     return makeBase2d({newBaseY.y, -newBaseY.x}, newBaseY);
 }
@@ -298,7 +288,7 @@ constexpr Matrix<float, 2, 2> makeRotation2d(float angle) {
     return result;
 }
 
-template<typename Vec1, typename Vec2, enable_for_vec_t<Vec1, Vec2> = true>
-constexpr bool isFurtherClockwise(const Vec1& vec1, const Vec2 vec2) {
+template<aVec2 V, aVec2 W>
+constexpr bool isFurtherClockwise(const V& vec1, const W& vec2) {
     return dot(swizzled<Vec2SwizzleMask::SwapNegateX>(vec1), vec2) < 0;
 }
