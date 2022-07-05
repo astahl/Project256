@@ -127,7 +127,6 @@ struct TestBed {
 
         // initialize main memory
         if (input.frameNumber == 0) {
-            printf("libver: %d cpp: %ld", _LIBCPP_STD_VER, __cplusplus);
             std::memset(&memory, 0, MemorySize);
 
             std::memset(memory.palette.data(), 0xFF, memory.palette.size() * 4);
@@ -263,11 +262,10 @@ struct TestBed {
                             if (outputChar != 0xFF) {
                                 memory.textBuffer[memory.textCursorPosition++] = outputChar;
                             } else {
-                                memory.textBuffer[memory.textCursorPosition++] = utf8;
-//                                char upper = utf8 >> 4;
-//                                char lower = utf8 & 0xF;
-//                                memory.textBuffer[memory.textCursorPosition++] = CharacterTable[upper > 9 ? (upper - 10) + 'a' : upper + '0'];
-//                                memory.textBuffer[memory.textCursorPosition++] = CharacterTable[lower > 9 ? (lower - 10) + 'a' : lower + '0'];
+                                char upper = static_cast<uint8_t>(utf8) >> 4;
+                                char lower = static_cast<uint8_t>(utf8) & 0xF;
+                                memory.textBuffer[memory.textCursorPosition++] = CharacterTable[upper > 9 ? (upper - 10) + 'a' : upper + '0'];
+                                memory.textBuffer[memory.textCursorPosition++] = CharacterTable[lower > 9 ? (lower - 10) + 'a' : lower + '0'];
                             }
                         }
                     }
