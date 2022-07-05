@@ -16,9 +16,6 @@
 
 namespace ranges_at_home {
 
-template <typename...> struct WhichType;
-class Something {};
-
 template <typename T, typename U>
 using is_not_same = std::bool_constant<std::negation_v<std::is_same<T, U>>>;
 
@@ -105,7 +102,7 @@ constexpr sentinel_t<const T> end(const U& t) { return &t[N - 1]; }
 template <typename T>
 constexpr size_t size(const T& t) {
     size_t sz = 0;
-    for (auto it = begin(t); it != end(t); ++it) sz++;
+    for (auto _ : t) { _ = _; sz++;}
     return sz;
 }
 
@@ -116,19 +113,35 @@ template <typename T, size_t N = std::extent_v<T>, typename U = T[N]>
 constexpr size_t size(const U& t) { return N; }
 
 template <typename T, typename U>
-using is_notequal_testable = std::bool_constant<std::is_same_v<bool, decltype(T{} != U{})>>;
+concept aOneWayInequalityComparable = requires(T& t, U& u) {
+    t != u;
+};
 
 template <typename T>
-using is_iterable = std::bool_constant<std::conjunction_v<is_notequal_testable<iterator_t<T>, sentinel_t<T>>>>;
+concept anIncrementable = requires(T& t) {
+    {++t} -> std::same_as<T&>;
+};
+
 
 template <typename T>
-using is_range = std::conjunction<is_iterable<T>>;
+concept aDereferencable = requires(T& t) {
+    *t;
+};
 
 template <typename T>
-constant bool is_range_v = is_range<T>::value;
+concept anIterator = anIncrementable<T> && aDereferencable<T>;
 
-template <typename ...T>
-using enable_for_range_t = std::enable_if_t<std::conjunction_v<is_range<std::decay_t<T>>...>, bool>;
+template <typename R>
+concept aRange = requires(R& r) {
+    typename ranges_at_home::iter_value_t<R>;
+    typename ranges_at_home::sentinel_t<R>;
+    typename ranges_at_home::iterator_t<R>;
+
+    ranges_at_home::begin(r);
+    ranges_at_home::end(r);
+}
+&& anIterator<iterator_t<R>>
+&& aOneWayInequalityComparable<iterator_t<R>, sentinel_t<R>>;
 
 template <typename T>
 struct array_view {
@@ -148,7 +161,7 @@ struct array_view {
     }
 };
 
-template<typename T, typename Func>
+template<aRange T, typename Func>
 struct transform_view final {
     using InputIterator = iterator_t<const T>;
     using InputSentinel = sentinel_t<const T>;
@@ -207,7 +220,7 @@ struct transform_view final {
 };
 
 
-template<typename T, typename U = iter_value_t<T>>
+template<aRange T, typename U = iter_value_t<T>>
 struct enumerate_view final {
     using InputIterator = iterator_t<const T>;
     using InputSentinel = sentinel_t<const T>;
@@ -269,7 +282,7 @@ struct enumerate_view final {
 };
 
 
-template<typename T, typename Func>
+template<aRange T, typename Func>
 struct filter_view final {
     using InputIterator = iterator_t<const T>;
     using InputSentinel = sentinel_t<const T>;
@@ -343,7 +356,7 @@ struct filter_view final {
 
 
 
-template<typename T>
+template<aRange T>
 struct skip_view {
     using InputIterator = iterator_t<const T>;
     using InputSentinel = sentinel_t<const T>;
@@ -396,7 +409,7 @@ struct skip_view {
 };
 
 
-template<typename T>
+template<aRange T>
 struct take_view {
     using InputIterator = iterator_t<const T>;
     using InputSentinel = sentinel_t<const T>;
@@ -442,7 +455,7 @@ struct take_view {
 };
 
 
-template<typename T, size_t N, size_t Stride, bool Wrap>
+template<aRange T, size_t N, size_t Stride, bool Wrap>
 struct batch_view {
     using InputIterator = iterator_t<const T>;
     using InputSentinel = sentinel_t<const T>;
@@ -525,7 +538,7 @@ struct batch_view {
 
 
 
-template<typename T>
+template<aRange T>
 struct flatten_view {
     using InputIterator = iterator_t<const T>;
     using InputSentinel = sentinel_t<const T>;
@@ -593,7 +606,7 @@ struct flatten_view {
 
 
 
-template<typename T, typename U>
+template<aRange T, aRange U>
 struct pairwise_view {
     using InputIteratorLeft = iterator_t<const T>;
     using InputSentinelLeft = sentinel_t<const T>;
@@ -652,7 +665,7 @@ struct transform final {
     constexpr transform(const Func& func)
     : func(func) {}
 
-    template <typename T>
+    template <aRange T>
     constexpr transform_view<T, Func> apply(const T& range) const
     {
         return transform_view(range, func);
@@ -668,7 +681,7 @@ struct filter {
     constexpr filter(const Func& func)
     : func(func) {}
 
-    template <typename T>
+    template <aRange T>
     constexpr filter_view<T, Func> apply(const T& range) const
     {
         return filter_view(range, func);
@@ -677,7 +690,7 @@ struct filter {
 };
 
 struct enumerate {
-    template <typename T>
+    template <aRange T>
     constexpr enumerate_view<T> apply(const T& range) const
     {
         return enumerate_view(range);
@@ -687,7 +700,7 @@ struct enumerate {
 struct skip {
     int mCount;
 
-    template <typename T>
+    template <aRange T>
     constexpr skip_view<T> apply(const T& range) const
     {
         return skip_view<T> {
@@ -700,7 +713,7 @@ struct skip {
 struct take {
     int mCount;
 
-    template <typename T>
+    template <aRange T>
     constexpr take_view<T> apply(const T& range) const
     {
         return take_view<T> {
@@ -714,7 +727,7 @@ struct take {
 template <size_t N, size_t Stride = N, bool Wrap = true>
 struct batch {
     static_assert(Stride > 0, "Stride must be greater than 0");
-    template <typename T>
+    template <aRange T>
     constexpr auto apply(const T& range) const {
         return batch_view<T, N, Stride, Wrap> {
             .mInputRange = range
@@ -725,7 +738,7 @@ struct batch {
 
 struct flatten final {
 
-    template <typename T>
+    template <aRange T>
     constexpr flatten_view<T> apply(const T& range) const
     {
         return flatten_view<T>{.mInputRange = range};
@@ -740,7 +753,7 @@ struct forEach {
 
     constexpr forEach(const Func& func) : mFunc(func) {}
 
-    template <typename T>
+    template <aRange T>
     constexpr void apply(const T& range) const {
         for(const auto& v : range) {
             mFunc(v);
@@ -755,7 +768,7 @@ struct reduce {
 
     constexpr reduce(const Func& func, V initial) : mFunc(func), initial{initial} {}
 
-    template <typename T>
+    template <aRange T>
     constexpr auto apply(const T& range) const {
         V value = initial;
         for(const auto& v : range) {
@@ -769,7 +782,7 @@ struct reduce {
 template <size_t N>
 struct toArray {
 
-    template<typename U>
+    template<aRange U>
     constexpr auto apply(const U& range) const
     {
         using T = iter_value_t<U>;
@@ -789,7 +802,7 @@ template <size_t N, typename Compare>
 struct toSortedArray {
     Compare mCompare{};
 
-    template<typename U>
+    template<aRange U>
     auto apply(const U& range) const
     {
         using T = iter_value_t<U>;
@@ -806,7 +819,7 @@ struct applicator final {
     T left;
     U right;
 
-    template <typename W>
+    template <aRange W>
     constexpr auto apply(const W& w) const {
         return right.apply(left.apply(w));
     }
@@ -840,7 +853,8 @@ constexpr applicator<T, U> operator|(T&& left, U&& right)
         .right{static_cast<U&&>(right)}};
 }
 
-template <typename T, typename U>
+template <aRange T, aRange U>
+requires std::same_as<iter_value_t<T>, iter_value_t<U>>
 struct concatenator final {
     T left;
     U right;
@@ -849,8 +863,6 @@ struct concatenator final {
     using InputIteratorRight = iterator_t<U>;
     using InputSentinelLeft = sentinel_t<T>;
     using InputSentinelRight = sentinel_t<U>;
-
-    static_assert(std::is_same_v<iter_value_t<T>, iter_value_t<U>> == true, "Left and Right must have same value type.");
 
     struct sentinel {
         InputSentinelRight mRightSentinel;
@@ -903,14 +915,14 @@ struct concatenator final {
     }
 };
 
-template <typename T, typename U, std::enable_if_t<
-        std::is_same_v<iter_value_t<T>, iter_value_t<U>>, bool> = true>
+template <aRange T, aRange U>
+requires std::same_as<iter_value_t<T>, iter_value_t<U>>
 constexpr concatenator<T, U> operator^(T&& left, U&& right)
 {
     return concatenator<T, U> {static_cast<T&&>(left), static_cast<U&&>(right)};
 }
 
-template <typename T, typename U>
+template <aRange T, aRange U>
 constexpr pairwise_view<T, U> pairwise(T&& left, U&& right) {
     return pairwise_view<T, U>{static_cast<T&&>(left), static_cast<U&&>(right)};
 
