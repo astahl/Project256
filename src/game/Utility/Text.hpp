@@ -51,7 +51,7 @@ struct Utf8CodepointsView {
             return *this;
         }
 
-        constexpr bool operator!=(const Sentinel& other) const {
+        constexpr bool operator!=(const Sentinel&) const {
             return !atEnd;
         }
     };
