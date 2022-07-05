@@ -29,6 +29,7 @@
   <ItemGroup>
     <ClInclude Include="..\..\src\game\defines.h" />
     <ClInclude Include="..\..\src\game\Drawing\Generators.hpp" />
+    <ClInclude Include="..\..\src\game\Drawing\Images.hpp" />
     <ClInclude Include="..\..\src\game\Drawing\InterleavedBitmaps.hpp" />
     <ClInclude Include="..\..\src\game\Drawing\Palettes.hpp" />
     <ClInclude Include="..\..\src\game\Drawing\Sprites.hpp" />
@@ -36,6 +37,8 @@
     <ClInclude Include="..\..\src\game\Math\Vec2Math.hpp" />
     <ClInclude Include="..\..\src\game\Profiling\Timings.h" />
     <ClInclude Include="..\..\src\game\Project256.h" />
+    <ClInclude Include="..\..\src\game\Utility\Text.hpp" />
+    <ClInclude Include="..\..\src\game\Utility\Timers.hpp" />
     <ClInclude Include="..\..\src\platform_win32\Direct3D12View.h" />
     <ClInclude Include="..\..\src\platform_win32\GameState.h" />
     <ClInclude Include="..\..\src\platform_win32\MainWindow.h" />

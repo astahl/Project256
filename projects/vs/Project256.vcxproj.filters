@@ -37,6 +37,9 @@
     <Filter Include="Header Files\Math">
       <UniqueIdentifier>{733ee4ae-ea31-4178-ac0b-47a8e53f0800}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Utility">
+      <UniqueIdentifier>{85bed556-91e6-459e-bffa-ec187ca8d9a7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\platform_win32\WinMain.cpp">
@@ -94,6 +97,15 @@
     </ClInclude>
     <ClInclude Include="..\..\src\game\Drawing\InterleavedBitmaps.hpp">
       <Filter>Header Files\Drawing</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\game\Drawing\Images.hpp">
+      <Filter>Header Files\Drawing</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\game\Utility\Text.hpp">
+      <Filter>Header Files\Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\game\Utility\Timers.hpp">
+      <Filter>Header Files\Utility</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
