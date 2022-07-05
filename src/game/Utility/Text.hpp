@@ -36,7 +36,7 @@ struct Utf8CodepointsView {
             }
             uint8_t inputChar = *(mInput++);
 
-            int onesCount = std::__countl_one(inputChar);
+            int onesCount = std::countl_one(inputChar);
             if(onesCount == 1 || onesCount > 4) {
                 mCode = inputChar;
                 return *this;

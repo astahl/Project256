@@ -74,6 +74,7 @@ enum class endian
 #endif
 };
 #else
+#include <bit>
 using endian = std::endian;
 #endif
 
