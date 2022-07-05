@@ -14,8 +14,8 @@
 
 template <typename T>
 concept aVec2 = requires(T v) {
-    v.x;
-    v.y;
+    {v.x} -> std::same_as<decltype((v.y))>;
+    {v.y} -> std::same_as<decltype((v.x))>;
 };
 
 template <typename T>
@@ -229,7 +229,7 @@ struct Matrix{
 using Mat4i = Matrix<int, 4, 4>;
 using Mat4f = Matrix<float, 4, 4>;
 
-template <typename T, typename Vec, typename U = vec2_scalar_t<Vec>, typename R = vec2_t<decltype(T{} * U{})>>
+template <typename T, aVec2 Vec, typename U = vec2_scalar_t<Vec>, aVec2 R = vec2_t<decltype(T{} * U{})>>
 constexpr R operator*(const Matrix<T, 2, 3>& matrix, const Vec& vector)
 {
     return vec2<R>{
@@ -238,7 +238,7 @@ constexpr R operator*(const Matrix<T, 2, 3>& matrix, const Vec& vector)
     };
 }
 
-template <typename T, typename Vec, typename U = vec2_scalar_t<Vec>, typename R = vec2_t<decltype(T{} * U{})>>
+template <typename T, aVec2 Vec, typename U = vec2_scalar_t<Vec>, aVec2 R = vec2_t<decltype(T{} * U{})>>
 constexpr R operator*(const Matrix<T, 2, 2>& matrix, const Vec& vector)
 {
     return R{
