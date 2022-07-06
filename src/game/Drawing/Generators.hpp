@@ -136,7 +136,7 @@ struct Line {
         , mTo(to)
     {
         Vec2i diff = mTo - mFrom;
-        if (abs(diff.x) < abs(diff.y)) {
+        if (myabs(diff.x) < myabs(diff.y)) {
             mSteep = true;
             std::swap(mTo.x, mTo.y);
             std::swap(mFrom.x, mFrom.y);

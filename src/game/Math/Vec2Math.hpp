@@ -9,6 +9,7 @@
 #include <cmath>
 #include <type_traits>
 #include <utility>
+#include <numbers>
 #include <array>
 
 
@@ -165,8 +166,17 @@ constexpr Vec2i truncate(Vec2f vec) {
     return Vec2i{static_cast<int>(vec.x), static_cast<int>(vec.y)};
 }
 
+constexpr auto myabs(auto value) {
+    return (value < 0) ? -value : +value;
+}
+
+template<typename T = int>
+constexpr T myround(std::floating_point auto value) noexcept {
+    return static_cast<T>(value + (value < 0 ? -0.5 : +0.5));
+}
+
 constexpr Vec2i round(Vec2f vec) {
-    return Vec2i{static_cast<int>(lround(vec.x)), static_cast<int>(lround(vec.y))};
+    return Vec2i{myround(vec.x), myround(vec.y)};
 }
 
 constexpr Vec2f itof(Vec2i vec) {
@@ -190,7 +200,7 @@ Vec2f vec2FromAngleOffX(float angleInRad) {
 }
 
 Vec2f randomDirection2d() {
-    const float angle = 6.28318530717f * std::rand() / RAND_MAX;
+    const float angle = 2 * std::numbers::pi_v<float> * std::rand() / RAND_MAX;
     return vec2FromAngleOffX(angle);
 }
 
