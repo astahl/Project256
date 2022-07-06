@@ -11,6 +11,7 @@
 #include <utility>
 #include <numbers>
 #include <array>
+#include "Trigonometry.hpp"
 
 
 template <typename T>
@@ -196,7 +197,7 @@ Vec2i rand2d() {
 }
 
 Vec2f vec2FromAngleOffX(float angleInRad) {
-    return Vec2f{ cos(angleInRad), -sin(angleInRad) };
+    return Vec2f{ myCos(angleInRad), -sin(angleInRad) };
 }
 
 Vec2f randomDirection2d() {
@@ -291,8 +292,8 @@ constexpr Matrix<T, 2, 2> makeBase2dY(Vec newBaseY) {
 constexpr Matrix<float, 2, 2> makeRotation2d(float angle) {
     Matrix<float, 2, 2> result {
         .rows {
-            Matrix<float, 2, 2>::Row{ .values = { cos(angle), -sin(angle) } },
-            Matrix<float, 2, 2>::Row{ .values = { sin(angle), cos(angle) } }
+            Matrix<float, 2, 2>::Row{ .values = { myCos(angle), -sin(angle) } },
+            Matrix<float, 2, 2>::Row{ .values = { sin(angle), myCos(angle) } }
         }
     };
     return result;

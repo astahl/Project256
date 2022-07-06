@@ -98,7 +98,9 @@ struct TestBed {
 
     static GameOutput doGameThings(TestBedMemory& memory, const GameInput& input, const PlatformCallbacks& callbacks)
     {
-
+        if (input.frameNumber == 0) {
+            test_myCos();
+        }
         using namespace ranges_at_home;
         using namespace Generators;
 

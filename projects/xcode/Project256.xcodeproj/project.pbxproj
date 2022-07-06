@@ -67,6 +67,7 @@
 		685741CD2868ED8C00B13B23 /* Faufau.brush */ = {isa = PBXFileReference; lastKnownFileType = file; name = Faufau.brush; path = ../../assets/Faufau.brush; sourceTree = "<group>"; };
 		685741CE2868ED8C00B13B23 /* Faufau.ilbm */ = {isa = PBXFileReference; lastKnownFileType = file; name = Faufau.ilbm; path = ../../assets/Faufau.ilbm; sourceTree = "<group>"; };
 		6859DD0128673522009137CC /* GameSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameSettings.swift; sourceTree = "<group>"; };
+		689A1ACA2875FF5B0057090F /* Trigonometry.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Trigonometry.hpp; sourceTree = "<group>"; };
 		689A250B284BE37D0086DD58 /* Palettes.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Palettes.hpp; sourceTree = "<group>"; };
 		689E03222857A61D00DF8738 /* GameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameView.swift; sourceTree = "<group>"; };
 		689E03252857A67600DF8738 /* DrawBufferView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawBufferView.swift; sourceTree = "<group>"; };
@@ -160,6 +161,7 @@
 			isa = PBXGroup;
 			children = (
 				68D205D12854101100CB4213 /* Vec2Math.hpp */,
+				689A1ACA2875FF5B0057090F /* Trigonometry.hpp */,
 			);
 			path = Math;
 			sourceTree = "<group>";
