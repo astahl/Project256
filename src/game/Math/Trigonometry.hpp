@@ -49,9 +49,10 @@ static_assert(isNear(power(2.0, 2), 4.0));
 static_assert(isNear(power(2.0, 3), 8.0));
 static_assert(isNear(power(2.0, 4), 16.0));
 
-compiletime double CosineTaylor(double rad) {
-    double value = 1.0;
-    for (int n = 1; n < 8; ++n) {
+template <typename T, int K = 6>
+compiletime T CosineTaylor(T rad) {
+    T value{1};
+    for (int n = 1; n <= K; ++n) {
         value += power(-1.0, n) * power(rad, 2 * n) / factorial(2 * n);
     }
     return value;
