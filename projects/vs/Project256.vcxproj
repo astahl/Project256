@@ -34,6 +34,7 @@
     <ClInclude Include="..\..\src\game\Drawing\Palettes.hpp" />
     <ClInclude Include="..\..\src\game\Drawing\Sprites.hpp" />
     <ClInclude Include="..\..\src\game\FML\RangesAtHome.hpp" />
+    <ClInclude Include="..\..\src\game\Math\Trigonometry.hpp" />
     <ClInclude Include="..\..\src\game\Math\Vec2Math.hpp" />
     <ClInclude Include="..\..\src\game\Profiling\Timings.h" />
     <ClInclude Include="..\..\src\game\Project256.h" />

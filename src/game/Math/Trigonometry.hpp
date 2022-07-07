@@ -84,9 +84,8 @@ compiletime T myCos(T x) {
     if (quadrant == 1 || quadrant == 3) {
         index = N - index - 1;
     }
-    T inverter = (quadrant == 1 || quadrant == 2) ? -1.0 : 1.0;
-    T value = inverter * QuarterCosine[index];
-    return value;
+    T value = static_cast<T>(QuarterCosine[index]);
+    return (quadrant == 1 || quadrant == 2) ? -value : value;
 }
 
 template <std::floating_point T>
