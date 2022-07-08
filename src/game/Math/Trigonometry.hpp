@@ -49,9 +49,10 @@ static_assert(isNear(power(2.0, 2), 4.0));
 static_assert(isNear(power(2.0, 3), 8.0));
 static_assert(isNear(power(2.0, 4), 16.0));
 
-compiletime double CosineTaylor(double rad) {
-    double value = 1.0;
-    for (int n = 1; n < 5; ++n) {
+template <typename T, int K = 6>
+compiletime T CosineTaylor(T rad) {
+    T value{1};
+    for (int n = 1; n <= K; ++n) {
         value += power(-1.0, n) * power(rad, 2 * n) / factorial(2 * n);
     }
     return value;
@@ -84,9 +85,8 @@ compiletime T myCos(T x) {
     if (quadrant == 1 || quadrant == 3) {
         index = N - index - 1;
     }
-    T inverter = (quadrant == 1 || quadrant == 2) ? -1.0 : 1.0;
-    T value = inverter * QuarterCosine[index];
-    return value;
+    T value = static_cast<T>(QuarterCosine[index]);
+    return (quadrant == 1 || quadrant == 2) ? -value : value;
 }
 
 template <std::floating_point T>

@@ -107,6 +107,9 @@
     <ClInclude Include="..\..\src\game\Utility\Timers.hpp">
       <Filter>Header Files\Utility</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\game\Math\Trigonometry.hpp">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="..\..\src\platform_win32\Shader.hlsl">
