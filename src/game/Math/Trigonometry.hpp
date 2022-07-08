@@ -41,7 +41,7 @@ compiletime double power(double x, int n) {
 }
 
 compiletime bool isNear(auto a, auto b) {
-    return (a - b) * (a - b) < 0.000005;
+    return (a - b) * (a - b) < 0.000002;
 }
 
 static_assert(isNear(power(2.0, 1), 2.0));
@@ -51,7 +51,7 @@ static_assert(isNear(power(2.0, 4), 16.0));
 
 compiletime double CosineTaylor(double rad) {
     double value = 1.0;
-    for (int n = 1; n < 8; ++n) {
+    for (int n = 1; n < 5; ++n) {
         value += power(-1.0, n) * power(rad, 2 * n) / factorial(2 * n);
     }
     return value;
@@ -95,9 +95,20 @@ compiletime T mySin(T x) {
     return myCos(pi_2 - x);
 }
 
+template <std::floating_point T>
+compiletime T myTan(T x) {
+    return mySin(x) / myCos(x);
+}
+
 compiletime void test_myCos() {
 
-    for (double x = -10.0; x < 10.0; x += 0.01) {
+    for (double x = 0.0; x < 10.0; x += 0.01) {
+        double my = myCos(x);
+        double std = std::cos(x);
+        assert(isNear(my, std));
+    }
+
+    for (double x = 0.0; x > -10.0; x -= 0.01) {
         double my = myCos(x);
         double std = std::cos(x);
         assert(isNear(my, std));

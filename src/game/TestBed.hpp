@@ -106,25 +106,6 @@ struct TestBed {
 
         GameOutput output{};
         using Palette = PaletteVGA;
-        compiletime auto lookupColor = [](auto col) { return static_cast<uint8_t>(findNearest(col, Palette::colors).index); };
-        compiletime uint8_t black = lookupColor(Colors::Black);
-        compiletime uint8_t cyan = lookupColor(Colors::Cyan);
-        compiletime uint8_t lightBlue = lookupColor(Colors::LightBlue);
-        compiletime uint8_t red = lookupColor(Colors::Red);
-        compiletime uint8_t white = lookupColor(Colors::White);
-        compiletime uint8_t green = lookupColor(Colors::Green);
-
-        compiletime auto clip = [=](const auto& p) {
-            return (Vec2i{0,0} <= p) && (p < BufferSize);
-        };
-
-        auto clearColor = black;
-        if (input.closeRequested) {
-            clearColor = white;
-        }
-
-
-
         const auto time = std::chrono::microseconds(input.upTime_microseconds);
 
         // initialize main memory
@@ -145,45 +126,30 @@ struct TestBed {
                 0, 0, 1, 0, 0,
                 1, 1, 1, 1, 1,
             };
-            std::replace(memory.sprite.data.begin(), memory.sprite.data.end(), static_cast<uint8_t>(1), cyan);
+            std::replace(memory.sprite.data.begin(), memory.sprite.data.end(), static_cast<uint8_t>(1), static_cast<uint8_t>(2));
             memory.currentSpriteFrame = 0;
             memory.birdSpeed = 5;
-            if (callbacks.readFile) {
-                int64_t read = callbacks.readFile("CharacterRomPET8x8x256.bin", memory.characterROM.bytes(), memory.characterROM.bytesSize());
-                if (read != 2048)
-                {
-                    exit(2);
-                }
-            }
-            else {
-                exit(1);
-            }
+            int64_t read = callbacks.readFile("CharacterRomPET8x8x256.bin", memory.characterROM.bytes(), memory.characterROM.bytesSize());
+            assert(read == 2048);
             memory.timerCursorBlink = AutoResettingTimer(time, std::chrono::milliseconds(200));
-
-            memory.textFirstLine = 0;
-            memory.textLastLine = 0;
-            memory.textScroll = 0;
-            std::memset(memory.textColors.data(), white, memory.textColors.size());
+            std::memset(memory.textColors.data(), 1, memory.textColors.size());
             std::memset(memory.textBuffer.data(), CharacterTable[' '], memory.textBuffer.size());
             {
-            size_t read = callbacks.readFile("Faufau.brush", memory.scratch.data(), memory.scratch.size());
-            ILBMDataParser<endian::big> parser{.data = memory.scratch.data(), .dataSize = static_cast<int>(read)};
-            parser.isValid();
-            auto header = parser.getHeader();
-            printf("w: %d, h: %d", header.width.value, header.height.value);
-            auto colorMap = parser.getColorMap();
-            for (int i = 0; i < colorMap.size; ++i) {
-                auto color = colorMap.colors[i];
-                memory.palette[i] = makeARGB(color.red, color.green, color.blue);
-            }
-            parser.deinterleaveInto(memory.faufauDecoded.data(), memory.faufauDecoded.size(), memory.faufauDecoded.pitch());
-            parser.deinterleaveInto(&memory.faufauDecoded.pixel(16,8), memory.faufauDecoded.size() - 16, memory.faufauDecoded.pitch());
+                size_t read = callbacks.readFile("Faufau.brush", memory.scratch.data(), memory.scratch.size());
+                ILBMDataParser<endian::big> parser{.data = memory.scratch.data(), .dataSize = static_cast<int>(read)};
+                assert(parser.isValid());
+                auto colorMap = parser.getColorMap();
+                for (int i = 0; i < colorMap.size; ++i) {
+                    auto color = colorMap.colors[i];
+                    memory.palette[i] = makeARGB(color.red, color.green, color.blue);
+                }
+                parser.deinterleaveInto(memory.faufauDecoded.data(), memory.faufauDecoded.size(), memory.faufauDecoded.pitch());
             }
 
             {
-            size_t read = callbacks.readFile("Faufau.ilbm", memory.scratch.data(), memory.scratch.size());
-            ILBMDataParser<endian::big> parser{.data = memory.scratch.data(), .dataSize = static_cast<int>(read)};
-            parser.inflateAndDeinterleaveInto(memory.faubigDecoded.data(), memory.faubigDecoded.size(), memory.faubigDecoded.pitch());
+                size_t read = callbacks.readFile("Faufau.ilbm", memory.scratch.data(), memory.scratch.size());
+                ILBMDataParser<endian::big> parser{.data = memory.scratch.data(), .dataSize = static_cast<int>(read)};
+                parser.inflateAndDeinterleaveInto(memory.faubigDecoded.data(), memory.faubigDecoded.size(), memory.faubigDecoded.pitch());
             }
 
 
@@ -199,8 +165,19 @@ struct TestBed {
 
         }
 
+        constant auto black = findNearest(Colors::Black, memory.palette).index;
+        constant auto white = findNearest(Colors::White, memory.palette).index;
+        constant auto cyan = findNearest(Colors::Cyan, memory.palette).index;
+        constant auto lightBlue = findNearest(Colors::LightBlue, memory.palette).index;
+        constant auto red = findNearest(Colors::Red, memory.palette).index;
+        constant auto green = findNearest(Colors::Green, memory.palette).index;
         constant auto whitePixel = [&](const auto& p) { memory.vram.pixel(p) = white; };
         constant auto redPixel = [&](const auto& p) { memory.vram.pixel(p) = red; };
+
+        auto clearColor = black;
+        if (input.closeRequested) {
+            clearColor = cyan;
+        }
 
         // handle timers
         if (memory.directionChangeTimer.hasFired(time) || memory.birdTarget == round(memory.birdPosition)) {
@@ -294,6 +271,7 @@ struct TestBed {
 
         // do some experimentation in the vram
         compiletime auto wrap = [](auto p) { return wrapAround2d(p, Vec2i(), Vec2i{DrawBufferWidth, DrawBufferHeight});};
+        compiletime auto clip = [=](const auto& p) { return (Vec2i{0,0} <= p) && (p < BufferSize); };
 
         if (memory.points[0] != memory.points[1])
         for (auto p : Generators::Line{memory.points[0], memory.points[1]})
