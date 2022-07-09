@@ -149,7 +149,7 @@ func loadImageDEBUG(filenamePtr: UnsafePointer<CChar>?, destination: UnsafeMutab
     }
 
     context.draw(cgImage, in: CGRect(x: 0, y: 0, width: Int(width), height: Int(height)))
-    // swizzle BGRA to ARBG with byte swap
+    // swizzle BGRA to ARGB with byte swap
     let buffer = UnsafeMutableBufferPointer(start: destination, count: Int(width * height))
     for i in 0..<buffer.count {
         buffer[i] = buffer[i].byteSwapped

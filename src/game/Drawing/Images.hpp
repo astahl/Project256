@@ -11,6 +11,17 @@
 #include <type_traits>
 #include <array>
 
+template <typename T>
+concept anImage = requires(T& t) {
+    typename std::decay_t<T>::PixelType;
+    { t.width() } -> std::convertible_to<size_t>;
+    { t.height() } -> std::convertible_to<size_t>;
+    { t.pitch() } -> std::convertible_to<size_t>;
+    { t.originX() } -> std::convertible_to<ptrdiff_t>;
+    { t.originY()} -> std::convertible_to<ptrdiff_t>;
+    { t.pixel(ptrdiff_t{}, ptrdiff_t{}) } -> std::same_as<std::add_lvalue_reference_t<typename std::decay_t<T>::PixelType>>;
+};
+
 enum class ImageOrigin {
     BottomLeft,
     TopLeft,
@@ -154,7 +165,7 @@ struct Image {
 
 
 template <typename TImage, ImageOrigin O = ImageOrigin::BottomLeft>
-struct ImageView {
+struct SubImageView {
     using ImageType = std::decay_t<TImage>;
     using Pixel = typename ImageType::PixelType;
     template <typename T = Pixel>
@@ -350,17 +361,15 @@ constexpr uint64_t spread(const BitmapCell<uint8_t>& cell) {
 }
 
 
-
-
-template <typename T, ImageOrigin Origin = std::decay_t<T>::Origin>
-constexpr ImageView<T, Origin> makeSubImage(T&& image, ptrdiff_t x, ptrdiff_t y, size_t width, size_t height)
+template <anImage T, ImageOrigin Origin = std::decay_t<T>::Origin>
+constexpr SubImageView<T, Origin> makeSubImage(T&& image, ptrdiff_t x, ptrdiff_t y, size_t width, size_t height)
 {
     assert(x + width <= image.width());
     assert(y + height <= image.height());
     assert(x >= image.originX());
     assert(y >= image.originY());
 
-    return ImageView<T, Origin>{
+    return SubImageView<T, Origin>{
         .image = static_cast<T&&>(image),
         .mWidth = width,
         .mHeight = height,
@@ -369,7 +378,7 @@ constexpr ImageView<T, Origin> makeSubImage(T&& image, ptrdiff_t x, ptrdiff_t y,
     };
 }
 
-template <typename T, typename U>
+template <anImage T, anImage U>
 constexpr void imageCopy(const T& source, U&& destination) {
     using DestinationType = std::decay_t<U>;
     using Pixel = typename DestinationType::PixelType;
@@ -388,7 +397,7 @@ constexpr void imageCopy(const T& source, U&& destination) {
     }
 }
 
-template <typename T, typename U>
+template <anImage T, anImage U>
 constexpr void imageBlitWithTransparentColor(const T& source, U&& destination, typename T::PixelType transparentColor) {
     using DestinationType = std::decay_t<U>;
     using SourceType = std::decay_t<T>;

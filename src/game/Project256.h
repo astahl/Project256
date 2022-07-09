@@ -142,7 +142,9 @@ struct GameInput {
 };
 
 struct PlatformCallbacks {
+    // filename, buffer, buffersize -> actual read size
     long long (*readFile)(const char*, unsigned char*, long long);
+    // filename, argb buffer, width, height -> success
     _Bool (*readImage)(const char*, unsigned int*, int, int);
 };
 
