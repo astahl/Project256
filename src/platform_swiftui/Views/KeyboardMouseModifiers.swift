@@ -7,7 +7,6 @@
 
 import Foundation
 import SwiftUI
-import GameController
 
 #if os(macOS)
 extension NSPoint {
@@ -15,25 +14,6 @@ extension NSPoint {
 }
 
 class KbMFirstResponderView : NSView {
-    enum KeyboardEvent {
-        case Down (keyCode: CGKeyCode, characters: String?, modifierFlags: NSEvent.ModifierFlags)
-        case Up (keyCode: CGKeyCode, characters: String?, modifierFlags: NSEvent.ModifierFlags)
-    }
-
-    enum MouseButton : Int {
-        case Left, Right, Other
-    }
-
-    enum MouseClickEvent {
-        case Down(button: MouseButton, locationInView: CGPoint)
-        case Up(button: MouseButton, locationInView: CGPoint)
-    }
-
-    enum MouseMoveEvent {
-        case Move (locationInView: CGPoint, relative: CGPoint)
-        case Drag (locationInView: CGPoint, relative: CGPoint, button: MouseButton)
-        case Scroll (scroll: CGPoint)
-    }
 
     typealias KeyboardHandler = (_ event: KeyboardEvent) -> Void
     typealias MouseClickHandler = (_ event: MouseClickEvent) -> Void
@@ -46,7 +26,11 @@ class KbMFirstResponderView : NSView {
     override func viewDidMoveToWindow() {
         self.window?.acceptsMouseMovedEvents = true
     }
-    
+
+    override func resetCursorRects() {
+        self.addCursorRect(self.bounds, cursor: .crosshair)
+    }
+
     override var acceptsFirstResponder: Bool { get { true } }
 
     override func becomeFirstResponder() -> Bool {
@@ -164,18 +148,6 @@ struct KeyboardAndMouseModifier : ViewModifier {
 
 
 extension View {
-    func keyboard(_ handler: @escaping KbMFirstResponderView.KeyboardHandler) -> some View {
-        return modifier(KeyboardAndMouseModifier(keyboard: handler, move: nil, click: nil))
-    }
-
-    func mouseMove(_ move: @escaping KbMFirstResponderView.MouseMoveHandler) -> some View {
-        return modifier(KeyboardAndMouseModifier(keyboard: nil, move: move, click: nil))
-    }
-
-    func mouseClick(_ click: @escaping KbMFirstResponderView.MouseClickHandler) -> some View {
-        return modifier(KeyboardAndMouseModifier(keyboard: nil, move: nil, click: click))
-    }
-
     func keyboardAndMouse(keyboard: KbMFirstResponderView.KeyboardHandler?, move: KbMFirstResponderView.MouseMoveHandler?, click: KbMFirstResponderView.MouseClickHandler?)-> some View {
         return modifier(KeyboardAndMouseModifier(keyboard: keyboard, move: move, click: click))
     }

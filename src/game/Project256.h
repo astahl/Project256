@@ -103,7 +103,7 @@ struct GameController {
         };
         struct Button buttons[InputControllerButtonCount];
     };
-};
+} CF_SWIFT_NAME(P256GameController);
 
 #pragma warning (pop)
 
@@ -164,6 +164,7 @@ struct Vec2f clipSpaceDrawBufferScale(unsigned int viewportWidth, unsigned int v
 void cleanInput(struct GameInput* input);
 struct GameOutput doGameThings(struct GameInput* input, void* memory, struct PlatformCallbacks callbacks);
 void writeDrawBuffer(void* memory, void* buffer);
+void writeAudioBuffer(void* memory, void* buffer);
 
 #ifdef __cplusplus
 }

@@ -17,6 +17,15 @@
 		685035D4283F9D4F00355252 /* Project256.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 68455589283D7F08004AD3FB /* Project256.cpp */; };
 		685035D92842921900355252 /* DrawBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 685035D82842921900355252 /* DrawBuffer.swift */; };
 		685035DA2842921900355252 /* DrawBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 685035D82842921900355252 /* DrawBuffer.swift */; };
+		68565FE1287B08F400D07090 /* PlatformInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68565FE0287B08F400D07090 /* PlatformInput.swift */; };
+		68565FE2287B08F400D07090 /* PlatformInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68565FE0287B08F400D07090 /* PlatformInput.swift */; };
+		68565FE5287B121100D07090 /* TupleAccess.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68565FE4287B121100D07090 /* TupleAccess.swift */; };
+		68565FE6287B121100D07090 /* TupleAccess.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68565FE4287B121100D07090 /* TupleAccess.swift */; };
+		68565FE8287B123800D07090 /* Chronometer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68565FE7287B123800D07090 /* Chronometer.swift */; };
+		68565FE9287B123800D07090 /* Chronometer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68565FE7287B123800D07090 /* Chronometer.swift */; };
+		68565FEB287B12D600D07090 /* PlatformCallbacks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68565FEA287B12D600D07090 /* PlatformCallbacks.swift */; };
+		68565FEC287B12D600D07090 /* PlatformCallbacks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68565FEA287B12D600D07090 /* PlatformCallbacks.swift */; };
+		68565FEF287B1D8A00D07090 /* InputEvents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68565FED287B1D8A00D07090 /* InputEvents.swift */; };
 		685741CF2868ED8C00B13B23 /* Faufau.brush in Resources */ = {isa = PBXBuildFile; fileRef = 685741CD2868ED8C00B13B23 /* Faufau.brush */; };
 		685741D02868ED8C00B13B23 /* Faufau.brush in Resources */ = {isa = PBXBuildFile; fileRef = 685741CD2868ED8C00B13B23 /* Faufau.brush */; };
 		685741D12868ED8C00B13B23 /* Faufau.ilbm in Resources */ = {isa = PBXBuildFile; fileRef = 685741CE2868ED8C00B13B23 /* Faufau.ilbm */; };
@@ -63,6 +72,11 @@
 		684555AA283D86C9004AD3FB /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		685035D528428EE200355252 /* GameState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameState.swift; sourceTree = "<group>"; };
 		685035D82842921900355252 /* DrawBuffer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawBuffer.swift; sourceTree = "<group>"; };
+		68565FE0287B08F400D07090 /* PlatformInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlatformInput.swift; sourceTree = "<group>"; };
+		68565FE4287B121100D07090 /* TupleAccess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TupleAccess.swift; sourceTree = "<group>"; };
+		68565FE7287B123800D07090 /* Chronometer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Chronometer.swift; sourceTree = "<group>"; };
+		68565FEA287B12D600D07090 /* PlatformCallbacks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlatformCallbacks.swift; sourceTree = "<group>"; };
+		68565FED287B1D8A00D07090 /* InputEvents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputEvents.swift; sourceTree = "<group>"; };
 		685741BC2868E53900B13B23 /* InterleavedBitmaps.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = InterleavedBitmaps.hpp; sourceTree = "<group>"; };
 		685741CD2868ED8C00B13B23 /* Faufau.brush */ = {isa = PBXFileReference; lastKnownFileType = file; name = Faufau.brush; path = ../../assets/Faufau.brush; sourceTree = "<group>"; };
 		685741CE2868ED8C00B13B23 /* Faufau.ilbm */ = {isa = PBXFileReference; lastKnownFileType = file; name = Faufau.ilbm; path = ../../assets/Faufau.ilbm; sourceTree = "<group>"; };
@@ -169,6 +183,7 @@
 		6845558B283D7F22004AD3FB /* Platform */ = {
 			isa = PBXGroup;
 			children = (
+				68565FE3287B11EE00D07090 /* Utility */,
 				689E03212857A5F100DF8738 /* Model */,
 				689E03202857A5E300DF8738 /* Views */,
 				684555AA283D86C9004AD3FB /* Assets.xcassets */,
@@ -194,6 +209,16 @@
 				6845559D283D8044004AD3FB /* macOS.entitlements */,
 			);
 			path = macOS;
+			sourceTree = "<group>";
+		};
+		68565FE3287B11EE00D07090 /* Utility */ = {
+			isa = PBXGroup;
+			children = (
+				68565FE4287B121100D07090 /* TupleAccess.swift */,
+				68565FE7287B123800D07090 /* Chronometer.swift */,
+				68565FEA287B12D600D07090 /* PlatformCallbacks.swift */,
+			);
+			path = Utility;
 			sourceTree = "<group>";
 		};
 		687B91AD283D7E95007604C7 = {
@@ -226,6 +251,8 @@
 				685035D528428EE200355252 /* GameState.swift */,
 				685035D82842921900355252 /* DrawBuffer.swift */,
 				6859DD0128673522009137CC /* GameSettings.swift */,
+				68565FE0287B08F400D07090 /* PlatformInput.swift */,
+				68565FED287B1D8A00D07090 /* InputEvents.swift */,
 			);
 			path = Model;
 			sourceTree = "<group>";
@@ -348,11 +375,15 @@
 			buildActionMask = 2147483647;
 			files = (
 				685035D92842921900355252 /* DrawBuffer.swift in Sources */,
+				68565FEB287B12D600D07090 /* PlatformCallbacks.swift in Sources */,
 				685035D3283F9D4E00355252 /* Project256.cpp in Sources */,
+				68565FE8287B123800D07090 /* Chronometer.swift in Sources */,
 				6859DD0228673522009137CC /* GameSettings.swift in Sources */,
+				68565FE1287B08F400D07090 /* PlatformInput.swift in Sources */,
 				68D205DC2855EAAF00CB4213 /* MetalView.swift in Sources */,
 				68D205CC28512A0000CB4213 /* Generators.hpp in Sources */,
 				6819ACC5283EDFFC00CCBFD5 /* MetalViewShader.metal in Sources */,
+				68565FE5287B121100D07090 /* TupleAccess.swift in Sources */,
 				689E03232857A61D00DF8738 /* GameView.swift in Sources */,
 				68D205D72854EE2F00CB4213 /* Timings.cpp in Sources */,
 				6845559E283D8044004AD3FB /* Project256App.swift in Sources */,
@@ -368,6 +399,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				685035DA2842921900355252 /* DrawBuffer.swift in Sources */,
+				68565FEF287B1D8A00D07090 /* InputEvents.swift in Sources */,
+				68565FEC287B12D600D07090 /* PlatformCallbacks.swift in Sources */,
 				685035D4283F9D4F00355252 /* Project256.cpp in Sources */,
 				68D205DD2855EAB000CB4213 /* MetalView.swift in Sources */,
 				68D205CD28512A0000CB4213 /* Generators.hpp in Sources */,
@@ -375,11 +408,14 @@
 				689E03242857A61D00DF8738 /* GameView.swift in Sources */,
 				6859DD0328673522009137CC /* GameSettings.swift in Sources */,
 				68D205D82854EE2F00CB4213 /* Timings.cpp in Sources */,
+				68565FE6287B121100D07090 /* TupleAccess.swift in Sources */,
+				68565FE2287B08F400D07090 /* PlatformInput.swift in Sources */,
 				6845559F283D8044004AD3FB /* Project256App.swift in Sources */,
 				68D205DE2855EE3700CB4213 /* GameState.swift in Sources */,
 				689A250D284BE37D0086DD58 /* Palettes.hpp in Sources */,
 				689E03272857A67600DF8738 /* DrawBufferView.swift in Sources */,
 				689E032A2857BEF300DF8738 /* KeyboardMouseModifiers.swift in Sources */,
+				68565FE9287B123800D07090 /* Chronometer.swift in Sources */,
 				68D205D32854101100CB4213 /* Vec2Math.hpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

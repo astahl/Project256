@@ -7,6 +7,13 @@
 
 import Foundation
 
+
+enum FPSTargets : Int, CaseIterable, Identifiable {
+    case Stop = 0, _5 = 5, _15 = 15, _60 = 60, _120 = 120
+    var id: Self { self }
+}
+
+
 class GameSettings {
     @Published var tickScale: Double = 1.0
     @Published var timeScale: Double = 1.0

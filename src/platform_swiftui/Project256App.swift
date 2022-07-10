@@ -9,24 +9,7 @@ import SwiftUI
 import Combine
 
 
-#if os(macOS)
-func setCursorVisible(_ shouldShow: Bool, currentlyHidden: Bool) -> Bool
-{
-    if shouldShow && currentlyHidden {
-        CGDisplayShowCursor(CGMainDisplayID())
-        return false
-    } else if !shouldShow && !currentlyHidden {
-        CGDisplayHideCursor(CGMainDisplayID())
-        return true
-    }
-    return currentlyHidden
-}
-#endif
 
-enum FPSTargets : Int, CaseIterable, Identifiable {
-    case Stop = 0, _5 = 5, _15 = 15, _60 = 60, _120 = 120
-    var id: Self { self }
-}
 
 @main
 struct Project256App: App {
@@ -43,19 +26,20 @@ struct Project256App: App {
     var subscriptions: AppSubscriptions
 
     init() {
-        gameState = GameState()
+        let settings = GameSettings()
+        gameSettings = settings
+        gameState = GameState(settings: settings)
         subscriptions = AppSubscriptions()
-        gameSettings = GameSettings()
     }
 
     func doTick(_ _: Date) {
-        gameState.tick(settings: gameSettings)
+        gameState.tick()
     }
 
     var body: some Scene {
         WindowGroup {
             ZStack {
-                GameView(state: gameState, settings: gameSettings)
+                GameView(state: gameState)
                 .onAppear {
                     self.subscriptions.highfrequency = Timer.publish(every: 1 / gameSettings.tickTargetHz, on: .main, in: .common)
                         .autoconnect()

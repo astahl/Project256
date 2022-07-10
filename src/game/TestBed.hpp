@@ -27,24 +27,7 @@ constant int TextCharacterH = 8;
 constant int TextLines = DrawBufferHeight / TextCharacterH;
 constant int TextLineLength = DrawBufferWidth / TextCharacterW;
 
-compiletime std::array<uint8_t, 256> CharacterTable = []() {
-    std::array<uint8_t, 256> result{};
-    for (size_t i = 0; i < result.size(); ++i) result[i] = 0xFF;// map any unknown to checkerboard
-    // PET 0x20 - 0x3F is equal to ascii
-    for (char c = ' '; c <= '?'; ++c) {
-        result[c] = c;
-    }
-    // Ascii Uppercase is at beginning of character rom
-    for (char c = '@'; c <= ']'; ++c) {
-        result[c] = c - '@';
-    }
-    // Ascii lowercase (0x60 - 0x7A) is in 0xC0 - 0xDA of character rom
-    for (char c = 'a'; c <= 'z'; ++c) {
-        result[c] = c + 0x60;
-    }
 
-    return result;
-}();
 
 
 struct TestBedMemory {
@@ -106,6 +89,7 @@ struct TestBed {
 
         GameOutput output{};
         using Palette = PaletteVGA;
+        using Text = CharacterRom::PET;
         const auto time = std::chrono::microseconds(input.upTime_microseconds);
 
         // initialize main memory
@@ -131,9 +115,19 @@ struct TestBed {
             memory.birdSpeed = 5;
             int64_t read = callbacks.readFile("CharacterRomPET8x8x256.bin", memory.characterROM.bytes(), memory.characterROM.bytesSize());
             assert(read == 2048);
+            memory.textFirstLine = 0;
+            memory.textLastLine = 8;
+
             memory.timerCursorBlink = AutoResettingTimer(time, std::chrono::milliseconds(200));
             std::memset(memory.textColors.data(), 1, memory.textColors.size());
-            std::memset(memory.textBuffer.data(), CharacterTable[' '], memory.textBuffer.size());
+            std::memset(memory.textBuffer.data(), Text::CharacterTable[' '], memory.textBuffer.size());
+
+            memory.textBuffer.at(1) = static_cast<uint8_t>(Text::SpecialCharacters::ArcDownRight);
+            memory.textBuffer.at(2) = static_cast<uint8_t>(Text::SpecialCharacters::HLine);
+            memory.textBuffer.at(3) = static_cast<uint8_t>(Text::SpecialCharacters::HLine);
+            memory.textBuffer.at(4) = static_cast<uint8_t>(Text::SpecialCharacters::HLine);
+            memory.textBuffer.at(5) = static_cast<uint8_t>(Text::SpecialCharacters::ArcDownLeft);
+
             {
                 size_t read = callbacks.readFile("Faufau.brush", memory.scratch.data(), memory.scratch.size());
                 ILBMDataParser<endian::big> parser{.data = memory.scratch.data(), .dataSize = static_cast<int>(read)};
@@ -215,13 +209,15 @@ struct TestBed {
             auto text = array_view<const char>{input.text_utf8, input.textLength};
 
             for (auto utf8 : Utf8CodepointsView<array_view<const char>>{text}) {
-                if (utf8 < 256) {
-                    // input is in 8 bit range
+                if (utf8 < 128) {
+                    // input is in ASCII range
                     switch (utf8) {
+                        case '+': memory.textBuffer[memory.textCursorPosition]++; break;
+                        case '-': memory.textBuffer[memory.textCursorPosition]--; break;
                         case 0x7F: // Delete == backspace on modern keyboards
                         case 0x08: // backspace
                             if (memory.textCursorPosition > 0) {
-                                memory.textBuffer[--memory.textCursorPosition] = CharacterTable[' '];
+                                memory.textBuffer[--memory.textCursorPosition] = Text::CharacterTable[' '];
                             }
                             break;
                         case 0x09: // tab
@@ -237,14 +233,20 @@ struct TestBed {
                             break;
                         }
                         default: {
-                            uint8_t outputChar = CharacterTable[utf8];
+                            uint8_t outputChar = Text::CharacterTable[utf8];
                             if (outputChar != 0xFF) {
                                 memory.textBuffer[memory.textCursorPosition++] = outputChar;
                             } else {
-                                char upper = static_cast<uint8_t>(utf8) >> 4;
-                                char lower = static_cast<uint8_t>(utf8) & 0xF;
-                                memory.textBuffer[memory.textCursorPosition++] = CharacterTable[upper > 9 ? (upper - 10) + 'a' : upper + '0'];
-                                memory.textBuffer[memory.textCursorPosition++] = CharacterTable[lower > 9 ? (lower - 10) + 'a' : lower + '0'];
+                                auto character = Text::CharacterForCodepoint(utf8);
+                                if (character) {
+                                    memory.textBuffer[memory.textCursorPosition++] = *character;
+                                }
+                                else {
+                                    char upper = static_cast<uint8_t>(utf8) >> 4;
+                                    char lower = static_cast<uint8_t>(utf8) & 0xF;
+                                    memory.textBuffer[memory.textCursorPosition++] = Text::CharacterTable[upper > 9 ? (upper - 10) + 'a' : upper + '0'];
+                                    memory.textBuffer[memory.textCursorPosition++] = Text::CharacterTable[lower > 9 ? (lower - 10) + 'a' : lower + '0'];
+                                }
                             }
                         }
                     }
@@ -256,15 +258,19 @@ struct TestBed {
                         case 0xF702: memory.textCursorPosition -= 1; break;
                         case 0xF703: memory.textCursorPosition += 1; break;
                         // macbook fn + backspace = delete?
-                        case 0xF728: memory.textBuffer[memory.textCursorPosition] = CharacterTable[' ']; break;
+                        case 0xF728: memory.textBuffer[memory.textCursorPosition] = Text::CharacterTable[' ']; break;
                         default:
-                            memory.textBuffer[memory.textCursorPosition++] = utf8 % 256;
+                        {
+                            auto character = Text::CharacterForCodepoint(utf8);
+                            if (character) {
+                                memory.textBuffer[memory.textCursorPosition++] = *character;
+                            }
                             printf("%x\n", utf8);
+                        }
                     }
                 }
 
             }
-
 
             memory.textCursorPosition = std::clamp(memory.textCursorPosition, 0, (memory.textLastLine - memory.textFirstLine + 1) * TextLineLength);
         }
@@ -273,9 +279,7 @@ struct TestBed {
         compiletime auto wrap = [](auto p) { return wrapAround2d(p, Vec2i(), Vec2i{DrawBufferWidth, DrawBufferHeight});};
         compiletime auto clip = [=](const auto& p) { return (Vec2i{0,0} <= p) && (p < BufferSize); };
 
-        if (memory.points[0] != memory.points[1])
-        for (auto p : Generators::Line{memory.points[0], memory.points[1]})
-            whitePixel(p);
+
 
         if (input.mouse.trackLength) {
             Vec2f mousePosition = input.mouse.track[input.mouse.trackLength - 1];
@@ -335,6 +339,10 @@ struct TestBed {
             }
 
         }
+
+        if (memory.points[0] != memory.points[1])
+        for (auto p : Generators::Line{memory.points[0], memory.points[1]})
+            whitePixel(p);
 
         // write controller state to the screen
         for (int i = 0; i < InputMaxControllers; ++i) {

@@ -9,12 +9,10 @@ import SwiftUI
 
 struct GameView: View {
     var state: GameState
-    var settings: GameSettings
     var drawBufferView: DrawBufferView
 
-    init(state: GameState, settings: GameSettings) {
+    init(state: GameState) {
         self.state = state
-        self.settings = settings
         self.drawBufferView = DrawBufferView(drawBufferSource: {
             drawBuffer in
             GameState.timingData?.startTimer(eTimerBufferCopy)
@@ -22,47 +20,26 @@ struct GameView: View {
             GameState.timingData?.interval(timer: eTimerBufferCopy, interval: eTimingBufferCopy)
             return drawBuffer
         })
-        self.drawBufferView.metalView.prefferedFrameRate = settings.frameTargetHz
+        self.drawBufferView.metalView.prefferedFrameRate = state.settings.frameTargetHz
     }
 
     var body: some View {
         drawBufferView
         #if os(macOS)
-            .keyboardAndMouse(keyboard: {
-                switch $0 {
-                case .Down(_, let characters?, let modifiers):
-                    state.addInputText(characters)
-                    print(modifiers)
-                default:
-                    break
-                }
-            }, move: {
-                switch $0 {
-                case .Move(let locationInView, let relative):
-                    let position = drawBufferView.pixelPosition(locationInView)
-                    state.addInputMouseMovement(relative: relative, position: position)
-                case .Drag(let locationInView, let relative, _):
-                    let position = drawBufferView.pixelPosition(locationInView)
-                    state.addInputMouseMovement(relative: relative, position: position)
-                case .Scroll(_):
-                    break
-                }
-            }, click: {
-                switch $0 {
-                case .Down(.Left, _):
-                    state.input.mouse.buttonLeft.press()
-                case .Down(.Right, _):
-                    state.input.mouse.buttonRight.press()
-                case .Down(.Other, _):
-                    state.input.mouse.buttonMiddle.press()
-                case .Up(.Left, _):
-                    state.input.mouse.buttonLeft.release()
-                case .Up(.Right, _):
-                    state.input.mouse.buttonRight.release()
-                case .Up(.Other, _):
-                    state.input.mouse.buttonMiddle.release()
+            .keyboardAndMouse(keyboard: { state.platformInput.pushKeyboardEvent($0) }, move: {
+                moveEvent in
 
+                var changedEvent = moveEvent
+                switch moveEvent {
+                case .Move(let locationInView, let relative):
+                    changedEvent = .Move(locationInView: drawBufferView.pixelPosition(locationInView), relative: relative)
+                case .Drag(let locationInView, let relative, let button):
+                    changedEvent = .Drag(locationInView: drawBufferView.pixelPosition(locationInView), relative: relative, button: button)
+                default: break
                 }
+                state.platformInput.pushMouseMoveEvent(changedEvent)
+            }, click: {
+                state.platformInput.pushMouseClickEvent($0)
             })
         #endif
     }
@@ -70,7 +47,7 @@ struct GameView: View {
 
 struct GameView_Previews: PreviewProvider {
     static var previews: some View {
-        GameView(state: GameState.init(), settings: GameSettings())
+        GameView(state: GameState.init(settings: nil))
             .previewInterfaceOrientation(.portrait)
     }
 }

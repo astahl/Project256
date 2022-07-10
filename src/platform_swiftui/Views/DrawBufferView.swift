@@ -27,9 +27,12 @@ struct DrawBufferView: View {
         metalView = MetalView(drawBuffer: nil)
     }
 
-    func pixelPosition(_ locationInView: CGPoint) -> CGPoint?
+    func pixelPosition(_ locationInView: CGPoint?) -> CGPoint?
     {
-        return metalView.pixelPosition?(locationInView)
+        if let location = locationInView {
+            return metalView.pixelPosition?(location)
+        }
+        return nil
     }
 
     var body: some View {
