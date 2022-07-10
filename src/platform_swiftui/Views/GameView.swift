@@ -26,21 +26,20 @@ struct GameView: View {
     var body: some View {
         drawBufferView
         #if os(macOS)
-            .keyboardAndMouse(keyboard: { state.platformInput.pushKeyboardEvent($0) }, move: {
-                moveEvent in
-
-                var changedEvent = moveEvent
-                switch moveEvent {
-                case .Move(let locationInView, let relative):
-                    changedEvent = .Move(locationInView: drawBufferView.pixelPosition(locationInView), relative: relative)
-                case .Drag(let locationInView, let relative, let button):
-                    changedEvent = .Drag(locationInView: drawBufferView.pixelPosition(locationInView), relative: relative, button: button)
-                default: break
-                }
-                state.platformInput.pushMouseMoveEvent(changedEvent)
-            }, click: {
-                state.platformInput.pushMouseClickEvent($0)
-            })
+            .keyboardAndMouse(
+                keyboard: { state.platformInput.pushKeyboardEvent($0) },
+                move: { moveEvent in
+                    var changedEvent = moveEvent
+                    switch moveEvent {
+                        case .Move(let locationInView, let relative):
+                            changedEvent = .Move(locationInView: drawBufferView.pixelPosition(locationInView), relative: relative)
+                        case .Drag(let locationInView, let relative, let button):
+                            changedEvent = .Drag(locationInView: drawBufferView.pixelPosition(locationInView), relative: relative, button: button)
+                        default: break
+                    }
+                    state.platformInput.pushMouseMoveEvent(changedEvent)
+                },
+                click: { state.platformInput.pushMouseClickEvent($0) })
         #endif
     }
 }

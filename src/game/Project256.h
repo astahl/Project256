@@ -148,6 +148,14 @@ struct PlatformCallbacks {
     _Bool (*readImage)(const char*, unsigned int*, int, int);
 };
 
+struct AudioBufferDescriptor {
+    unsigned long long timestamp;
+    double sampleTime;
+    double sampleRate;
+    unsigned framesPerBuffer;
+    unsigned channelsPerFrame;
+};
+
 struct Rumble {
 	float left, right;
 };
@@ -164,7 +172,7 @@ struct Vec2f clipSpaceDrawBufferScale(unsigned int viewportWidth, unsigned int v
 void cleanInput(struct GameInput* input);
 struct GameOutput doGameThings(struct GameInput* input, void* memory, struct PlatformCallbacks callbacks);
 void writeDrawBuffer(void* memory, void* buffer);
-void writeAudioBuffer(void* memory, void* buffer);
+void writeAudioBuffer(void* memory, void* buffer, struct AudioBufferDescriptor bufferDescriptor);
 
 #ifdef __cplusplus
 }

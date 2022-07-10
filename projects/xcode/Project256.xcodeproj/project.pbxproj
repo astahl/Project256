@@ -26,6 +26,8 @@
 		68565FEB287B12D600D07090 /* PlatformCallbacks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68565FEA287B12D600D07090 /* PlatformCallbacks.swift */; };
 		68565FEC287B12D600D07090 /* PlatformCallbacks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68565FEA287B12D600D07090 /* PlatformCallbacks.swift */; };
 		68565FEF287B1D8A00D07090 /* InputEvents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68565FED287B1D8A00D07090 /* InputEvents.swift */; };
+		68565FF1287B444100D07090 /* PlatformAudio.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68565FF0287B444100D07090 /* PlatformAudio.swift */; };
+		68565FF2287B444100D07090 /* PlatformAudio.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68565FF0287B444100D07090 /* PlatformAudio.swift */; };
 		685741CF2868ED8C00B13B23 /* Faufau.brush in Resources */ = {isa = PBXBuildFile; fileRef = 685741CD2868ED8C00B13B23 /* Faufau.brush */; };
 		685741D02868ED8C00B13B23 /* Faufau.brush in Resources */ = {isa = PBXBuildFile; fileRef = 685741CD2868ED8C00B13B23 /* Faufau.brush */; };
 		685741D12868ED8C00B13B23 /* Faufau.ilbm in Resources */ = {isa = PBXBuildFile; fileRef = 685741CE2868ED8C00B13B23 /* Faufau.ilbm */; };
@@ -77,6 +79,7 @@
 		68565FE7287B123800D07090 /* Chronometer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Chronometer.swift; sourceTree = "<group>"; };
 		68565FEA287B12D600D07090 /* PlatformCallbacks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlatformCallbacks.swift; sourceTree = "<group>"; };
 		68565FED287B1D8A00D07090 /* InputEvents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputEvents.swift; sourceTree = "<group>"; };
+		68565FF0287B444100D07090 /* PlatformAudio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlatformAudio.swift; sourceTree = "<group>"; };
 		685741BC2868E53900B13B23 /* InterleavedBitmaps.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = InterleavedBitmaps.hpp; sourceTree = "<group>"; };
 		685741CD2868ED8C00B13B23 /* Faufau.brush */ = {isa = PBXFileReference; lastKnownFileType = file; name = Faufau.brush; path = ../../assets/Faufau.brush; sourceTree = "<group>"; };
 		685741CE2868ED8C00B13B23 /* Faufau.ilbm */ = {isa = PBXFileReference; lastKnownFileType = file; name = Faufau.ilbm; path = ../../assets/Faufau.ilbm; sourceTree = "<group>"; };
@@ -253,6 +256,7 @@
 				6859DD0128673522009137CC /* GameSettings.swift */,
 				68565FE0287B08F400D07090 /* PlatformInput.swift */,
 				68565FED287B1D8A00D07090 /* InputEvents.swift */,
+				68565FF0287B444100D07090 /* PlatformAudio.swift */,
 			);
 			path = Model;
 			sourceTree = "<group>";
@@ -387,6 +391,7 @@
 				689E03232857A61D00DF8738 /* GameView.swift in Sources */,
 				68D205D72854EE2F00CB4213 /* Timings.cpp in Sources */,
 				6845559E283D8044004AD3FB /* Project256App.swift in Sources */,
+				68565FF1287B444100D07090 /* PlatformAudio.swift in Sources */,
 				68D205DF2855EE3800CB4213 /* GameState.swift in Sources */,
 				689E03262857A67600DF8738 /* DrawBufferView.swift in Sources */,
 				689E03292857BEF300DF8738 /* KeyboardMouseModifiers.swift in Sources */,
@@ -407,6 +412,7 @@
 				6819ACC6283EDFFC00CCBFD5 /* MetalViewShader.metal in Sources */,
 				689E03242857A61D00DF8738 /* GameView.swift in Sources */,
 				6859DD0328673522009137CC /* GameSettings.swift in Sources */,
+				68565FF2287B444100D07090 /* PlatformAudio.swift in Sources */,
 				68D205D82854EE2F00CB4213 /* Timings.cpp in Sources */,
 				68565FE6287B121100D07090 /* TupleAccess.swift in Sources */,
 				68565FE2287B08F400D07090 /* PlatformInput.swift in Sources */,

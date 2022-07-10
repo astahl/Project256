@@ -94,4 +94,29 @@ void writeDrawBuffer(void* pMemory, void* buffer)
     Game::writeDrawBuffer(memory, drawBuffer);
 }
 
+
+void writeAudioBuffer(void* pMemory, void* buffer, struct AudioBufferDescriptor bufferDescriptor)
+{
+    assert(buffer != nullptr);
+    assert(pMemory != nullptr);
+
+    auto& memory = *reinterpret_cast<Game::MemoryLayout*>(pMemory);
+
+    float phaseStep = memory.frequency / bufferDescriptor.sampleRate * 2 * M_PI;
+
+    struct Frame {
+        int16_t left, right;
+    };
+
+    auto frames = reinterpret_cast<Frame*>(buffer);
+    for (int i = 0; i < bufferDescriptor.framesPerBuffer; ++i) {
+        int16_t value = memory.amplitude * sin(memory.phase);
+        frames[i].left = value;
+        frames[i].right = value;
+        memory.phase += phaseStep;
+    }
+
+    memory.phase = fmodf(memory.phase, M_PI * 2);
+}
+
 }

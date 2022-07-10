@@ -26,6 +26,7 @@ func setCursorVisible(_ shouldShow: Bool, currentlyHidden: Bool) -> Bool
 class GameState : ObservableObject {
     let settings: GameSettings
     let platformInput: PlatformInput
+    let platformAudio: PlatformAudio
 
     static var timingData: ProfilingTime? = {
         var value = ProfilingTime()
@@ -40,15 +41,11 @@ class GameState : ObservableObject {
     var drawBuffer = DrawBuffer()
     let platformCallbacks = PlatformCallbacks(readFile: loadDataDEBUG(filenamePtr:destination:bufferSize:), readImage: loadImageDEBUG(filenamePtr:destination:width:height:))
 
-
     init(settings: GameSettings?) {
         self.settings = settings ?? GameSettings()
         self.platformInput = PlatformInput(settings: self.settings)
+        self.platformAudio = PlatformAudio(memory: self.memory)
     }
-
-
-
-    
 
     func tick() {
         GameState.timingData?.interval(timer: eTimerTickToTick, interval: eTimingTickToTick)

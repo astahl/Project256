@@ -66,6 +66,10 @@ struct TestBedMemory {
     Vec2i points[2];
     int currentPoint;
 
+    // audio
+    float phase = 0.0;
+    int16_t amplitude = 0;
+    float frequency = 220.0f;
 };
 
 
@@ -384,11 +388,14 @@ struct TestBed {
 
 
         // update
-        memory.birdPosition = memory.birdPosition + static_cast<float>(input.elapsedTime_s) * memory.birdSpeed * normalized(itof(memory.birdTarget) - memory.birdPosition);
+        auto birdDistance = itof(memory.birdTarget) - memory.birdPosition;
+        memory.birdPosition = memory.birdPosition + static_cast<float>(input.elapsedTime_s) * memory.birdSpeed * normalized(birdDistance);
         memory.birdPosition = clamp(memory.birdPosition, Vec2f{}, Vec2f{DrawBufferWidth - 1, DrawBufferHeight - 1});
 
         memory.vram.pixel(memory.birdTarget) = lightBlue;
 
+        memory.frequency = memory.birdPosition.y;
+        memory.amplitude = 20000 / (length(birdDistance) + 1);
         // draw
         blitSprite(memory.sprite, memory.currentSpriteFrame, memory.vram.data(), DrawBufferWidth, truncate(memory.birdPosition), Vec2i{}, Vec2i{DrawBufferWidth, DrawBufferHeight});
 
