@@ -20,7 +20,7 @@
 
 
 using DrawBuffer = Image<uint32_t, DrawBufferWidth, DrawBufferHeight>;
-
+using VRAM = Image<uint8_t, DrawBufferWidth, DrawBufferHeight, ImageOrigin::BottomLeft>;
 
 constant int TextCharacterW = 8;
 constant int TextCharacterH = 8;
@@ -33,7 +33,7 @@ constant int TextLineLength = DrawBufferWidth / TextCharacterW;
 struct TestBedMemory {
     std::array<uint8_t, 1024 * 1024> scratch;
     // video
-    alignas(128) Image<uint8_t, DrawBufferWidth, DrawBufferHeight, ImageOrigin::BottomLeft> vram;
+    alignas(128) VRAM vram;
     alignas(128) std::array<uint32_t, 256> palette;
 
     // text
@@ -117,8 +117,10 @@ struct TestBed {
             std::replace(memory.sprite.data.begin(), memory.sprite.data.end(), static_cast<uint8_t>(1), static_cast<uint8_t>(2));
             memory.currentSpriteFrame = 0;
             memory.birdSpeed = 5;
-            int64_t read = callbacks.readFile("CharacterRomPET8x8x256.bin", memory.characterROM.bytes(), memory.characterROM.bytesSize());
-            assert(read == 2048);
+            {
+                int64_t read = callbacks.readFile("CharacterRomPET8x8x256.bin", memory.characterROM.bytes(), memory.characterROM.bytesSize());
+                assert(read == 2048);
+            }
             memory.textFirstLine = 0;
             memory.textLastLine = 8;
 
@@ -163,12 +165,12 @@ struct TestBed {
 
         }
 
-        constant auto black = findNearest(Colors::Black, memory.palette).index;
-        constant auto white = findNearest(Colors::White, memory.palette).index;
-        constant auto cyan = findNearest(Colors::Cyan, memory.palette).index;
-        constant auto lightBlue = findNearest(Colors::LightBlue, memory.palette).index;
-        constant auto red = findNearest(Colors::Red, memory.palette).index;
-        constant auto green = findNearest(Colors::Green, memory.palette).index;
+        constant auto black = static_cast<VRAM::PixelType>(findNearest(Colors::Black, memory.palette).index);
+        constant auto white = static_cast<VRAM::PixelType>(findNearest(Colors::White, memory.palette).index);
+        constant auto cyan = static_cast<VRAM::PixelType>(findNearest(Colors::Cyan, memory.palette).index);
+        constant auto lightBlue = static_cast<VRAM::PixelType>(findNearest(Colors::LightBlue, memory.palette).index);
+        constant auto red = static_cast<VRAM::PixelType>(findNearest(Colors::Red, memory.palette).index);
+        constant auto green = static_cast<VRAM::PixelType>(findNearest(Colors::Green, memory.palette).index);
         constant auto whitePixel = [&](const auto& p) { memory.vram.pixel(p) = white; };
         constant auto redPixel = [&](const auto& p) { memory.vram.pixel(p) = red; };
 
@@ -395,7 +397,7 @@ struct TestBed {
         memory.vram.pixel(memory.birdTarget) = lightBlue;
 
         memory.frequency = memory.birdPosition.y;
-        memory.amplitude = 20000 / (length(birdDistance) + 1);
+        memory.amplitude = static_cast<int16_t>(20000.0f / (length(birdDistance) + 1));
         // draw
         blitSprite(memory.sprite, memory.currentSpriteFrame, memory.vram.data(), DrawBufferWidth, truncate(memory.birdPosition), Vec2i{}, Vec2i{DrawBufferWidth, DrawBufferHeight});
 
@@ -478,5 +480,25 @@ struct TestBed {
             for (unsigned x = 0; x < DrawBufferWidth; ++x)
                 *pixel++ = memory.palette[*vram++];
         }
+    }
+
+
+
+    static void writeAudioBuffer(TestBedMemory& memory, void* buffer, const AudioBufferDescriptor& bufferDescriptor) {
+        float phaseStep = memory.frequency / static_cast<float>(bufferDescriptor.sampleRate) * 2 * std::numbers::pi_v<float>;
+
+        struct Frame {
+            int16_t left, right;
+        };
+
+        auto frames = reinterpret_cast<Frame*>(buffer);
+        for (unsigned int i = 0; i < bufferDescriptor.framesPerBuffer; ++i) {
+            int16_t value = static_cast<int16_t>(memory.amplitude * sin(memory.phase));
+            frames[i].left = value;
+            frames[i].right = value;
+            memory.phase += phaseStep;
+        }
+
+        memory.phase = fmodf(memory.phase, std::numbers::pi_v<float> * 2);
     }
 };

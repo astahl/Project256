@@ -186,15 +186,15 @@ struct PET {
     compiletime std::optional<uint8_t> CharacterForCodepoint(uint32_t codePoint) {
         // PET 0x20 - 0x3F is equal to ascii
         if (codePoint >= ' ' && codePoint <= '?') {
-            return codePoint;
+            return static_cast<uint8_t>(codePoint);
         }
         // Ascii Uppercase is at beginning of character rom
         if (codePoint >= '@' && codePoint <= ']') {
-            return codePoint - '@';
+            return  static_cast<uint8_t>(codePoint - '@');
         }
         // Ascii lowercase (0x60 - 0x7A) is in 0xC0 - 0xDA of character rom
         if (codePoint >= 'a' && codePoint <= 'z') {
-            return codePoint + 0x60;
+            return  static_cast<uint8_t>(codePoint + 0x60);
         }
 
         using enum SpecialCharacters;
