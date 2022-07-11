@@ -396,8 +396,8 @@ struct TestBed {
 
         memory.vram.pixel(memory.birdTarget) = lightBlue;
 
-        memory.frequency = memory.birdPosition.y;
-        memory.amplitude = static_cast<int16_t>(20000.0f / (length(birdDistance) + 1));
+        memory.frequency = memory.birdPosition.y * 3;
+        memory.amplitude = static_cast<int16_t>(10000.0f / (length(birdDistance) + 1)) + 5000;
         // draw
         blitSprite(memory.sprite, memory.currentSpriteFrame, memory.vram.data(), DrawBufferWidth, truncate(memory.birdPosition), Vec2i{}, Vec2i{DrawBufferWidth, DrawBufferHeight});
 

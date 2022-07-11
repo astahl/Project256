@@ -3,6 +3,7 @@
 #include <d3dcompiler.h>
 #include <string>
 #include "GameState.h"
+#include <cassert>
 #ifdef _DEBUG
 #include <dxgidebug.h>
 #endif
@@ -658,5 +659,6 @@ bool Direct3D12View::ExitOnFail(HRESULT result) {
 	if (SUCCEEDED(result)) {
 		return true;
 	}
+	assert(false);
 	exit(result);
 }

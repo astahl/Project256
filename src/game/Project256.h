@@ -7,6 +7,11 @@
 
 constant long MemorySize = 1024 * 1024 * 8; // 8 MBytes
 
+constant unsigned AudioFramesPerBuffer = 256;
+constant unsigned AudioFramesPerSecond = 48000;
+constant unsigned AudioChannelsPerFrame = 2;
+constant unsigned AudioBitsPerSample = 16;
+
 constant unsigned DrawBufferWidth = 320;
 constant unsigned DrawBufferHeight = 200;
 

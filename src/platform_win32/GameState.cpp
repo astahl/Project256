@@ -204,9 +204,11 @@ void PlatformInput::pollXInput(GameInput& gameInput)
 }
 
 
-GameState::GameState() {
+GameState::GameState() 
+{
     this->memory = reinterpret_cast<byte*>(VirtualAlloc(LPVOID(2LL * 1024 * 1024 * 1024), MemorySize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
     this->drawBuffer = reinterpret_cast<byte*>(VirtualAlloc(LPVOID(2LL * 1024 * 1024 * 1024 + MemorySize), 4 * DrawBufferHeight * DrawBufferWidth, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
+    this->audio = new PlatformAudio{ this->memory };
 }
 
 
@@ -246,7 +248,8 @@ bool readImageDEBUG(const char* filename, unsigned int* buffer, int width, int h
     std::wstring filePath = pathBuf + wideString;
 
     // Initialize COM
-    HRESULT hr = CoInitialize(NULL);
+   
+    HRESULT hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
     if (!SUCCEEDED(hr))
         return false;
 

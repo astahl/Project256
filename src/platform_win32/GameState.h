@@ -3,6 +3,7 @@
 #include <Windows.h>
 #include "../game/Project256.h"
 #include "../game/Profiling/Timings.h"
+#include "PlatformAudio.h"
 
 class Chronometer {
     LARGE_INTEGER frequency = {};
@@ -75,6 +76,7 @@ struct GameState {
     byte* drawBuffer;
     GameInput input{};
 
+    PlatformAudio* audio;
     PlatformInput platform{};
 
     GameState();
