@@ -45,6 +45,7 @@ class GameState : ObservableObject {
         self.settings = settings ?? GameSettings()
         self.platformInput = PlatformInput(settings: self.settings)
         self.platformAudio = PlatformAudio(memory: self.memory)
+        self.platformAudio.start()
     }
 
     func tick() {

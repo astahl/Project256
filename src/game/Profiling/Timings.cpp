@@ -20,9 +20,11 @@ extern "C" {
 
 #ifdef PROFILING
 
-static const std::array<std::array<char, 16>, TimingIntervalCount> sIntervalNames {
+static const std::array<std::array<char, 32>, TimingIntervalCount> sIntervalNames {
     "TickToTick",
     "FrameToFrame",
+    "AudioBufToAudioBuf",
+    "AudioBufFill",
     "TickSetup",
     "TickDo",
     "TickPost",

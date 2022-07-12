@@ -14,6 +14,8 @@
 enum TimingTimer {
     eTimerTickToTick,
     eTimerFrameToFrame,
+    eTimerAudioBufferToAudioBuffer,
+    eTimerFillAudioBuffer,
     eTimerTick,
     eTimerBufferCopy,
     eTimerDraw,
@@ -23,6 +25,8 @@ enum TimingTimer {
 enum TimingInterval {
     eTimingTickToTick,
     eTimingFrameToFrame,
+    eTimingAudioBufferToAudioBuffer,
+    eTimingFillAudioBuffer,
     eTimingTickSetup,
     eTimingTickDo,
     eTimingTickPost,
