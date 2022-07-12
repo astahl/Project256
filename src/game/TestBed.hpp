@@ -27,7 +27,157 @@ constant int TextCharacterH = 8;
 constant int TextLines = DrawBufferHeight / TextCharacterH;
 constant int TextLineLength = DrawBufferWidth / TextCharacterW;
 
+template<typename T>
+concept aSoundGenerator = requires (T& t) {
+    t.value();
+    t.advance(0.0f);
+};
 
+template<typename T>
+concept aToneGenerator = aSoundGenerator<T> && requires (T& t) {
+    t.frequency;
+};
+
+template<typename T>
+struct SineWave {
+    compiletime float pi2 = 2 * std::numbers::pi_v<float>;
+    float phase;
+    T amplitude;
+    float frequency;
+
+    constexpr T value() const {
+        return amplitude * mySin(phase);
+    }
+
+    void advance(float timeStep) {
+        phase += pi2 * timeStep * frequency;
+        if (phase > pi2) {
+            phase = fmodf(phase, pi2);
+        }
+    }
+};
+
+template<typename T>
+struct SawtoothWave {
+    float phase;
+    T amplitude;
+    float frequency;
+
+    constexpr T value() const {
+        return amplitude * (phase - 1.0f);
+    }
+
+    void advance(float timeStep) {
+        phase += timeStep * frequency;
+        if (phase > 2.0f) {
+            phase = fmodf(phase, 2.0f);
+        }
+    }
+};
+
+template<typename T>
+struct TriangleWave {
+    float phase;
+    T amplitude;
+    float frequency;
+
+
+    constexpr T value() const {
+        return amplitude * (std::fabs(phase * 4 - 2.0f) - 1.0f);
+    }
+
+    void advance(float timeStep) {
+        phase += timeStep * frequency;
+        if (phase > 1.0f) {
+            phase = fmodf(phase, 1.0f);
+        }
+    }
+};
+
+
+template<typename T>
+struct SquareWave {
+    float phase;
+    T amplitude;
+    float frequency;
+
+
+    constexpr T value() const {
+        return phase < 0.5 ? amplitude : -amplitude;
+    }
+
+    void advance(float timeStep) {
+        phase += timeStep * frequency;
+        if (phase > 1.0f) {
+            phase = fmodf(phase, 1.0f);
+        }
+    }
+};
+
+template<typename T>
+struct PulseWave {
+    float phase;
+    T amplitude;
+    float frequency;
+    float pulseWidth;
+
+    constexpr T value() const {
+        return phase < pulseWidth ? amplitude : (phase - 0.5f < pulseWidth ? -amplitude : 0);
+    }
+
+    void advance(float timeStep) {
+        phase += timeStep * frequency;
+        if (phase > 1.0f) {
+            phase = fmodf(phase, 1.0f);
+        }
+    }
+};
+
+template<typename T>
+struct WhiteNoise {
+    T amplitude;
+    T mValue;
+
+    constexpr T value() const {
+        return mValue;
+    }
+
+    void advance(float) {
+        auto rando = amplitude * static_cast<float>(rand()) / RAND_MAX;
+        mValue = static_cast<T>(rando);
+    }
+};
+
+
+template<aToneGenerator T, aSoundGenerator U>
+struct FrequencyModulator {
+    T carrier;
+    U mod;
+
+    constexpr auto value() const {
+        return carrier.value();
+    }
+
+    void advance(float timeStep) {
+        mod.advance(timeStep);
+        carrier.advance(timeStep + (timeStep * mod.value()));
+    }
+};
+
+template<aToneGenerator T, aSoundGenerator U>
+struct AmplitudeModulator {
+    T carrier;
+    U mod;
+
+    constexpr auto value() const {
+        return carrier.value() * mod.value();
+    }
+
+    void advance(float timeStep) {
+        mod.advance(timeStep);
+        carrier.advance(timeStep);
+    }
+};
 
 
 struct TestBedMemory {
@@ -67,9 +217,8 @@ struct TestBedMemory {
     int currentPoint;
 
     // audio
-    float phase = 0.0;
-    int16_t amplitude = 0;
-    float frequency = 220.0f;
+    AmplitudeModulator<SineWave<float>, TriangleWave<float>> tone;
+    PulseWave<float> sineWave;
 };
 
 
@@ -163,6 +312,11 @@ struct TestBed {
 
             ConvertBitmapFrom32BppToIndex<320>(reinterpret_cast<uint32_t*>(memory.scratch.data()), 320, 256, memory.palette, memory.imageDecoded.data());
 
+
+            memory.tone.carrier.frequency = 300.0f;
+            memory.tone.carrier.amplitude = 1.0f;
+            memory.tone.mod.frequency = 2.0f;
+            memory.tone.mod.amplitude = 1.f;
         }
 
         constant auto black = static_cast<VRAM::PixelType>(findNearest(Colors::Black, memory.palette).index);
@@ -285,8 +439,6 @@ struct TestBed {
         compiletime auto wrap = [](auto p) { return wrapAround2d(p, Vec2i(), Vec2i{DrawBufferWidth, DrawBufferHeight});};
         compiletime auto clip = [=](const auto& p) { return (Vec2i{0,0} <= p) && (p < BufferSize); };
 
-
-
         if (input.mouse.trackLength) {
             Vec2f mousePosition = input.mouse.track[input.mouse.trackLength - 1];
             Vec2i position = truncate(mousePosition);
@@ -396,8 +548,9 @@ struct TestBed {
 
         memory.vram.pixel(memory.birdTarget) = lightBlue;
 
-        memory.frequency = memory.birdPosition.y * 3;
-        memory.amplitude = static_cast<int16_t>(10000.0f / (length(birdDistance) + 1)) + 5000;
+        memory.sineWave.frequency = memory.birdPosition.y * 3;
+        memory.sineWave.pulseWidth = 0.125f;
+        memory.sineWave.amplitude = 1.0f / (length(birdDistance) + 1) + 0.5f;
         // draw
         blitSprite(memory.sprite, memory.currentSpriteFrame, memory.vram.data(), DrawBufferWidth, truncate(memory.birdPosition), Vec2i{}, Vec2i{DrawBufferWidth, DrawBufferHeight});
 
@@ -485,7 +638,7 @@ struct TestBed {
 
 
     static void writeAudioBuffer(TestBedMemory& memory, void* buffer, const AudioBufferDescriptor& bufferDescriptor) {
-        float phaseStep = memory.frequency / static_cast<float>(bufferDescriptor.sampleRate) * 2 * std::numbers::pi_v<float>;
+        float timeStep = 1.0f / static_cast<float>(bufferDescriptor.sampleRate);
 
         struct Frame {
             int16_t left, right;
@@ -493,12 +646,11 @@ struct TestBed {
 
         auto frames = reinterpret_cast<Frame*>(buffer);
         for (unsigned int i = 0; i < bufferDescriptor.framesPerBuffer; ++i) {
-            int16_t value = static_cast<int16_t>(memory.amplitude * sin(memory.phase));
+            int16_t value = 2000 * memory.tone.value();
             frames[i].left = value;
             frames[i].right = value;
-            memory.phase += phaseStep;
+            memory.tone.advance(timeStep);
         }
 
-        memory.phase = fmodf(memory.phase, std::numbers::pi_v<float> * 2);
     }
 };
