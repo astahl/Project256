@@ -213,6 +213,7 @@ struct EnvelopeAdsr {
     float decay;
     float sustain;
     float release;
+    bool percussive;
 
     T amplitude;
     float t;
@@ -256,7 +257,7 @@ struct EnvelopeAdsr {
             }
         }
         if (currentSection == Section::Sustain) {
-            if (on) {
+            if (on && !percussive) {
                 currentValue = sustain * amplitude;
             } 
             else {
@@ -265,7 +266,8 @@ struct EnvelopeAdsr {
             }
         }
         if (currentSection == Section::Release) {
-            if (t < release) {
+            if (t < release &&
+                (!on && !percussive)) { // also check if envelope was retriggered, skip to ready and attack subsequently
                 float tRelease = t / release;
                 currentValue = std::lerp(sustain * amplitude, 0, tRelease);
             }
@@ -419,7 +421,7 @@ struct TestBed {
             memory.tone.mod.amplitude = 1.f;
             memory.tone.depth = 0.2f;
 
-            memory.sequencer.stepsPerSecond = 4;
+            memory.sequencer.stepsPerSecond = 16;
             memory.sequencer.steps[0] = { .amplitude = 1.0f, .frequency = 220.f };
             memory.sequencer.steps[1] = { .amplitude = 1.0f, .frequency = 250.f };
             memory.sequencer.steps[2] = { .amplitude = 1.0f, .frequency = 250.f };
@@ -429,7 +431,7 @@ struct TestBed {
             memory.envelope.attack = 0.01f;
             memory.envelope.sustain = 0.4f;
             memory.envelope.decay = 0.1f;
-            memory.envelope.release = .1f;
+            memory.envelope.release = .5f;
 
         }
 
