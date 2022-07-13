@@ -207,6 +207,77 @@ struct StepSequencer {
     }
 };
 
+template <typename T>
+struct EnvelopeAdsr {
+    float attack;
+    float decay;
+    float sustain;
+    float release;
+
+    T amplitude;
+    float t;
+    bool on;
+    enum class Section {
+        Ready, Attack, Decay, Sustain, Release
+    } currentSection;
+    T currentValue;
+
+    T value() {
+        return currentValue;
+    }
+
+    void advance(float timeStep) {
+        if (currentSection == Section::Ready) {
+            if (on == false) {
+                return;
+            }
+
+            currentSection = Section::Attack;
+        }
+        t += timeStep;
+        if (currentSection == Section::Attack) {
+            if (t < attack) {
+                float tAttack = t / attack;
+                currentValue = std::lerp(0.0f, amplitude, tAttack);
+            }
+            else {
+                currentSection = Section::Decay;
+                t -= attack;
+            }
+        }
+        if (currentSection == Section::Decay) {
+            if (t < decay) {
+                float tDecay = t / decay;
+                currentValue = std::lerp(amplitude, sustain * amplitude, tDecay);
+            }
+            else {
+                currentSection = Section::Sustain;
+                t -= decay;
+            }
+        }
+        if (currentSection == Section::Sustain) {
+            if (on) {
+                currentValue = sustain * amplitude;
+            } 
+            else {
+                currentSection = Section::Release;
+                t = timeStep;
+            }
+        }
+        if (currentSection == Section::Release) {
+            if (t < release) {
+                float tRelease = t / release;
+                currentValue = std::lerp(sustain * amplitude, 0, tRelease);
+            }
+            else {
+                currentValue = 0;
+                t = 0.0f;
+                currentSection = Section::Ready;
+            }
+        }
+    }
+};
+
 struct TestBedMemory {
     std::array<uint8_t, 1024 * 1024> scratch;
     // video
@@ -247,6 +318,7 @@ struct TestBedMemory {
     AmplitudeModulator<SineWave<float>, TriangleWave<float>> tone;
     StepSequencer<float> sequencer;
     PulseWave<float> sineWave;
+    EnvelopeAdsr<float> envelope;
 };
 
 
@@ -353,6 +425,12 @@ struct TestBed {
             memory.sequencer.steps[2] = { .amplitude = 1.0f, .frequency = 250.f };
             memory.sequencer.steps[3] = { .amplitude = .3f, .frequency = 440.f };;
             memory.sequencer.steps[12] = { .amplitude = .3f, .frequency = 500.f };
+
+            memory.envelope.attack = 0.01f;
+            memory.envelope.sustain = 0.4f;
+            memory.envelope.decay = 0.1f;
+            memory.envelope.release = .1f;
+
         }
 
         constant auto black = static_cast<VRAM::PixelType>(findNearest(Colors::Black, memory.palette).index);
@@ -585,7 +663,7 @@ struct TestBed {
         memory.vram.pixel(memory.birdTarget) = lightBlue;
 
         memory.tone.mod.frequency = 5 * 100.f / (length(birdDistance) + 1);
-        memory.tone.carrier.frequency = 10 * memory.birdPosition.x;
+        memory.tone.mod.amplitude = memory.birdPosition.x / 300;
         // draw
         blitSprite(memory.sprite, memory.currentSpriteFrame, memory.vram.data(), DrawBufferWidth, truncate(memory.birdPosition), Vec2i{}, Vec2i{DrawBufferWidth, DrawBufferHeight});
 
@@ -682,13 +760,23 @@ struct TestBed {
         auto frames = reinterpret_cast<Frame*>(buffer);
         for (unsigned int i = 0; i < bufferDescriptor.framesPerBuffer; ++i) {
             auto& step = memory.sequencer.value();
-            memory.tone.carrier.frequency = step.frequency;
-            memory.tone.carrier.amplitude = step.amplitude;
+            if (step.frequency > 0) {
+                memory.tone.carrier.frequency = step.frequency;
+            }
+            if (!memory.envelope.on && step.amplitude > 0.0f) {
+                memory.envelope.on = true;
+                memory.envelope.amplitude = step.amplitude;
+            } 
+            if (memory.envelope.on && step.amplitude == 0.0f) {
+                memory.envelope.on = false;
+            }
+            memory.tone.carrier.amplitude = memory.envelope.value();
             int16_t value = static_cast<int16_t>(2000 * memory.tone.value());
             frames[i].left = value;
             frames[i].right = value;
             memory.sequencer.advance(timeStep);
             memory.tone.advance(timeStep);
+            memory.envelope.advance(timeStep);
         }
 
     }
