@@ -181,6 +181,31 @@ struct AmplitudeModulator {
     }
 };
 
+template <typename T>
+struct StepSequencer {
+    struct Step {
+        T amplitude;
+        float frequency;
+    };
+
+    std::array<Step, 16> steps;
+    // bpm * 4 / 60
+    float stepsPerSecond;
+    float t;
+    int currentStep;
+
+    void advance(float timeStep) {
+        t += timeStep * stepsPerSecond;
+        if (t >= steps.size()) {
+            t = fmodf(t, static_cast<float>(steps.size()));
+        }
+        currentStep = static_cast<int>(t);
+    }
+
+    const Step& value() const {
+        return steps[currentStep];
+    }
+};
 
 struct TestBedMemory {
     std::array<uint8_t, 1024 * 1024> scratch;
@@ -220,6 +245,7 @@ struct TestBedMemory {
 
     // audio
     AmplitudeModulator<SineWave<float>, TriangleWave<float>> tone;
+    StepSequencer<float> sequencer;
     PulseWave<float> sineWave;
 };
 
@@ -306,7 +332,7 @@ struct TestBed {
 
             if (callbacks.readImage) {
                 if (!callbacks.readImage("test.bmp", reinterpret_cast<uint32_t*>(memory.scratch.data()), 320, 256))
-                    exit(3);
+                     exit(3);
             }
             else {
                 exit(4);
@@ -315,11 +341,18 @@ struct TestBed {
             ConvertBitmapFrom32BppToIndex<320>(reinterpret_cast<uint32_t*>(memory.scratch.data()), 320, 256, memory.palette, memory.imageDecoded.data());
 
 
-            memory.tone.carrier.frequency = 300.0f;
-            memory.tone.carrier.amplitude = 1.0f;
+            //memory.tone.carrier.frequency = 300.0f;
+            //memory.tone.carrier.amplitude = 1.0f;
             memory.tone.mod.frequency = 2.0f;
             memory.tone.mod.amplitude = 1.f;
             memory.tone.depth = 0.2f;
+
+            memory.sequencer.stepsPerSecond = 4;
+            memory.sequencer.steps[0] = { .amplitude = 1.0f, .frequency = 220.f };
+            memory.sequencer.steps[1] = { .amplitude = 1.0f, .frequency = 250.f };
+            memory.sequencer.steps[2] = { .amplitude = 1.0f, .frequency = 250.f };
+            memory.sequencer.steps[3] = { .amplitude = .3f, .frequency = 440.f };;
+            memory.sequencer.steps[12] = { .amplitude = .3f, .frequency = 500.f };
         }
 
         constant auto black = static_cast<VRAM::PixelType>(findNearest(Colors::Black, memory.palette).index);
@@ -648,9 +681,13 @@ struct TestBed {
 
         auto frames = reinterpret_cast<Frame*>(buffer);
         for (unsigned int i = 0; i < bufferDescriptor.framesPerBuffer; ++i) {
+            auto& step = memory.sequencer.value();
+            memory.tone.carrier.frequency = step.frequency;
+            memory.tone.carrier.amplitude = step.amplitude;
             int16_t value = static_cast<int16_t>(2000 * memory.tone.value());
             frames[i].left = value;
             frames[i].right = value;
+            memory.sequencer.advance(timeStep);
             memory.tone.advance(timeStep);
         }
 
