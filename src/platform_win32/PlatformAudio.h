@@ -10,12 +10,11 @@ using Microsoft::WRL::ComPtr;
 
 
 class PlatformAudio {
-	static const int BufferCount = 3;
 	ComPtr<IXAudio2> mXAudio2;
 	void* mMemory;
 	IXAudio2MasteringVoice* mMasteringVoice;
 	IXAudio2SourceVoice* mSourceVoice;
-	XAUDIO2_BUFFER mBuffers[BufferCount]{};
+	XAUDIO2_BUFFER mBuffers[AudioBufferCount]{};
 	int mCurrentBuffer = 0;
 	AudioBufferDescriptor mAudioBufferDescriptor{};
 

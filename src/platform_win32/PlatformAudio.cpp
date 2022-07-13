@@ -22,7 +22,7 @@ PlatformAudio::PlatformAudio(void* memory) :mMemory{ memory } {
 		.wFormatTag = WAVE_FORMAT_PCM,
 		.nChannels = AudioChannelsPerFrame,
 		.nSamplesPerSec = AudioFramesPerSecond,
-		.nAvgBytesPerSec = AudioFramesPerSecond * sizeof(INT16) * AudioChannelsPerFrame,
+		.nAvgBytesPerSec = AudioFramesPerSecond * AudioBitsPerSample / 8 * AudioChannelsPerFrame,
 		.nBlockAlign = AudioChannelsPerFrame * AudioBitsPerSample / 8,
 		.wBitsPerSample = AudioBitsPerSample,
 	};
@@ -37,8 +37,8 @@ PlatformAudio::PlatformAudio(void* memory) :mMemory{ memory } {
 	mAudioBufferDescriptor.sampleTime = 0;
 	mAudioBufferDescriptor.timestamp = 0;
 
-	const int bufferSize = AudioFramesPerBuffer * sizeof(INT16) * AudioChannelsPerFrame;
-	BYTE* bufferBytes = reinterpret_cast<BYTE*>(VirtualAlloc(0, bufferSize * BufferCount, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
+	const int bufferSize = AudioFramesPerBuffer * AudioBitsPerSample / 8 * AudioChannelsPerFrame;
+	BYTE* bufferBytes = reinterpret_cast<BYTE*>(VirtualAlloc(0, bufferSize * AudioBufferCount, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
 	for (auto& buffer : mBuffers) {
 		buffer.AudioBytes = bufferSize;
 		buffer.pAudioData = bufferBytes;
@@ -56,7 +56,7 @@ void PlatformAudio::prepareNextBuffer() {
 	void* data = const_cast<void*>(reinterpret_cast<const void*>(buf.pAudioData));
 	writeAudioBuffer(this->mMemory, data, mAudioBufferDescriptor);
 	mSourceVoice->SubmitSourceBuffer(&buf);
-	mCurrentBuffer = (mCurrentBuffer + 1) % BufferCount;
+	mCurrentBuffer = (mCurrentBuffer + 1) % AudioBufferCount;
 	mAudioBufferDescriptor.sampleTime += mAudioBufferDescriptor.framesPerBuffer;
 }
 
