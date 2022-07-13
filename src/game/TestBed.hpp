@@ -153,6 +153,7 @@ template<aToneGenerator T, aSoundGenerator U>
 struct FrequencyModulator {
     T carrier;
     U mod;
+    float depth;
 
     constexpr auto value() const {
         return carrier.value();
@@ -160,7 +161,7 @@ struct FrequencyModulator {
 
     void advance(float timeStep) {
         mod.advance(timeStep);
-        carrier.advance(timeStep + (timeStep * mod.value()));
+        carrier.advance(timeStep + (timeStep * depth * mod.value()));
     }
 };
 
@@ -168,9 +169,10 @@ template<aToneGenerator T, aSoundGenerator U>
 struct AmplitudeModulator {
     T carrier;
     U mod;
+    float depth;
 
     constexpr auto value() const {
-        return carrier.value() * mod.value();
+        return carrier.value() * std::lerp(1, mod.value(), depth);
     }
 
     void advance(float timeStep) {
@@ -317,6 +319,7 @@ struct TestBed {
             memory.tone.carrier.amplitude = 1.0f;
             memory.tone.mod.frequency = 2.0f;
             memory.tone.mod.amplitude = 1.f;
+            memory.tone.depth = 0.2f;
         }
 
         constant auto black = static_cast<VRAM::PixelType>(findNearest(Colors::Black, memory.palette).index);
@@ -548,9 +551,8 @@ struct TestBed {
 
         memory.vram.pixel(memory.birdTarget) = lightBlue;
 
-        memory.sineWave.frequency = memory.birdPosition.y * 3;
-        memory.sineWave.pulseWidth = 0.125f;
-        memory.sineWave.amplitude = 1.0f / (length(birdDistance) + 1) + 0.5f;
+        memory.tone.mod.frequency = 5 * 100.f / (length(birdDistance) + 1);
+        memory.tone.carrier.frequency = 10 * memory.birdPosition.x;
         // draw
         blitSprite(memory.sprite, memory.currentSpriteFrame, memory.vram.data(), DrawBufferWidth, truncate(memory.birdPosition), Vec2i{}, Vec2i{DrawBufferWidth, DrawBufferHeight});
 
@@ -646,7 +648,7 @@ struct TestBed {
 
         auto frames = reinterpret_cast<Frame*>(buffer);
         for (unsigned int i = 0; i < bufferDescriptor.framesPerBuffer; ++i) {
-            int16_t value = 2000 * memory.tone.value();
+            int16_t value = static_cast<int16_t>(2000 * memory.tone.value());
             frames[i].left = value;
             frames[i].right = value;
             memory.tone.advance(timeStep);
