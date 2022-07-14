@@ -4,6 +4,7 @@
 #include "../game/Project256.h"
 #include <xaudio2.h>
 #include <wrl.h>
+#include <thread>
 
 using Microsoft::WRL::ComPtr;
 
@@ -17,8 +18,12 @@ class PlatformAudio {
 	XAUDIO2_BUFFER mBuffers[AudioBufferCount]{};
 	int mCurrentBuffer = 0;
 	AudioBufferDescriptor mAudioBufferDescriptor{};
+	std::jthread mAudioProcessingThread;
 
 	struct SourceVoiceCallback : public IXAudio2VoiceCallback {
+		HANDLE mBufferEndEvent;
+		SourceVoiceCallback();
+		~SourceVoiceCallback();
 		virtual void __stdcall OnVoiceProcessingPassStart(UINT32 BytesRequired) override;
 		virtual void __stdcall OnVoiceProcessingPassEnd(void) override;
 		virtual void __stdcall OnStreamEnd(void) override;

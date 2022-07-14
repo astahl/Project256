@@ -335,7 +335,9 @@ struct TestBed {
     static GameOutput doGameThings(TestBedMemory& memory, const GameInput& input, const PlatformCallbacks& callbacks)
     {
         if (input.frameNumber == 0) {
+#ifdef DEBUG
             test_myCos();
+#endif
         }
         using namespace ranges_at_home;
         using namespace Generators;
@@ -369,6 +371,7 @@ struct TestBed {
             {
                 int64_t read = callbacks.readFile("CharacterRomPET8x8x256.bin", memory.characterROM.bytes(), memory.characterROM.bytesSize());
                 assert(read == 2048);
+                read;
             }
             memory.textFirstLine = 0;
             memory.textLastLine = 8;

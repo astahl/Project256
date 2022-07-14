@@ -106,17 +106,20 @@ compiletime void test_myCos() {
         double my = myCos(x);
         double std = std::cos(x);
         assert(isNear(my, std));
+        my; std;
     }
 
     for (double x = 0.0; x > -10.0; x -= 0.01) {
         double my = myCos(x);
         double std = std::cos(x);
         assert(isNear(my, std));
+        my; std;
     }
 
     for (double x = -10.0; x < 10.0; x += 0.01) {
         double my = mySin(x);
         double std = std::sin(x);
         assert(isNear(my, std));
+        my; std;
     }
 }

@@ -39,14 +39,30 @@ PlatformAudio::PlatformAudio(void* memory) :mMemory{ memory } {
 
 	const int bufferSize = AudioFramesPerBuffer * AudioBitsPerSample / 8 * AudioChannelsPerFrame;
 	BYTE* bufferBytes = reinterpret_cast<BYTE*>(VirtualAlloc(0, bufferSize * AudioBufferCount, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
+	ptrdiff_t index = 0;
 	for (auto& buffer : mBuffers) {
 		buffer.AudioBytes = bufferSize;
 		buffer.pAudioData = bufferBytes;
-		buffer.pContext = this;
+		buffer.pContext = reinterpret_cast<void*>(index++);
+		mSourceVoice->SubmitSourceBuffer(&buffer);
 		bufferBytes += bufferSize;
 	}
 
-	prepareNextBuffer();
+	mAudioProcessingThread = std::jthread{ [&](std::stop_token stop, HANDLE waitable) {
+		DWORD waitResult = WAIT_TIMEOUT;
+		while (true) {
+			do {
+				if (stop.stop_requested()) {
+					return;
+				}
+				waitResult = WaitForSingleObjectEx(waitable, 200, FALSE);
+			} while (waitResult == WAIT_TIMEOUT);
+
+			if (waitResult == WAIT_OBJECT_0) {
+				prepareNextBuffer();
+			}
+		}
+	}, mSourceVoiceCallback.mBufferEndEvent };
 
 	mSourceVoice->Start();
 }
@@ -56,8 +72,21 @@ void PlatformAudio::prepareNextBuffer() {
 	void* data = const_cast<void*>(reinterpret_cast<const void*>(buf.pAudioData));
 	writeAudioBuffer(this->mMemory, data, mAudioBufferDescriptor);
 	mSourceVoice->SubmitSourceBuffer(&buf);
+	std::stringstream x{};
+	x << "Submit: " << mCurrentBuffer << "\n";
+	OutputDebugStringA(x.str().c_str());
 	mCurrentBuffer = (mCurrentBuffer + 1) % AudioBufferCount;
 	mAudioBufferDescriptor.sampleTime += mAudioBufferDescriptor.framesPerBuffer;
+}
+
+PlatformAudio::SourceVoiceCallback::SourceVoiceCallback()
+	: mBufferEndEvent{CreateEvent(NULL, FALSE, FALSE, NULL)}
+{
+}
+
+PlatformAudio::SourceVoiceCallback::~SourceVoiceCallback()
+{
+	CloseHandle(mBufferEndEvent);
 }
 
 void __stdcall PlatformAudio::SourceVoiceCallback::OnVoiceProcessingPassStart(UINT32)
@@ -72,13 +101,21 @@ void __stdcall PlatformAudio::SourceVoiceCallback::OnStreamEnd()
 {
 }
 
-void __stdcall PlatformAudio::SourceVoiceCallback::OnBufferStart(void*)
+void __stdcall PlatformAudio::SourceVoiceCallback::OnBufferStart(void* index)
 {
+	auto bufferIndex = reinterpret_cast<ptrdiff_t>(index);
+	std::stringstream x{};
+	x << "Start: " << bufferIndex << "\n";
+	OutputDebugStringA(x.str().c_str());
 }
 
-void __stdcall PlatformAudio::SourceVoiceCallback::OnBufferEnd(void* pBufferContext)
+void __stdcall PlatformAudio::SourceVoiceCallback::OnBufferEnd(void* index)
 {
-	reinterpret_cast<PlatformAudio*>(pBufferContext)->prepareNextBuffer();
+	auto bufferIndex = reinterpret_cast<ptrdiff_t>(index);
+	std::stringstream x{};
+	x << "End: " << bufferIndex << "\n";
+	OutputDebugStringA(x.str().c_str());
+	SetEvent(mBufferEndEvent);
 }
 
 void __stdcall PlatformAudio::SourceVoiceCallback::OnLoopEnd(void*)
