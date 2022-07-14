@@ -181,14 +181,16 @@ struct AmplitudeModulator {
     }
 };
 
+
+template <typename T>
+struct Step {
+    T amplitude;
+    float frequency;
+};
+
 template <typename T>
 struct StepSequencer {
-    struct Step {
-        T amplitude;
-        float frequency;
-    };
-
-    std::array<Step, 16> steps;
+    std::array<T, 16> steps;
     // bpm * 4 / 60
     float stepsPerSecond;
     float t;
@@ -202,7 +204,7 @@ struct StepSequencer {
         currentStep = static_cast<int>(t);
     }
 
-    const Step& value() const {
+    const T& value() const {
         return steps[currentStep];
     }
 };
@@ -318,7 +320,7 @@ struct TestBedMemory {
 
     // audio
     AmplitudeModulator<SineWave<float>, TriangleWave<float>> tone;
-    StepSequencer<float> sequencer;
+    StepSequencer<Step<float>> sequencer;
     PulseWave<float> sineWave;
     EnvelopeAdsr<float> envelope;
 };
@@ -373,10 +375,10 @@ struct TestBed {
             {
                 int64_t read = callbacks.readFile("CharacterRomPET8x8x256.bin", memory.characterROM.bytes(), memory.characterROM.bytesSize());
                 assert(read == 2048);
-                read;
+                read = read;
             }
             memory.textFirstLine = 0;
-            memory.textLastLine = 8;
+            memory.textLastLine = 4;
 
             memory.timerCursorBlink = AutoResettingTimer(time, std::chrono::milliseconds(200));
             std::memset(memory.textColors.data(), 1, memory.textColors.size());
@@ -424,12 +426,12 @@ struct TestBed {
             memory.tone.mod.amplitude = 1.f;
             memory.tone.depth = 0.2f;
 
-            memory.sequencer.stepsPerSecond = 16;
+            memory.sequencer.stepsPerSecond = 4;
             memory.sequencer.steps[0] = { .amplitude = 1.0f, .frequency = 220.f };
             memory.sequencer.steps[1] = { .amplitude = 1.0f, .frequency = 250.f };
             memory.sequencer.steps[2] = { .amplitude = 1.0f, .frequency = 250.f };
-            memory.sequencer.steps[3] = { .amplitude = .3f, .frequency = 440.f };;
-            memory.sequencer.steps[12] = { .amplitude = .3f, .frequency = 500.f };
+            memory.sequencer.steps[3] = { .amplitude = 1.0f, .frequency = 440.f };;
+            memory.sequencer.steps[12] = { .amplitude = 1.f, .frequency = 500.f };
 
             memory.envelope.attack = 0.01f;
             memory.envelope.sustain = 0.4f;
