@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "Audio/AudioStuff.hpp"
 #include "FML/RangesAtHome.hpp"
 #include "Drawing/InterleavedBitmaps.hpp"
 #include "Math/Vec2Math.hpp"
@@ -27,260 +28,6 @@ constant int TextCharacterH = 8;
 constant int TextLines = DrawBufferHeight / TextCharacterH;
 constant int TextLineLength = DrawBufferWidth / TextCharacterW;
 
-template<typename T>
-concept aSoundGenerator = requires (T& t) {
-    t.value();
-    t.advance(0.0f);
-};
-
-template<typename T>
-concept aToneGenerator = aSoundGenerator<T> && requires (T& t) {
-    t.frequency;
-};
-
-template<typename T>
-struct SineWave {
-    compiletime float pi2 = 2 * std::numbers::pi_v<float>;
-    float phase;
-    T amplitude;
-    float frequency;
-
-    constexpr T value() const {
-        return amplitude * mySin(phase);
-    }
-
-    void advance(float timeStep) {
-        phase += pi2 * timeStep * frequency;
-        if (phase > pi2) {
-            phase = fmodf(phase, pi2);
-        }
-    }
-};
-
-template<typename T>
-struct SawtoothWave {
-    float phase;
-    T amplitude;
-    float frequency;
-
-    constexpr T value() const {
-        return amplitude * (phase - 1.0f);
-    }
-
-    void advance(float timeStep) {
-        phase += timeStep * frequency;
-        if (phase > 2.0f) {
-            phase = fmodf(phase, 2.0f);
-        }
-    }
-};
-
-template<typename T>
-struct TriangleWave {
-    float phase;
-    T amplitude;
-    float frequency;
-
-
-    constexpr T value() const {
-        return amplitude * (std::fabs(phase * 4 - 2.0f) - 1.0f);
-    }
-
-    void advance(float timeStep) {
-        phase += timeStep * frequency;
-        if (phase > 1.0f) {
-            phase = fmodf(phase, 1.0f);
-        }
-    }
-};
-
-
-template<typename T>
-struct SquareWave {
-    float phase;
-    T amplitude;
-    float frequency;
-
-
-    constexpr T value() const {
-        return phase < 0.5 ? amplitude : -amplitude;
-    }
-
-    void advance(float timeStep) {
-        phase += timeStep * frequency;
-        if (phase > 1.0f) {
-            phase = fmodf(phase, 1.0f);
-        }
-    }
-};
-
-template<typename T>
-struct PulseWave {
-    float phase;
-    T amplitude;
-    float frequency;
-    float pulseWidth;
-
-    constexpr T value() const {
-        return phase < pulseWidth ? amplitude : (phase - 0.5f < pulseWidth ? -amplitude : 0);
-    }
-
-    void advance(float timeStep) {
-        phase += timeStep * frequency;
-        if (phase > 1.0f) {
-            phase = fmodf(phase, 1.0f);
-        }
-    }
-};
-
-template<typename T>
-struct WhiteNoise {
-    T amplitude;
-    T mValue;
-
-    constexpr T value() const {
-        return mValue;
-    }
-
-    void advance(float) {
-        auto rando = amplitude * static_cast<float>(rand()) / RAND_MAX;
-        mValue = static_cast<T>(rando);
-    }
-};
-
-
-template<aToneGenerator T, aSoundGenerator U>
-struct FrequencyModulator {
-    T carrier;
-    U mod;
-    float depth;
-
-    constexpr auto value() const {
-        return carrier.value();
-    }
-
-    void advance(float timeStep) {
-        mod.advance(timeStep);
-        carrier.advance(timeStep + (timeStep * depth * mod.value()));
-    }
-};
-
-template<aToneGenerator T, aSoundGenerator U>
-struct AmplitudeModulator {
-    T carrier;
-    U mod;
-    float depth;
-
-    constexpr auto value() const {
-        return carrier.value() * std::lerp(1, mod.value(), depth);
-    }
-
-    void advance(float timeStep) {
-        mod.advance(timeStep);
-        carrier.advance(timeStep);
-    }
-};
-
-
-template <typename T>
-struct Step {
-    T amplitude;
-    float frequency;
-};
-
-template <typename T>
-struct StepSequencer {
-    std::array<T, 16> steps;
-    // bpm * 4 / 60
-    float stepsPerSecond;
-    float t;
-    int currentStep;
-
-    void advance(float timeStep) {
-        t += timeStep * stepsPerSecond;
-        if (t >= steps.size()) {
-            t = fmodf(t, static_cast<float>(steps.size()));
-        }
-        currentStep = static_cast<int>(t);
-    }
-
-    const T& value() const {
-        return steps[currentStep];
-    }
-};
-
-template <typename T>
-struct EnvelopeAdsr {
-    float attack;
-    float decay;
-    float sustain;
-    float release;
-    bool percussive;
-
-    T amplitude;
-    float t;
-    bool on;
-    enum class Section {
-        Ready, Attack, Decay, Sustain, Release
-    } currentSection;
-    T currentValue;
-
-    T value() {
-        return currentValue;
-    }
-
-    void advance(float timeStep) {
-        if (currentSection == Section::Ready) {
-            if (on == false) {
-                return;
-            }
-
-            currentSection = Section::Attack;
-        }
-        t += timeStep;
-        if (currentSection == Section::Attack) {
-            if (t < attack) {
-                float tAttack = t / attack;
-                currentValue = std::lerp(0.0f, amplitude, tAttack);
-            }
-            else {
-                currentSection = Section::Decay;
-                t -= attack;
-            }
-        }
-        if (currentSection == Section::Decay) {
-            if (t < decay) {
-                float tDecay = t / decay;
-                currentValue = std::lerp(amplitude, sustain * amplitude, tDecay);
-            }
-            else {
-                currentSection = Section::Sustain;
-                t -= decay;
-            }
-        }
-        if (currentSection == Section::Sustain) {
-            if (on && !percussive) {
-                currentValue = sustain * amplitude;
-            } 
-            else {
-                currentSection = Section::Release;
-                t = timeStep;
-            }
-        }
-        if (currentSection == Section::Release) {
-            if (t < release &&
-                (!on && !percussive)) { // also check if envelope was retriggered, skip to ready and attack subsequently
-                float tRelease = t / release;
-                currentValue = std::lerp(sustain * amplitude, 0, tRelease);
-            }
-            else {
-                currentValue = 0;
-                t = 0.0f;
-                currentSection = Section::Ready;
-            }
-        }
-    }
-};
 
 struct TestBedMemory {
     std::array<uint8_t, 1024 * 1024> scratch;
@@ -319,10 +66,10 @@ struct TestBedMemory {
     int currentPoint;
 
     // audio
-    AmplitudeModulator<SineWave<float>, TriangleWave<float>> tone;
+    FrequencyModulator<SawtoothWave<float>, SineWave<float>> tone;
     StepSequencer<Step<float>> sequencer;
-    PulseWave<float> sineWave;
     EnvelopeAdsr<float> envelope;
+    EffectDelay<float> delay;
 };
 
 
@@ -419,25 +166,27 @@ struct TestBed {
 
             ConvertBitmapFrom32BppToIndex<320>(reinterpret_cast<uint32_t*>(memory.scratch.data()), 320, 256, memory.palette, memory.imageDecoded.data());
 
+            memory.tone.depth = .5f;
+            memory.tone.mod.amplitude = 1.0f;
 
-            //memory.tone.carrier.frequency = 300.0f;
-            //memory.tone.carrier.amplitude = 1.0f;
-            memory.tone.mod.frequency = 2.0f;
-            memory.tone.mod.amplitude = 1.f;
-            memory.tone.depth = 0.2f;
+            memory.sequencer = StepSequencer<>::withBpm(70);
+            memory.sequencer.steps[0] = { .amplitude = 1.0f, .frequency = Frequency(Note::A3) };
+            memory.sequencer.steps[1] = { .amplitude = 1.0f, .frequency = Frequency(Note::C3) };
+            memory.sequencer.steps[2] = { .amplitude = 1.0f, .frequency = Frequency(Note::B3) };
+            memory.sequencer.steps[3] = { .amplitude = 1.0f, .frequency = Frequency(Note::C4) };
+            memory.sequencer.steps[4] = { .amplitude = 1.0f, .frequency = Frequency(Note::G4) };
+            memory.sequencer.steps[8] = { .amplitude = 1.0f, .frequency = Frequency(Note::G4) };
+            memory.sequencer.steps[12] = { .amplitude = 1.0f, .frequency = Frequency(Note::G4) };
+            memory.sequencer.steps[13] = { .amplitude = 1.0f, .frequency = Frequency(Note::E4) };
 
-            memory.sequencer.stepsPerSecond = 4;
-            memory.sequencer.steps[0] = { .amplitude = 1.0f, .frequency = 220.f };
-            memory.sequencer.steps[1] = { .amplitude = 1.0f, .frequency = 250.f };
-            memory.sequencer.steps[2] = { .amplitude = 1.0f, .frequency = 250.f };
-            memory.sequencer.steps[3] = { .amplitude = 1.0f, .frequency = 440.f };;
-            memory.sequencer.steps[12] = { .amplitude = 1.f, .frequency = 500.f };
-
+            memory.envelope.percussive = false;
             memory.envelope.attack = 0.01f;
-            memory.envelope.sustain = 0.4f;
-            memory.envelope.decay = 0.1f;
-            memory.envelope.release = .5f;
+            memory.envelope.sustain = .4f;
+            memory.envelope.decay = 0.05f;
+            memory.envelope.release = .4f;
 
+            memory.delay.write = AudioFramesPerSecond * 60 / 70;
+            memory.delay.feedback = 0.5f;
         }
 
         constant auto black = static_cast<VRAM::PixelType>(findNearest(Colors::Black, memory.palette).index);
@@ -669,8 +418,6 @@ struct TestBed {
 
         memory.vram.pixel(memory.birdTarget) = lightBlue;
 
-        memory.tone.mod.frequency = 5 * 100.f / (length(birdDistance) + 1);
-        memory.tone.mod.amplitude = memory.birdPosition.x / 300;
         // draw
         blitSprite(memory.sprite, memory.currentSpriteFrame, memory.vram.data(), DrawBufferWidth, truncate(memory.birdPosition), Vec2i{}, Vec2i{DrawBufferWidth, DrawBufferHeight});
 
@@ -769,21 +516,20 @@ struct TestBed {
             auto& step = memory.sequencer.value();
             if (step.frequency > 0) {
                 memory.tone.carrier.frequency = step.frequency;
+                memory.tone.mod.frequency = 3 * step.frequency;
             }
-            if (!memory.envelope.on && step.amplitude > 0.0f) {
-                memory.envelope.on = true;
-                memory.envelope.amplitude = step.amplitude;
-            } 
-            if (memory.envelope.on && step.amplitude == 0.0f) {
-                memory.envelope.on = false;
-            }
+            memory.envelope.triggerValue(step.amplitude);
             memory.tone.carrier.amplitude = memory.envelope.value();
-            int16_t value = static_cast<int16_t>(2000 * memory.tone.value());
+            memory.delay.put(memory.tone.value());
+            auto mix = 0.6 * memory.delay.value() + 0.4 * memory.tone.value();
+            int16_t value = static_cast<int16_t>(std::numeric_limits<int16_t>::max() * mix);
+
             frames[i].left = value;
             frames[i].right = value;
             memory.sequencer.advance(timeStep);
             memory.tone.advance(timeStep);
             memory.envelope.advance(timeStep);
+            memory.delay.advance(timeStep);
         }
 
     }

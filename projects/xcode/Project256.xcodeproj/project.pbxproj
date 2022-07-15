@@ -90,6 +90,7 @@
 		689E03252857A67600DF8738 /* DrawBufferView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawBufferView.swift; sourceTree = "<group>"; };
 		689E03282857BEF300DF8738 /* KeyboardMouseModifiers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardMouseModifiers.swift; sourceTree = "<group>"; };
 		68A8725D28591EBB0033DBCB /* defines.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = defines.h; sourceTree = "<group>"; };
+		68B73C072881D9B6006F691B /* AudioStuff.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = AudioStuff.hpp; sourceTree = "<group>"; };
 		68BB1CB928709174009B02CA /* Images.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Images.hpp; sourceTree = "<group>"; };
 		68D205CB28512A0000CB4213 /* Generators.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Generators.hpp; sourceTree = "<group>"; };
 		68D205D12854101100CB4213 /* Vec2Math.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Vec2Math.hpp; sourceTree = "<group>"; };
@@ -131,6 +132,7 @@
 		6821D85B28591C01008D4128 /* Game */ = {
 			isa = PBXGroup;
 			children = (
+				68B73C0B2881ECCA006F691B /* Audio */,
 				681C0C512871A6690021710E /* Utility */,
 				6821D85F28591D14008D4128 /* Math */,
 				6821D85E28591CDE008D4128 /* Profiling */,
@@ -259,6 +261,14 @@
 				68565FF0287B444100D07090 /* PlatformAudio.swift */,
 			);
 			path = Model;
+			sourceTree = "<group>";
+		};
+		68B73C0B2881ECCA006F691B /* Audio */ = {
+			isa = PBXGroup;
+			children = (
+				68B73C072881D9B6006F691B /* AudioStuff.hpp */,
+			);
+			path = Audio;
 			sourceTree = "<group>";
 		};
 		68FC4A0C2861B67C009FC29D /* Assets */ = {
