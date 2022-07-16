@@ -8,6 +8,7 @@
 #pragma once
 #include <cmath>
 #include <numbers>
+#include <type_traits>
 #include "../Math/Vec2Math.hpp"
 
 template<typename T>
@@ -20,6 +21,8 @@ template<typename T>
 concept aToneGenerator = aSoundGenerator<T> && requires (T& t) {
     t.frequency;
 };
+
+
 
 enum class Note : uint8_t {
     A0 = 21,
@@ -183,6 +186,14 @@ enum class Note : uint8_t {
 };
 static_assert(static_cast<uint8_t>(Note::A4) == 69);
 static_assert(static_cast<uint8_t>(Note::A9Flat) == 128);
+
+template<typename T>
+concept aVoice = aSoundGenerator<T> && requires (T& t) {
+    {t.isOn()} -> std::same_as<bool>;
+    {t.currentNote()} -> std::same_as<Note>;
+    t.on(Note{}, float{});
+    t.off(Note{});
+};
 
 compiletime std::array<float, 128> Frequencies = ([]() {
     std::array<float, 128> result{};
@@ -367,7 +378,6 @@ struct Step {
 template <typename T = Step<float>>
 struct StepSequencer {
     std::array<T, 16> steps;
-    // bpm * 4 / 60
     float stepsPerSecond;
     float t;
     int currentStep;
@@ -401,7 +411,7 @@ struct EnvelopeAdsr {
 
     T amplitude;
     float t;
-    bool on;
+    bool mIsOn;
     enum class Section {
         Ready, Attack, Decay, Sustain, Release
     } currentSection;
@@ -413,18 +423,18 @@ struct EnvelopeAdsr {
     }
 
     void triggerValue(T amp, T threshold = 0) {
-        if (!on && amp > threshold) {
-            on = true;
+        if (!mIsOn && amp > threshold) {
+            mIsOn = true;
             amplitude = amp;
         }
-        if (on && amp <= threshold) {
-            on = false;
+        if (mIsOn && amp <= threshold) {
+            mIsOn = false;
         }
     }
 
     void advance(float timeStep) {
         if (currentSection == Section::Ready) {
-            if (on == false) {
+            if (mIsOn == false) {
                 return;
             }
             startValue = currentValue;
@@ -452,7 +462,7 @@ struct EnvelopeAdsr {
             }
         }
         if (currentSection == Section::Sustain) {
-            if (on) {
+            if (mIsOn) {
                 currentValue = sustain * amplitude;
             }
             else {
@@ -461,7 +471,7 @@ struct EnvelopeAdsr {
             }
         }
         if (currentSection == Section::Release) {
-            if (on) {
+            if (mIsOn) {
                 t = 0;
                 currentSection = Section::Ready;
             } else if (t < release) { // also check if envelope was retriggered, skip to ready and attack subsequently
@@ -498,6 +508,112 @@ struct EffectDelay {
         ++write;
         read %= buffer.size();
         write %= buffer.size();
+    }
+};
+
+template <typename T>
+struct SineSynthVoice {
+    using AmplitudeType = T;
+
+    EnvelopeAdsr<T> envelope;
+    SineWave<T> wave;
+    bool mIsOn;
+    Note mCurrentNote;
+    void on(Note note, T amplitude) {
+        mCurrentNote = note;
+        wave.frequency = Frequency(note);
+        mIsOn = true;
+        envelope.triggerValue(amplitude);
+    }
+
+    void off(Note) {
+        mIsOn = false;
+        envelope.triggerValue(0);
+    }
+
+    void advance(float timeStep) {
+        envelope.advance(timeStep);
+        wave.amplitude = envelope.value();
+        wave.advance(timeStep);
+    }
+
+    AmplitudeType value() {
+        return wave.value();
+    }
+
+    bool isOn() {
+        return mIsOn;
+    }
+
+    Note currentNote() {
+        return mCurrentNote;
+    }
+};
+
+template <aVoice T, size_t N>
+struct MultitimbralVoice {
+    using AmplitudeType = typename T::AmplitudeType;
+
+    std::array<T, N> voices;
+    size_t from, to;
+
+    void use(T voice) {
+        voices.fill(voice);
+    }
+
+    void on(Note note, AmplitudeType amplitude) {
+        for (size_t i = from; i != to; i = (i + 1) % voices.size()) {
+            if (voices[i].currentNote() == note) {
+                voices[i].on(note, amplitude);
+                return;
+            }
+        }
+        voices[to++].on(note, amplitude);
+        to %= voices.size();
+        if (to == from) {
+            from = to + 1;
+            from %= voices.size();
+        }
+    }
+
+    void off(Note note) {
+        for (size_t i = from; i != to; i = (i + 1) % voices.size()) {
+            if (voices[i].currentNote() == note) {
+                voices[i].off(note);
+            }
+        }
+        while (from != to) {
+            if (!voices[from].value()) {
+                from = (from + 1) % voices.size();
+            } else {
+                break;
+            }
+        }
+    }
+
+    bool isOn() {
+        return to != from;
+    }
+
+    Note currentNote() {
+        size_t last = (to - 1) % voices.size();
+        return voices[last].currentNote;
+    }
+
+    void advance(float timestep) {
+        for (size_t i = from; i != to; i = (i + 1) % voices.size()) {
+            voices[i].advance(timestep);
+        }
+    }
+
+    AmplitudeType value() {
+        AmplitudeType sum = {};
+        float factor = 1.0f / N;
+
+        for (size_t i = from; i != to; i = (i + 1) % voices.size()) {
+            sum += static_cast<AmplitudeType>(factor * voices[i].value());
+        }
+        return sum;
     }
 };
 

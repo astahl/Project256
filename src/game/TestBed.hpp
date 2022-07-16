@@ -70,6 +70,8 @@ struct TestBedMemory {
     StepSequencer<Step<float>> sequencer;
     EnvelopeAdsr<float> envelope;
     EffectDelay<float> delay;
+
+    MultitimbralVoice<SineSynthVoice<float>, 3> voice;
 };
 
 
@@ -187,6 +189,16 @@ struct TestBed {
 
             memory.delay.write = AudioFramesPerSecond * 60 / 70;
             memory.delay.feedback = 0.5f;
+
+            SineSynthVoice<float> voice{
+                .envelope {
+                    .attack = 0.1f,
+                    .sustain = .8f,
+                    .decay = 0.1f,
+                    .release = .5f,
+                }
+            };
+            memory.voice.use(voice);
         }
 
         constant auto black = static_cast<VRAM::PixelType>(findNearest(Colors::Black, memory.palette).index);
@@ -368,6 +380,20 @@ struct TestBed {
 
         }
 
+
+        if (input.mouse.buttonLeft.transitionCount) {
+            localpersist Note note[4] = {Note::A3, Note::C4, Note::E4, Note::G4};
+            localpersist int currentNote = 0;
+            if (input.mouse.buttonLeft.endedDown) {
+                memory.voice.on(note[currentNote], 1.0f);
+            }
+            else {
+                memory.voice.off(note[currentNote]);
+                currentNote = (currentNote + 1) % 4;
+            }
+        }
+
+
         if (memory.points[0] != memory.points[1])
         for (auto p : Generators::Line{memory.points[0], memory.points[1]})
             whitePixel(p);
@@ -513,23 +539,27 @@ struct TestBed {
 
         auto frames = reinterpret_cast<Frame*>(buffer);
         for (unsigned int i = 0; i < bufferDescriptor.framesPerBuffer; ++i) {
-            auto& step = memory.sequencer.value();
-            if (step.frequency > 0) {
-                memory.tone.carrier.frequency = step.frequency;
-                memory.tone.mod.frequency = 3 * step.frequency;
-            }
-            memory.envelope.triggerValue(step.amplitude);
-            memory.tone.carrier.amplitude = memory.envelope.value();
-            memory.delay.put(memory.tone.value());
-            auto mix = 0.6 * memory.delay.value() + 0.4 * memory.tone.value();
+//            auto& step = memory.sequencer.value();
+//            if (step.frequency > 0) {
+//                memory.tone.carrier.frequency = step.frequency;
+//                memory.tone.mod.frequency = 3 * step.frequency;
+//            }
+//            memory.envelope.triggerValue(step.amplitude);
+//            memory.tone.carrier.amplitude = memory.envelope.value();
+//            memory.delay.put(memory.tone.value());
+//            auto mix = 0.6 * memory.delay.value() + 0.4 * memory.tone.value();
+
+            auto mix = memory.voice.value();
+            memory.voice.advance(timeStep);
+
             int16_t value = static_cast<int16_t>(std::numeric_limits<int16_t>::max() * mix);
 
             frames[i].left = value;
             frames[i].right = value;
-            memory.sequencer.advance(timeStep);
-            memory.tone.advance(timeStep);
-            memory.envelope.advance(timeStep);
-            memory.delay.advance(timeStep);
+//            memory.sequencer.advance(timeStep);
+//            memory.tone.advance(timeStep);
+//            memory.envelope.advance(timeStep);
+//            memory.delay.advance(timeStep);
         }
 
     }
