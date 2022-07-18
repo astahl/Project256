@@ -72,9 +72,9 @@ void PlatformAudio::prepareNextBuffer() {
 	void* data = const_cast<void*>(reinterpret_cast<const void*>(buf.pAudioData));
 	writeAudioBuffer(this->mMemory, data, mAudioBufferDescriptor);
 	mSourceVoice->SubmitSourceBuffer(&buf);
-	std::stringstream x{};
-	x << "Submit: " << mCurrentBuffer << "\n";
-	OutputDebugStringA(x.str().c_str());
+	//std::stringstream x{};
+	//x << "Submit: " << mCurrentBuffer << "\n";
+	//OutputDebugStringA(x.str().c_str());
 	mCurrentBuffer = (mCurrentBuffer + 1) % AudioBufferCount;
 	mAudioBufferDescriptor.sampleTime += mAudioBufferDescriptor.framesPerBuffer;
 }
@@ -103,18 +103,20 @@ void __stdcall PlatformAudio::SourceVoiceCallback::OnStreamEnd()
 
 void __stdcall PlatformAudio::SourceVoiceCallback::OnBufferStart(void* index)
 {
-	auto bufferIndex = reinterpret_cast<ptrdiff_t>(index);
-	std::stringstream x{};
-	x << "Start: " << bufferIndex << "\n";
-	OutputDebugStringA(x.str().c_str());
+	//auto bufferIndex = reinterpret_cast<ptrdiff_t>(index);
+	//std::stringstream x{};
+	//x << "Start: " << bufferIndex << "\n";
+	//OutputDebugStringA(x.str().c_str());
+	index = index;
 }
 
 void __stdcall PlatformAudio::SourceVoiceCallback::OnBufferEnd(void* index)
 {
-	auto bufferIndex = reinterpret_cast<ptrdiff_t>(index);
-	std::stringstream x{};
-	x << "End: " << bufferIndex << "\n";
-	OutputDebugStringA(x.str().c_str());
+	//auto bufferIndex = reinterpret_cast<ptrdiff_t>(index);
+	//std::stringstream x{};
+	//x << "End: " << bufferIndex << "\n";
+	//OutputDebugStringA(x.str().c_str());
+	index = index;
 	SetEvent(mBufferEndEvent);
 }
 

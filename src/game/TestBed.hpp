@@ -190,8 +190,8 @@ struct TestBed {
             SineSynthVoice<float> voice{
                 .envelope {
                     .attack = 0.1f,
-                    .sustain = .8f,
                     .decay = 0.1f,
+                    .sustain = .8f,
                     .release = .5f,
                 }
             };

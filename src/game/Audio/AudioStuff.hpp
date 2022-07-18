@@ -197,25 +197,25 @@ concept aVoice = aSoundGenerator<T> && requires (T& t) {
 
 compiletime std::array<float, 128> Frequencies = ([]() {
     std::array<float, 128> result{};
-    result[69] = 440.0;
-    result[70] = 466.16;
-    result[71] = 493.88;
-    result[72] = 523.25;
-    result[73] = 554.37;
-    result[74] = 587.33;
-    result[75] = 622.25;
-    result[76] = 659.26;
-    result[77] = 698.46;
-    result[78] = 739.99;
-    result[79] = 783.99;
-    result[80] = 830.61;
+    result[69] = 440.0f;
+    result[70] = 466.16f;
+    result[71] = 493.88f;
+    result[72] = 523.25f;
+    result[73] = 554.37f;
+    result[74] = 587.33f;
+    result[75] = 622.25f;
+    result[76] = 659.26f;
+    result[77] = 698.46f;
+    result[78] = 739.99f;
+    result[79] = 783.99f;
+    result[80] = 830.61f;
 
     for (int i = 68; i >= 0; --i) {
-        result[i] = 0.5 * result[i + 12];
+        result[i] = 0.5f * result[i + 12];
     }
 
     for (int i = 81; i < 128; ++i) {
-        result[i] = 2 * result[i - 12];
+        result[i] = 2.0f * result[i - 12];
     }
 
     return result;
@@ -503,7 +503,7 @@ struct EffectDelay {
         return buffer[read];
     }
 
-    void advance(float timeStep) {
+    void advance(float /* timeStep */) {
         ++read;
         ++write;
         read %= buffer.size();

@@ -7,6 +7,7 @@
 #pragma once
 #include "../Project256.h"
 #include <cmath>
+#include <algorithm>
 #include <type_traits>
 #include <utility>
 #include <numbers>

@@ -11,7 +11,7 @@
 #include <array>
 #include <cstdint>
 #include <numbers>
-
+#include <cassert>
 
 namespace {
 
