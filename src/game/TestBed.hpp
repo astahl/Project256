@@ -66,12 +66,12 @@ struct TestBedMemory {
     int currentPoint;
 
     // audio
-    FrequencyModulator<SawtoothWave<float>, SineWave<float>> tone;
+    FrequencyModulator<SineWave<float>, TriangleWave<float>> tone;
     StepSequencer<Step<float>> sequencer;
     EnvelopeAdsr<float> envelope;
     EffectDelay<float> delay;
 
-    MultitimbralVoice<SineSynthVoice<float>, 3> voice;
+    MultitimbralVoice<SineSynthVoice<float>, 8> voice;
 };
 
 
@@ -172,14 +172,11 @@ struct TestBed {
             memory.tone.mod.amplitude = 1.0f;
 
             memory.sequencer = StepSequencer<>::withBpm(70);
-            memory.sequencer.steps[0] = { .amplitude = 1.0f, .frequency = Frequency(Note::A3) };
-            memory.sequencer.steps[1] = { .amplitude = 1.0f, .frequency = Frequency(Note::C3) };
-            memory.sequencer.steps[2] = { .amplitude = 1.0f, .frequency = Frequency(Note::B3) };
-            memory.sequencer.steps[3] = { .amplitude = 1.0f, .frequency = Frequency(Note::C4) };
-            memory.sequencer.steps[4] = { .amplitude = 1.0f, .frequency = Frequency(Note::G4) };
-            memory.sequencer.steps[8] = { .amplitude = 1.0f, .frequency = Frequency(Note::G4) };
-            memory.sequencer.steps[12] = { .amplitude = 1.0f, .frequency = Frequency(Note::G4) };
-            memory.sequencer.steps[13] = { .amplitude = 1.0f, .frequency = Frequency(Note::E4) };
+            memory.sequencer.steps[0] = { .amplitude = 1.0f, .frequency = Frequency(Note::A2) };
+            memory.sequencer.steps[4] = { .amplitude = 1.0f, .frequency = Frequency(Note::G3) };
+            memory.sequencer.steps[8] = { .amplitude = 1.0f, .frequency = Frequency(Note::G3) };
+            memory.sequencer.steps[12] = { .amplitude = 1.0f, .frequency = Frequency(Note::G3) };
+            memory.sequencer.steps[13] = { .amplitude = 1.0f, .frequency = Frequency(Note::E3) };
 
             memory.envelope.percussive = false;
             memory.envelope.attack = 0.01f;
@@ -188,7 +185,7 @@ struct TestBed {
             memory.envelope.release = .4f;
 
             memory.delay.write = AudioFramesPerSecond * 60 / 70;
-            memory.delay.feedback = 0.5f;
+            memory.delay.feedback = 0.8f;
 
             SineSynthVoice<float> voice{
                 .envelope {
@@ -382,7 +379,7 @@ struct TestBed {
 
 
         if (input.mouse.buttonLeft.transitionCount) {
-            localpersist Note note[4] = {Note::A3, Note::C4, Note::E4, Note::G4};
+            localpersist Note note[4] = {Note::A4, Note::C5, Note::E5, Note::G5};
             localpersist int currentNote = 0;
             if (input.mouse.buttonLeft.endedDown) {
                 memory.voice.on(note[currentNote], 1.0f);
@@ -539,27 +536,26 @@ struct TestBed {
 
         auto frames = reinterpret_cast<Frame*>(buffer);
         for (unsigned int i = 0; i < bufferDescriptor.framesPerBuffer; ++i) {
-//            auto& step = memory.sequencer.value();
-//            if (step.frequency > 0) {
-//                memory.tone.carrier.frequency = step.frequency;
-//                memory.tone.mod.frequency = 3 * step.frequency;
-//            }
-//            memory.envelope.triggerValue(step.amplitude);
-//            memory.tone.carrier.amplitude = memory.envelope.value();
-//            memory.delay.put(memory.tone.value());
-//            auto mix = 0.6 * memory.delay.value() + 0.4 * memory.tone.value();
+            auto& step = memory.sequencer.value();
+            if (step.frequency > 0) {
+                memory.tone.carrier.frequency = step.frequency;
+                memory.tone.mod.frequency = 3 * step.frequency;
+            }
+            memory.envelope.triggerValue(step.amplitude);
+            memory.tone.carrier.amplitude = memory.envelope.value();
+            memory.delay.put(memory.tone.value());
+            auto mix = 0.5 * memory.voice.value() + 0.3 * memory.delay.value() + 0.2 * memory.tone.value();
 
-            auto mix = memory.voice.value();
-            memory.voice.advance(timeStep);
 
             int16_t value = static_cast<int16_t>(std::numeric_limits<int16_t>::max() * mix);
 
             frames[i].left = value;
             frames[i].right = value;
-//            memory.sequencer.advance(timeStep);
-//            memory.tone.advance(timeStep);
-//            memory.envelope.advance(timeStep);
-//            memory.delay.advance(timeStep);
+            memory.sequencer.advance(timeStep);
+            memory.tone.advance(timeStep);
+            memory.envelope.advance(timeStep);
+            memory.delay.advance(timeStep);
+            memory.voice.advance(timeStep);
         }
 
     }
