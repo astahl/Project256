@@ -68,6 +68,8 @@ struct TestBedMemory {
     // audio
     FrequencyModulator<SineWave<float>, TriangleWave<float>> tone;
     StepSequencer<Step<float>> sequencer;
+    StepSequencer<Step<float>> drumSequencer;
+    SineSweepVoice<float> pewpew;
     EnvelopeAdsr<float> envelope;
     EffectDelay<float> delay;
 
@@ -184,6 +186,27 @@ struct TestBed {
             memory.envelope.decay = 0.05f;
             memory.envelope.release = .4f;
 
+            memory.pewpew = {
+                .wave {
+                    .amplitude = 1.0f,
+                    .frequency = 500.0f,
+                    .frequencyTo = 50.0f,
+                    .rate = 10.0f
+                },
+                .envelope {
+                    .percussive = true,
+                    .attack = 0.1f,
+                    .sustain = .4f,
+                    .decay = .2f,
+                    .release = .8f,
+                }
+            };
+
+            memory.drumSequencer = StepSequencer<>::withBpm(70);
+            memory.drumSequencer.steps[0] = { .amplitude = 1.0f };
+            memory.drumSequencer.steps[4] = { .amplitude = 1.0f };
+            memory.drumSequencer.steps[8] = { .amplitude = 1.0f };
+
             memory.delay.write = AudioFramesPerSecond * 60 / 70;
             memory.delay.feedback = 0.8f;
 
@@ -193,6 +216,9 @@ struct TestBed {
                     .decay = 0.1f,
                     .sustain = .8f,
                     .release = .5f,
+                },
+                .wave {
+                    .amplitude = 1.0f
                 }
             };
             memory.voice.use(voice);
@@ -541,17 +567,23 @@ struct TestBed {
                 memory.tone.carrier.frequency = step.frequency;
                 memory.tone.mod.frequency = 3 * step.frequency;
             }
-            memory.envelope.triggerValue(step.amplitude);
+            memory.envelope.on(step.amplitude);
+
+            auto& drumStep = memory.drumSequencer.value();
+            memory.pewpew.on(drumStep.amplitude);
+
             memory.tone.carrier.amplitude = memory.envelope.value();
             memory.delay.put(memory.tone.value());
-            auto mix = 0.5 * memory.voice.value() + 0.3 * memory.delay.value() + 0.2 * memory.tone.value();
-
+            auto mix = memory.voice.value() + memory.delay.value() + memory.tone.value() + memory.pewpew.value();
+            mix /= 4.0f;
 
             int16_t value = static_cast<int16_t>(std::numeric_limits<int16_t>::max() * mix);
 
             frames[i].left = value;
             frames[i].right = value;
             memory.sequencer.advance(timeStep);
+            memory.drumSequencer.advance(timeStep);
+            memory.pewpew.advance(timeStep);
             memory.tone.advance(timeStep);
             memory.envelope.advance(timeStep);
             memory.delay.advance(timeStep);

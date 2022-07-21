@@ -13,6 +13,7 @@
 
 template<typename T>
 concept aSoundGenerator = requires (T& t) {
+    typename T::AmplitudeType;
     t.value();
     t.advance(0.0f);
 };
@@ -20,6 +21,25 @@ concept aSoundGenerator = requires (T& t) {
 template<typename T>
 concept aToneGenerator = aSoundGenerator<T> && requires (T& t) {
     t.frequency;
+};
+
+template<typename T>
+struct Amplitude {};
+template<>
+struct Amplitude<float> {
+    using Type = float;
+    compiletime float Max = 1.0f;
+    compiletime float Min = -1.0f;
+    compiletime float Zero = 0.0f;
+};
+
+
+template<>
+struct Amplitude<int16_t> {
+    using Type = int16_t;
+    compiletime int16_t Max = INT16_MAX;
+    compiletime int16_t Min = INT16_MIN;
+    compiletime int16_t Zero = 0;
 };
 
 
@@ -187,13 +207,24 @@ enum class Note : uint8_t {
 static_assert(static_cast<uint8_t>(Note::A4) == 69);
 static_assert(static_cast<uint8_t>(Note::A9Flat) == 128);
 
-template<typename T>
-concept aVoice = aSoundGenerator<T> && requires (T& t) {
-    {t.isOn()} -> std::same_as<bool>;
+template <typename T>
+concept aTuneable = requires (T& t) {
+    t.setNote(Note::A0);
     {t.currentNote()} -> std::same_as<Note>;
-    t.on(Note{}, float{});
-    t.off(Note{});
 };
+
+template <typename T>
+concept aTriggerable = requires (T& t) {
+    {t.isOn()} -> std::same_as<bool>;
+    t.on(float{});
+    t.off();
+};
+
+template <typename T>
+concept anEnvelope = aTriggerable<T> && aSoundGenerator<T>;
+
+template<typename T>
+concept aVoice = aSoundGenerator<T> && aTuneable<T> && aTriggerable<T>;
 
 compiletime std::array<float, 128> Frequencies = ([]() {
     std::array<float, 128> result{};
@@ -227,6 +258,7 @@ compiletime float Frequency(Note note) {
 
 template<typename T>
 struct SineWave {
+    using AmplitudeType = T;
     compiletime float pi2 = 2 * std::numbers::pi_v<float>;
     float phase;
     T amplitude;
@@ -246,6 +278,7 @@ struct SineWave {
 
 template<typename T>
 struct SawtoothWave {
+    using AmplitudeType = T;
     float phase;
     T amplitude;
     float frequency;
@@ -264,6 +297,7 @@ struct SawtoothWave {
 
 template<typename T>
 struct TriangleWave {
+    using AmplitudeType = T;
     float phase;
     T amplitude;
     float frequency;
@@ -284,6 +318,7 @@ struct TriangleWave {
 
 template<typename T>
 struct SquareWave {
+    using AmplitudeType = T;
     float phase;
     T amplitude;
     float frequency;
@@ -303,6 +338,7 @@ struct SquareWave {
 
 template<typename T>
 struct PulseWave {
+    using AmplitudeType = T;
     float phase;
     T amplitude;
     float frequency;
@@ -322,6 +358,7 @@ struct PulseWave {
 
 template<typename T>
 struct WhiteNoise {
+    using AmplitudeType = T;
     T amplitude;
     T mValue;
 
@@ -335,6 +372,41 @@ struct WhiteNoise {
     }
 };
 
+template<aToneGenerator T>
+struct Sweep {
+    using AmplitudeType = typename T::AmplitudeType;
+
+    T generator;
+    AmplitudeType amplitude;
+    float frequency;
+    float frequencyTo;
+    float t;
+    float rate; // 1 / duration
+    constexpr AmplitudeType value() const {
+        return generator.value();
+    }
+
+    void on(AmplitudeType amplitude) {
+        if (amplitude > 0) {
+            generator.amplitude = amplitude;
+        } else {
+            off();
+        }
+    }
+
+    void off() {
+        t = 0;
+        generator.amplitude = 0;
+    }
+
+    void advance(float timeStep) {
+        if (t <= 1.0f) {
+            generator.frequency = std::lerp(frequency, frequencyTo, t);
+        }
+        generator.advance(timeStep);
+        t += rate * timeStep;
+    }
+};
 
 template<aToneGenerator T, aSoundGenerator U>
 struct FrequencyModulator {
@@ -403,33 +475,43 @@ struct StepSequencer {
 
 template <typename T>
 struct EnvelopeAdsr {
+    using AmplitudeType = T;
+
     float attack;
     float decay;
     float sustain;
     float release;
     bool percussive;
 
-    T amplitude;
+    AmplitudeType amplitude;
     float t;
     bool mIsOn;
     enum class Section {
         Ready, Attack, Decay, Sustain, Release
     } currentSection;
-    T currentValue;
-    T startValue;
+    AmplitudeType currentValue;
+    AmplitudeType startValue;
 
-    T value() {
+    AmplitudeType value() {
         return currentValue;
     }
 
-    void triggerValue(T amp, T threshold = 0) {
-        if (!mIsOn && amp > threshold) {
+    void on(AmplitudeType amp) {
+        if (!mIsOn && amp > 0) {
             mIsOn = true;
             amplitude = amp;
         }
-        if (mIsOn && amp <= threshold) {
+        if (mIsOn && amp <= 0) {
             mIsOn = false;
         }
+    }
+
+    void off() {
+        mIsOn = false;
+    }
+
+    bool isOn() {
+        return mIsOn;
     }
 
     void advance(float timeStep) {
@@ -511,44 +593,55 @@ struct EffectDelay {
     }
 };
 
-template <typename T>
-struct SineSynthVoice {
-    using AmplitudeType = T;
 
-    EnvelopeAdsr<T> envelope;
-    SineWave<T> wave;
-    bool mIsOn;
+
+template <anEnvelope E, aToneGenerator V>
+struct EnvelopeVoice {
+    using AmplitudeType = typename E::AmplitudeType;
+
+    E envelope;
+    V wave;
     Note mCurrentNote;
-    void on(Note note, T amplitude) {
+
+    void setNote(Note note) {
         mCurrentNote = note;
         wave.frequency = Frequency(note);
-        mIsOn = true;
-        envelope.triggerValue(amplitude);
     }
 
-    void off(Note) {
-        mIsOn = false;
-        envelope.triggerValue(0);
+    void on(AmplitudeType amplitude) {
+        envelope.on(amplitude);
+        wave.on(amplitude);
+    }
+
+    void off() {
+        envelope.off();
+        envelope.off();
     }
 
     void advance(float timeStep) {
         envelope.advance(timeStep);
-        wave.amplitude = envelope.value();
         wave.advance(timeStep);
     }
 
     AmplitudeType value() {
-        return wave.value();
+        return wave.value() * envelope.value();
     }
 
     bool isOn() {
-        return mIsOn;
+        return envelope.isOn();
     }
 
     Note currentNote() {
         return mCurrentNote;
     }
 };
+
+
+template <typename T>
+using SineSynthVoice = EnvelopeVoice<EnvelopeAdsr<T>, SineWave<T>>;
+template <typename T>
+using SineSweepVoice = EnvelopeVoice<EnvelopeAdsr<T>, Sweep<SineWave<T>>>;
+
 
 template <aVoice T, size_t N>
 struct MultitimbralVoice {
@@ -564,11 +657,14 @@ struct MultitimbralVoice {
     void on(Note note, AmplitudeType amplitude) {
         for (size_t i = from; i != to; i = (i + 1) % voices.size()) {
             if (voices[i].currentNote() == note) {
-                voices[i].on(note, amplitude);
+                voices[i].setNote(note);
+                voices[i].on(amplitude);
                 return;
             }
         }
-        voices[to++].on(note, amplitude);
+        voices[to].setNote(note);
+        voices[to].on(amplitude);
+        to += 1;
         to %= voices.size();
         if (to == from) {
             from = to + 1;
@@ -579,7 +675,7 @@ struct MultitimbralVoice {
     void off(Note note) {
         for (size_t i = from; i != to; i = (i + 1) % voices.size()) {
             if (voices[i].currentNote() == note) {
-                voices[i].off(note);
+                voices[i].off();
             }
         }
         while (from != to) {
@@ -616,4 +712,5 @@ struct MultitimbralVoice {
         return sum;
     }
 };
+
 

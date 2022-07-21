@@ -106,11 +106,29 @@ class PlatformInput {
     #endif
     init(settings: GameSettings) {
         self.settings = settings
+
     }
 
     func updateGameInput(gameInput: inout GameInput, frameTime: (microseconds: Int64, seconds: Double)) {
         if frameNumber == 0 {
             setupControllers()
+        }
+
+        if let keyboard = GCKeyboard.coalesced?.keyboardInput {
+            gameInput.controllers.0.isConnected = true
+            if keyboard.isAnyKeyPressed {
+                gameInput.controllers.0.isActive = true
+            }
+            gameInput.controllers.0.stickLeft.up.pressed(keyboard.button(forKeyCode: GCKeyCode.keyW)?.isPressed ?? false);
+            gameInput.controllers.0.stickLeft.left.pressed(keyboard.button(forKeyCode: GCKeyCode.keyA)?.isPressed ?? false);
+            gameInput.controllers.0.stickLeft.down.pressed(keyboard.button(forKeyCode: GCKeyCode.keyS)?.isPressed ?? false);
+            gameInput.controllers.0.stickLeft.right.pressed(keyboard.button(forKeyCode: GCKeyCode.keyD)?.isPressed ?? false);
+            gameInput.controllers.0.stickLeft.digitalToAnalog();
+        }
+
+        if let mouse = GCMouse.current?.mouseInput {
+            gameInput.controllers.0.isConnected = true
+            gameInput.controllers.0.shoulderRight.pressed(mouse.leftButton.isPressed)
         }
 
         gameInput.frameNumber = self.frameNumber
