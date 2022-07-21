@@ -187,19 +187,19 @@ struct TestBed {
             memory.envelope.release = .4f;
 
             memory.pewpew = {
+                .envelope {
+                    .attack = 0.1f,
+                    .decay = .2f,
+                    .sustain = .4f,
+                    .release = .8f,
+                    .percussive = true,
+                },
                 .wave {
                     .amplitude = 1.0f,
                     .frequency = 500.0f,
                     .frequencyTo = 50.0f,
                     .rate = 10.0f
                 },
-                .envelope {
-                    .percussive = true,
-                    .attack = 0.1f,
-                    .sustain = .4f,
-                    .decay = .2f,
-                    .release = .8f,
-                }
             };
 
             memory.drumSequencer = StepSequencer<>::withBpm(70);

@@ -616,11 +616,9 @@ struct EnvelopeVoice {
 
     void on(AmplitudeType amplitude) {
         envelope.on(amplitude);
-        wave.on(amplitude);
     }
 
     void off() {
-        envelope.off();
         envelope.off();
     }
 
