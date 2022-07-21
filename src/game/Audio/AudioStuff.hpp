@@ -490,13 +490,19 @@ struct EnvelopeAdsr {
 
 template <typename T>
 struct EffectDelay {
-    std::array<T, AudioFramesPerSecond * 10> buffer;
+    std::array<T, AudioFramesPerSecond * 2> buffer;
     size_t read;
     size_t write;
     float feedback;
 
     void put(T val) {
         buffer[write] = std::lerp(val, value(), feedback);
+    }
+
+    void setDelayTime(float seconds) {
+        size_t offsetFrames = static_cast<size_t>(seconds * AudioFramesPerSecond);
+        if (offsetFrames > buffer.size)
+        read = offsetFrames % buffer.size();
     }
 
     T value() {
