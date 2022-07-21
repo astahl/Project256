@@ -223,8 +223,11 @@ concept aTriggerable = requires (T& t) {
 template <typename T>
 concept anEnvelope = aTriggerable<T> && aSoundGenerator<T>;
 
+template <typename T>
+concept aRawVoice = aSoundGenerator<T> && aTriggerable<T>;
+
 template<typename T>
-concept aVoice = aSoundGenerator<T> && aTuneable<T> && aTriggerable<T>;
+concept aVoice = aRawVoice<T> && aTuneable<T>;
 
 compiletime std::array<float, 128> Frequencies = ([]() {
     std::array<float, 128> result{};
@@ -386,9 +389,9 @@ struct Sweep {
         return generator.value();
     }
 
-    void on(AmplitudeType amplitude) {
-        if (amplitude > 0) {
-            generator.amplitude = amplitude;
+    void on(AmplitudeType a) {
+        if (a > 0) {
+            generator.amplitude = a;
         } else {
             off();
         }
@@ -397,6 +400,10 @@ struct Sweep {
     void off() {
         t = 0;
         generator.amplitude = 0;
+    }
+
+    bool isOn() {
+        return t > 0 && t <= 1;
     }
 
     void advance(float timeStep) {
@@ -640,11 +647,52 @@ struct EnvelopeVoice {
     }
 };
 
+template <anEnvelope E, aRawVoice V>
+struct EnvelopeRawVoice {
+    using AmplitudeType = typename E::AmplitudeType;
+
+    E envelope;
+    V wave;
+    Note mCurrentNote;
+
+    void setNote(Note note) {
+        mCurrentNote = note;
+        wave.frequency = Frequency(note);
+    }
+
+    void on(AmplitudeType amplitude) {
+        envelope.on(amplitude);
+        wave.on(amplitude);
+    }
+
+    void off() {
+        envelope.off();
+        wave.off();
+    }
+
+    void advance(float timeStep) {
+        envelope.advance(timeStep);
+        wave.advance(timeStep);
+    }
+
+    AmplitudeType value() {
+        return wave.value() * envelope.value();
+    }
+
+    bool isOn() {
+        return envelope.isOn();
+    }
+
+    Note currentNote() {
+        return mCurrentNote;
+    }
+};
+
 
 template <typename T>
 using SineSynthVoice = EnvelopeVoice<EnvelopeAdsr<T>, SineWave<T>>;
 template <typename T>
-using SineSweepVoice = EnvelopeVoice<EnvelopeAdsr<T>, Sweep<SineWave<T>>>;
+using SineSweepVoice = EnvelopeRawVoice<EnvelopeAdsr<T>, Sweep<SineWave<T>>>;
 
 
 template <aVoice T, size_t N>
