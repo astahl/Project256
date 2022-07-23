@@ -10,6 +10,7 @@
 #include <numbers>
 #include <type_traits>
 #include "../Math/Vec2Math.hpp"
+#include "../Utility/CircularIndex.hpp"
 
 template<typename T>
 concept aSoundGenerator = requires (T& t) {
@@ -580,29 +581,26 @@ struct EnvelopeAdsr {
 template <typename T>
 struct EffectDelay {
     std::array<T, AudioFramesPerSecond * 2> buffer;
-    size_t read;
-    size_t write;
+    CircularIndex<AudioFramesPerSecond * 2> read;
+    CircularIndex<AudioFramesPerSecond * 2> write;
     float feedback;
 
     void put(T val) {
-        buffer[write] = std::lerp(val, value(), feedback);
+        buffer[write.value] = std::lerp(val, value(), feedback);
     }
 
     void setDelayTime(float seconds) {
         size_t offsetFrames = static_cast<size_t>(seconds * AudioFramesPerSecond);
-        if (offsetFrames > buffer.size)
-        read = offsetFrames % buffer.size();
+        read = offsetFrames;
     }
 
     T value() {
-        return buffer[read];
+        return buffer[read.value];
     }
 
     void advance(float /* timeStep */) {
         ++read;
         ++write;
-        read %= buffer.size();
-        write %= buffer.size();
     }
 };
 

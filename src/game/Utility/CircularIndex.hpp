@@ -2,22 +2,25 @@
 
 #include <concepts>
 
-template <size_t N, std::unsigned_integral T>
+template <size_t N, std::signed_integral T = std::ptrdiff_t>
 struct CircularIndex {
 	T value;
 
-	constexpr void set(auto val) {
+    constexpr CircularIndex(auto val) {
+        value = (((val) % N) + N) % N;
+    }
+
+	constexpr CircularIndex& operator=(auto val) {
 		value = (((val) % N) + N) % N;
+        return *this;
 	}
 
 	constexpr CircularIndex& operator+=(auto i) {
-		set(value + i);
-		return *this;
+		return *this = (value + i);
 	}
 
 	constexpr CircularIndex& operator++() {
-		set(value + 1);
-		return *this;
+		return *this = value + 1;
 	}
 
 	constexpr CircularIndex& operator-=(auto i) {
@@ -37,5 +40,9 @@ struct CircularIndex {
 	constexpr bool operator!=(const CircularIndex& other) const {
 		return other.value != value;
 	}
+
+    constexpr T operator-(const CircularIndex& other) const {
+        return ((value + N) - other.value) % N;
+    }
 
 };

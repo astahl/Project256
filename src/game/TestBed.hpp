@@ -173,7 +173,7 @@ struct TestBed {
             memory.tone.depth = .5f;
             memory.tone.mod.amplitude = 1.0f;
 
-            memory.sequencer = StepSequencer<>::withBpm(70);
+            memory.sequencer = StepSequencer<>::withBpm(90);
             memory.sequencer.steps[0] = { .amplitude = 1.0f, .frequency = Frequency(Note::A2) };
             memory.sequencer.steps[4] = { .amplitude = 1.0f, .frequency = Frequency(Note::G3) };
             memory.sequencer.steps[8] = { .amplitude = 1.0f, .frequency = Frequency(Note::G3) };
@@ -189,9 +189,9 @@ struct TestBed {
             memory.pewpew = {
                 .envelope {
                     .attack = 0.1f,
-                    .decay = .2f,
-                    .sustain = .4f,
-                    .release = .8f,
+                    .decay = .01f,
+                    .sustain = .1f,
+                    .release = .01f,
                     .percussive = true,
                 },
                 .wave {
@@ -202,12 +202,12 @@ struct TestBed {
                 },
             };
 
-            memory.drumSequencer = StepSequencer<>::withBpm(70);
+            memory.drumSequencer = StepSequencer<>::withBpm(90);
             memory.drumSequencer.steps[0] = { .amplitude = 1.0f };
             memory.drumSequencer.steps[4] = { .amplitude = 1.0f };
             memory.drumSequencer.steps[8] = { .amplitude = 1.0f };
 
-            memory.delay.write = AudioFramesPerSecond * 60 / 70;
+            memory.delay.setDelayTime(1.0);
             memory.delay.feedback = 0.8f;
 
             SineSynthVoice<float> voice{
@@ -576,9 +576,9 @@ struct TestBed {
             memory.delay.put(memory.tone.value());
             auto mix = memory.voice.value() + memory.delay.value() + memory.tone.value() + memory.pewpew.value();
 
-            auto result = (1.0f - (1.0f / ((mix * mix) + 1.0f)));
-            result = mix < 0 ? -result : result;
-
+//            auto result = (1.0f - (1.0f / ((mix * mix) + 1.0f)));
+//            result = mix < 0 ? -result : result;
+            auto result = mix / 4;
             int16_t value = static_cast<int16_t>(std::numeric_limits<int16_t>::max() * result);
 
             frames[i].left = value;

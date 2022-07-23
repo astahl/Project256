@@ -58,6 +58,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		68177537288C143300200C0E /* CircularIndex.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CircularIndex.hpp; sourceTree = "<group>"; };
 		6819ACC1283ECD8E00CCBFD5 /* MetalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetalView.swift; sourceTree = "<group>"; };
 		6819ACC4283EDFFC00CCBFD5 /* MetalViewShader.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = MetalViewShader.metal; sourceTree = "<group>"; };
 		6819ACC7283EE19500CCBFD5 /* MetalViewShaderTypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MetalViewShaderTypes.h; sourceTree = "<group>"; };
@@ -123,6 +124,7 @@
 		681C0C512871A6690021710E /* Utility */ = {
 			isa = PBXGroup;
 			children = (
+				68177537288C143300200C0E /* CircularIndex.hpp */,
 				681C0C5328736D860021710E /* Text.hpp */,
 				681C0C502871A6310021710E /* Timers.hpp */,
 			);
