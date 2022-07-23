@@ -575,9 +575,11 @@ struct TestBed {
             memory.tone.carrier.amplitude = memory.envelope.value();
             memory.delay.put(memory.tone.value());
             auto mix = memory.voice.value() + memory.delay.value() + memory.tone.value() + memory.pewpew.value();
-            mix /= 4.0f;
 
-            int16_t value = static_cast<int16_t>(std::numeric_limits<int16_t>::max() * mix);
+            auto result = (1.0f - (1.0f / ((mix * mix) + 1.0f)));
+            result = mix < 0 ? -result : result;
+
+            int16_t value = static_cast<int16_t>(std::numeric_limits<int16_t>::max() * result);
 
             frames[i].left = value;
             frames[i].right = value;
