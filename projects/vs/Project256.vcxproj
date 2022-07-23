@@ -40,6 +40,7 @@
     <ClInclude Include="..\..\src\game\Profiling\Timings.h" />
     <ClInclude Include="..\..\src\game\Project256.h" />
     <ClInclude Include="..\..\src\game\TestBed.hpp" />
+    <ClInclude Include="..\..\src\game\Utility\CircularIndex.hpp" />
     <ClInclude Include="..\..\src\game\Utility\Text.hpp" />
     <ClInclude Include="..\..\src\game\Utility\Timers.hpp" />
     <ClInclude Include="..\..\src\platform_win32\Direct3D12View.h" />
