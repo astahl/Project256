@@ -15,9 +15,15 @@ struct GameView: View {
         self.state = state
         self.drawBufferView = DrawBufferView(drawBufferSource: {
             drawBuffer in
-            GameState.timingData?.startTimer(eTimerBufferCopy)
+            PlatformProfiling.withInstance {
+                profiling in
+                profiling.timingData.startTimer(eTimerBufferCopy)
+            }
             writeDrawBuffer(state.memory, drawBuffer?.data.baseAddress!)
-            GameState.timingData?.interval(timer: eTimerBufferCopy, interval: eTimingBufferCopy)
+            PlatformProfiling.withInstance {
+                profiling in
+                profiling.timingData.interval(timer: eTimerBufferCopy, interval: eTimingBufferCopy)
+            }
             return drawBuffer
         })
         self.drawBufferView.metalView.prefferedFrameRate = state.settings.frameTargetHz

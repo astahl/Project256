@@ -84,11 +84,17 @@ class MyMTKView : MTKView {
 
     override func draw(_ dirtyRect: CGRect) {
 
-        GameState.timingData?.startTimer(eTimerDraw)
+        PlatformProfiling.withInstance {
+            profiling in
+            profiling.timingData.startTimer(eTimerDraw)
+        }
         if let newDrawBuffer = self.beforeDrawHandler?(self.drawBuffer) {
             self.drawBuffer = newDrawBuffer
         }
-        GameState.timingData?.interval(timer: eTimerDraw, interval: eTimingDrawBefore)
+        PlatformProfiling.withInstance {
+            profiling in
+            profiling.timingData.interval(timer: eTimerDraw, interval: eTimingDrawBefore)
+        }
         updateViewport(withDrawableSize: drawableSize)
 
         guard let renderPassDescriptor = self.currentRenderPassDescriptor else {
@@ -108,7 +114,10 @@ class MyMTKView : MTKView {
         }
 
         encoder.label = "MyEncoder"
-        GameState.timingData?.interval(timer: eTimerDraw, interval: eTimingDrawWaitAndSetup)
+        PlatformProfiling.withInstance {
+            profiling in
+            profiling.timingData.interval(timer: eTimerDraw, interval: eTimingDrawWaitAndSetup)
+        }
 
         encoder.setViewport(self.viewport)
         if let pipelineState = self.pipelineState {
@@ -122,16 +131,22 @@ class MyMTKView : MTKView {
             encoder.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
 
             encoder.endEncoding()
-            GameState.timingData?.interval(timer: eTimerDraw, interval: eTimingDrawEncoding)
+            PlatformProfiling.withInstance {
+                profiling in
+                profiling.timingData.interval(timer: eTimerDraw, interval: eTimingDrawEncoding)
+            }
         }
         if let drawable = self.currentDrawable {
             #if os(macOS)
             drawable.addPresentedHandler() {
                 drawble in
-                GameState.timingData?.interval(timer: eTimerFrameToFrame, interval: eTimingFrameToFrame)
 
-                GameState.timingData?.startTimer(eTimerFrameToFrame)
-                GameState.timingData?.interval(timer: eTimerDraw, interval: eTimingDrawPresent)
+                PlatformProfiling.withInstance {
+                    profiling in
+                    profiling.timingData.interval(timer: eTimerFrameToFrame, interval: eTimingFrameToFrame)
+                    profiling.timingData.startTimer(eTimerFrameToFrame)
+                    profiling.timingData.interval(timer: eTimerDraw, interval: eTimingDrawPresent)
+                }
             }
             #endif
             commandBuffer.present(drawable)

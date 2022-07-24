@@ -48,10 +48,14 @@ struct Project256App: App {
                         .autoconnect()
                         .sink {
                             date in
-                            let length = GameState.timingData?.printTo(buffer: profilingBuffer.baseAddress!, size: Int32(profilingBuffer.count))
-                            profilingString = String.init(bytesNoCopy: profilingBuffer.baseAddress!, length: Int(length!), encoding: .ascii, freeWhenDone: false)!
+                            PlatformProfiling.withInstance {
+                                profiling in
 
-                            GameState.timingData?.clear()
+                            let length = profiling.timingData.printTo(buffer: profilingBuffer.baseAddress!, size: Int32(profilingBuffer.count))
+                            profilingString = String.init(bytesNoCopy: profilingBuffer.baseAddress!, length: Int(length), encoding: .ascii, freeWhenDone: false)!
+
+                                profiling.timingData.clear()
+                            }
                         }
                 }
                 .onDisappear {

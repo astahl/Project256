@@ -104,13 +104,18 @@ struct Endian {
     }
 };
 
+struct DoubleWord {
+    int16_t lower;
+    int16_t upper;
+};
+
 #pragma pack(push)
 #pragma pack(1)
 
 template <endian E = endian::native>
 struct ILBMChunkPrelude {
     char chunkName[4];
-    Endian<int, E> chunkLength;
+    Endian<DoubleWord, E> chunkLength;
 };
 
 template <endian E = endian::native>
@@ -227,13 +232,14 @@ struct ILBMDataParser {
 
     std::ptrdiff_t findChunk(const char* name, std::ptrdiff_t offset = HEADER_PRELUDE_OFFSET) const {
         auto chunkPrelude = reinterpret_cast<const ILBMChunkPrelude<E>*>(data + offset);
-        Endian<int> chunkLength = chunkPrelude->chunkLength;
-        while (offset < dataSize && !ILBMCompareNames(chunkPrelude->chunkName, name) && chunkLength.value != 0) {
-            offset += chunkLength.value + CHUNK_PRELUDE_SIZE + (chunkLength.value % 2);
+        Endian<DoubleWord> chunkLength = chunkPrelude->chunkLength;
+        while (offset < dataSize && !ILBMCompareNames(chunkPrelude->chunkName, name) && chunkLength.value.lower != 0) {
+            offset += chunkLength.value.lower + CHUNK_PRELUDE_SIZE + (chunkLength.value.lower % 2);
+
             chunkPrelude = reinterpret_cast<const ILBMChunkPrelude<E>*>(data + offset);
             chunkLength = chunkPrelude->chunkLength;
         }
-        if (chunkLength.value == 0) {
+        if (chunkLength.value.lower == 0) {
             return CHUNK_NOT_FOUND;
         }
         if (offset > dataSize) {
@@ -248,8 +254,8 @@ struct ILBMDataParser {
             return ILBMColorMap{};
         }
         auto chunkPrelude = reinterpret_cast<const ILBMChunkPrelude<E>*>(data + offset);
-        Endian<int> length = chunkPrelude->chunkLength;
-        return { length.value / 3, reinterpret_cast<const ILBMColor*>(data + offset + CHUNK_PRELUDE_SIZE) };
+        Endian<DoubleWord> length = chunkPrelude->chunkLength;
+        return { length.value.lower / 3, reinterpret_cast<const ILBMColor*>(data + offset + CHUNK_PRELUDE_SIZE) };
     }
 
     template <endian Target = endian::native>
@@ -288,8 +294,8 @@ struct ILBMDataParser {
             return ILBMBody{};
         }
         auto chunkPrelude = reinterpret_cast<const ILBMChunkPrelude<E>*>(data + offset);
-        Endian<int> length = chunkPrelude->chunkLength;
-        return { length.value, reinterpret_cast<const uint8_t*>(data + offset + CHUNK_PRELUDE_SIZE) };
+        Endian<DoubleWord> length = chunkPrelude->chunkLength;
+        return { length.value.lower, reinterpret_cast<const uint8_t*>(data + offset + CHUNK_PRELUDE_SIZE) };
     }
 
     void deinterleaveInto(uint8_t* buffer, size_t bufferSize, size_t bufferPitch) {
@@ -310,6 +316,7 @@ struct ILBMDataParser {
         const uint8_t* srcPtr = body.data;
         for (int y = 0; y < height; ++y) {
             for (int p = 0; p < planeCount; ++p) {
+                assert(reinterpret_cast<std::intptr_t>(linePtr) % 8 == 0);
                 uint64_t* dst = reinterpret_cast<uint64_t*>(linePtr);
                 for (int x = 0; x < width; x += 8) {
                     uint64_t src = *srcPtr; // overprovision to allow shifts without warning

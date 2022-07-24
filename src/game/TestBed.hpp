@@ -35,6 +35,8 @@ struct TestBedMemory {
     alignas(128) VRAM vram;
     alignas(128) std::array<uint32_t, 256> palette;
 
+    std::atomic<bool> isInitialized;
+
     // text
     BitmapImage<TextCharacterW, TextCharacterH * 256> characterROM;
     std::array<uint8_t, TextLines * TextLineLength> textBuffer;
@@ -57,9 +59,9 @@ struct TestBedMemory {
     int currentSpriteFrame;
 
     // images
-    Image<uint8_t, 320, 256, ImageOrigin::TopLeft> imageDecoded;
-    Image<uint8_t, 320, 256, ImageOrigin::TopLeft> faubigDecoded;
-    Image<uint8_t, 32, 24, ImageOrigin::TopLeft> faufauDecoded;
+    alignas(8) Image<uint8_t, 320, 256, ImageOrigin::TopLeft> imageDecoded;
+    alignas(8) Image<uint8_t, 320, 256, ImageOrigin::TopLeft> faubigDecoded;
+    alignas(8) Image<uint8_t, 32, 24, ImageOrigin::TopLeft> faufauDecoded;
 
     // mouse clicks
     Vec2i points[2];
@@ -222,6 +224,7 @@ struct TestBed {
                 }
             };
             memory.voice.use(voice);
+            memory.isInitialized.store(true);
         }
 
         constant auto black = static_cast<VRAM::PixelType>(findNearest(Colors::Black, memory.palette).index);
@@ -513,6 +516,7 @@ struct TestBed {
     }
 
     static void writeDrawBuffer(TestBedMemory& memory, DrawBuffer& buffer) {
+        if (!memory.isInitialized) return;
         uint8_t* vram = memory.vram.data();
         uint32_t* drawBuffer = buffer.data();
 
@@ -554,11 +558,16 @@ struct TestBed {
 
 
     static void writeAudioBuffer(TestBedMemory& memory, void* buffer, const AudioBufferDescriptor& bufferDescriptor) {
-        float timeStep = 1.0f / static_cast<float>(bufferDescriptor.sampleRate);
-
         struct Frame {
             int16_t left, right;
         };
+
+        if (!memory.isInitialized) {
+            memset(buffer, 0, bufferDescriptor.framesPerBuffer * sizeof(Frame));
+            return;
+        }
+
+        float timeStep = 1.0f / static_cast<float>(bufferDescriptor.sampleRate);
 
         auto frames = reinterpret_cast<Frame*>(buffer);
         for (unsigned int i = 0; i < bufferDescriptor.framesPerBuffer; ++i) {

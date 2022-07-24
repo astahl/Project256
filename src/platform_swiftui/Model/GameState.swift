@@ -28,11 +28,6 @@ class GameState : ObservableObject {
     let platformInput: PlatformInput
     let platformAudio: PlatformAudio
 
-    static var timingData: ProfilingTime? = {
-        var value = ProfilingTime()
-        value.getPlatformTimeMicroseconds = timestamp
-        return value
-    }()
     let memory = UnsafeMutableRawPointer.allocate(byteCount: MemorySize, alignment: 128)
     var input = GameInput()
     let frameTime = Chronometer()
@@ -49,16 +44,25 @@ class GameState : ObservableObject {
     }
 
     func tick() {
-        GameState.timingData?.interval(timer: eTimerTickToTick, interval: eTimingTickToTick)
-        GameState.timingData?.startTimer(eTimerTickToTick)
-        GameState.timingData?.startTimer(eTimerTick)
+        PlatformProfiling.withInstance {
+            profiling in
+            profiling.timingData.interval(timer: eTimerTickToTick, interval: eTimingTickToTick)
+            profiling.timingData.startTimer(eTimerTickToTick)
+            profiling.timingData.startTimer(eTimerTick)
+        }
 
         self.platformInput.updateGameInput(gameInput: &self.input, frameTime: self.frameTime.elapsed())
        
-        GameState.timingData?.interval(timer: eTimerTick, interval: eTimingTickSetup)
+        PlatformProfiling.withInstance {
+            profiling in
+            profiling.timingData.interval(timer: eTimerTick, interval: eTimingTickSetup)
+        }
 
         let output = doGameThings(&self.input, self.memory, self.platformCallbacks)
-        GameState.timingData?.interval(timer: eTimerTick, interval: eTimingTickDo)
+        PlatformProfiling.withInstance {
+            profiling in
+            profiling.timingData.interval(timer: eTimerTick, interval: eTimingTickDo)
+        }
 
         if output.shouldQuit {
             exit(0)
@@ -74,6 +78,9 @@ class GameState : ObservableObject {
 //        }
         #endif
         cleanInput(&input)
-        GameState.timingData?.interval(timer: eTimerTick, interval: eTimingTickPost)
+        PlatformProfiling.withInstance {
+            profiling in
+            profiling.timingData.interval(timer: eTimerTick, interval: eTimingTickPost)
+        }
     }
 }

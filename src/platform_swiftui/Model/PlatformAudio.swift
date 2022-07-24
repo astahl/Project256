@@ -40,9 +40,11 @@ class PlatformAudio {
             mReserved: 0)
 
         var status = AudioQueueNewOutputWithDispatchQueue(&self.audioQueueRef, &audioStreamDescription, 0, DispatchQueue.global(qos: .userInteractive)) { audioQueue, buffer in
-            GameState.timingData?.interval(timer: eTimerAudioBufferToAudioBuffer, interval: eTimingAudioBufferToAudioBuffer)
-            GameState.timingData?.startTimer(eTimerAudioBufferToAudioBuffer)
-
+            PlatformProfiling.withInstance {
+                profiling in
+                profiling.timingData.interval(timer: eTimerAudioBufferToAudioBuffer, interval: eTimingAudioBufferToAudioBuffer)
+                profiling.timingData.startTimer(eTimerAudioBufferToAudioBuffer)
+            }
             self.queueLock.lock()
             defer {
                 self.queueLock.unlock()
@@ -78,11 +80,13 @@ class PlatformAudio {
             var buffer: AudioQueueBufferRef
             while !self.thread!.isCancelled {
                 self.condition.lock()
-                while (self.availableBuffers.isEmpty) {
+                self.queueLock.lock()
+                if (self.availableBuffers.isEmpty) {
+                    self.queueLock.unlock()
                     self.condition.wait()
+                    self.queueLock.lock()
                 }
 
-                self.queueLock.lock()
                 buffer = self.availableBuffers.removeFirst()
                 self.queueLock.unlock()
 
@@ -101,7 +105,10 @@ class PlatformAudio {
     }
 
     func fillAndEnqueueIn(_ queue: AudioQueueRef, bufferRef: AudioQueueBufferRef) {
-        GameState.timingData?.startTimer(eTimerFillAudioBuffer)
+        PlatformProfiling.withInstance {
+            profiling in
+            profiling.timingData.startTimer(eTimerFillAudioBuffer)
+        }
         let capacity = bufferRef.pointee.mAudioDataBytesCapacity
 
         var timestamp: AudioTimeStamp = .init()
@@ -115,6 +122,9 @@ class PlatformAudio {
         if status != noErr {
             exit(status)
         }
-        GameState.timingData?.interval(timer: eTimerFillAudioBuffer, interval: eTimingFillAudioBuffer)
+        PlatformProfiling.withInstance {
+            profiling in
+            profiling.timingData.interval(timer: eTimerFillAudioBuffer, interval: eTimingFillAudioBuffer)
+        }
     }
 }
