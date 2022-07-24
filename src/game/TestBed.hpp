@@ -18,6 +18,7 @@
 #include "Drawing/Palettes.hpp"
 #include "Drawing/Generators.hpp"
 #include "Project256.h"
+#include <mutex>
 
 
 using DrawBuffer = Image<uint32_t, DrawBufferWidth, DrawBufferHeight>;
@@ -29,13 +30,24 @@ constant int TextLines = DrawBufferHeight / TextCharacterH;
 constant int TextLineLength = DrawBufferWidth / TextCharacterW;
 
 
+globalvar std::mutex memoryMutex;
+
 struct TestBedMemory {
     std::array<uint8_t, 1024 * 1024> scratch;
     // video
     alignas(128) VRAM vram;
     alignas(128) std::array<uint32_t, 256> palette;
 
-    std::atomic<bool> isInitialized;
+    // audio
+    FrequencyModulator<SineWave<float>, TriangleWave<float>> tone;
+    StepSequencer<Step<float>> sequencer;
+    StepSequencer<Step<float>> drumSequencer;
+    SineSweepVoice<float> pewpew;
+    EnvelopeAdsr<float> envelope;
+    EffectDelay<float> delay;
+    MultitimbralVoice<SineSynthVoice<float>, 8> voice;
+
+    bool isInitialized;
 
     // text
     BitmapImage<TextCharacterW, TextCharacterH * 256> characterROM;
@@ -48,7 +60,7 @@ struct TestBedMemory {
     AutoResettingTimer timerCursorBlink;
     bool isCursorOn;
 
-    // bird
+    // gamestate
     Vec2f birdPosition;
     int birdSpeed;
     Vec2i birdTarget;
@@ -66,16 +78,6 @@ struct TestBedMemory {
     // mouse clicks
     Vec2i points[2];
     int currentPoint;
-
-    // audio
-    FrequencyModulator<SineWave<float>, TriangleWave<float>> tone;
-    StepSequencer<Step<float>> sequencer;
-    StepSequencer<Step<float>> drumSequencer;
-    SineSweepVoice<float> pewpew;
-    EnvelopeAdsr<float> envelope;
-    EffectDelay<float> delay;
-
-    MultitimbralVoice<SineSynthVoice<float>, 8> voice;
 };
 
 
@@ -104,9 +106,10 @@ struct TestBed {
         using Text = CharacterRom::PET;
         const auto time = std::chrono::microseconds(input.upTime_microseconds);
 
+        auto lock = std::scoped_lock(memoryMutex);
         // initialize main memory
         if (input.frameNumber == 0) {
-            std::memset(&memory, 0, MemorySize);
+            memory = TestBedMemory{};
 
             std::memset(memory.palette.data(), 0xFF, memory.palette.size() * 4);
             Palette::writeTo(memory.palette.data());
@@ -224,8 +227,9 @@ struct TestBed {
                 }
             };
             memory.voice.use(voice);
-            memory.isInitialized.store(true);
+            memory.isInitialized = true;
         }
+
 
         constant auto black = static_cast<VRAM::PixelType>(findNearest(Colors::Black, memory.palette).index);
         constant auto white = static_cast<VRAM::PixelType>(findNearest(Colors::White, memory.palette).index);
@@ -257,8 +261,6 @@ struct TestBed {
 
         // draw the testimage
         imageCopy(memory.imageDecoded, memory.vram);
-
-
 
         // draw the palette in the first rows
     //    for (int y = 0; y < memory.palette.size() / 2; ++y) {
@@ -516,6 +518,7 @@ struct TestBed {
     }
 
     static void writeDrawBuffer(TestBedMemory& memory, DrawBuffer& buffer) {
+        auto lock = std::scoped_lock(memoryMutex);
         if (!memory.isInitialized) return;
         uint8_t* vram = memory.vram.data();
         uint32_t* drawBuffer = buffer.data();
@@ -562,6 +565,7 @@ struct TestBed {
             int16_t left, right;
         };
 
+        auto lock = std::scoped_lock(memoryMutex);
         if (!memory.isInitialized) {
             memset(buffer, 0, bufferDescriptor.framesPerBuffer * sizeof(Frame));
             return;

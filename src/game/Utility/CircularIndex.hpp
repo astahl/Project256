@@ -4,7 +4,9 @@
 
 template <size_t N, std::signed_integral T = std::ptrdiff_t>
 struct CircularIndex {
-	T value;
+    T value{};
+
+    constexpr CircularIndex() = default;
 
     constexpr CircularIndex(auto val) {
         value = (((val) % N) + N) % N;

@@ -15,6 +15,8 @@ using FunctionPointer = Return (*)(Args...);
 struct Timer {
     std::chrono::microseconds firesAt;
 
+    Timer() = default;
+
     Timer(std::chrono::microseconds currentTime, std::chrono::microseconds period)
     : firesAt{currentTime + period}
     {
@@ -33,6 +35,8 @@ struct AutoResettingTimer {
     Timer timer;
     std::chrono::microseconds period;
 
+    AutoResettingTimer() = default;
+
     AutoResettingTimer(std::chrono::microseconds currentTime, std::chrono::microseconds period)
     : timer(currentTime, period), period{period} {
 
@@ -50,6 +54,8 @@ struct AutoResettingTimer {
 struct CountdownTimer {
     AutoResettingTimer timer;
     uint64_t count;
+
+    CountdownTimer() = default;
 
     CountdownTimer(std::chrono::microseconds currentTime, std::chrono::microseconds period, uint64_t count = 1)
     : timer(currentTime, period), count{count} {
