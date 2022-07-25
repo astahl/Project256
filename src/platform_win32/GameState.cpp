@@ -212,8 +212,7 @@ GameState::GameState()
 }
 
 
-INT64 readFileDEBUG(const char* filename, unsigned char* buffer, INT64 bufferSize) {
-
+internalfunc std::wstring makeFilePath(const char* filename) {
     int requiredWideLength = MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, filename, -1, NULL, 0);
     std::wstring wideString(requiredWideLength, L'\0');
     MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, filename, -1, wideString.data(), static_cast<int>(wideString.size()));
@@ -223,10 +222,17 @@ INT64 readFileDEBUG(const char* filename, unsigned char* buffer, INT64 bufferSiz
     size_t lastSlashPos = pathBuf.find_last_of(L'\\');
     if (lastSlashPos != std::wstring::npos) pathBuf.erase(lastSlashPos + 1);
     std::wstring filePath = pathBuf + wideString;
+    return filePath;
+}
+
+
+INT64 readFileDEBUG(const char* filename, unsigned char* buffer, INT64 bufferSize) {
+    auto filePath = makeFilePath(filename);
     HANDLE file = CreateFile2(filePath.c_str(), GENERIC_READ, FILE_SHARE_READ, OPEN_EXISTING, NULL);
     if (file == INVALID_HANDLE_VALUE) {
         exit(GetLastError());
     }
+
     DWORD read{};
     if (ReadFile(file, buffer, static_cast<DWORD>(bufferSize), &read, NULL)) {
         return read;
@@ -237,16 +243,7 @@ INT64 readFileDEBUG(const char* filename, unsigned char* buffer, INT64 bufferSiz
 
 bool readImageDEBUG(const char* filename, unsigned int* buffer, int width, int height)
 {
-    int requiredWideLength = MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, filename, -1, NULL, 0);
-    std::wstring wideString(requiredWideLength, L'\0');
-    MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, filename, -1, wideString.data(), static_cast<int>(wideString.size()));
-
-    std::wstring pathBuf(512, L'\0');
-    GetModuleFileName(nullptr, pathBuf.data(), 512);
-    size_t lastSlashPos = pathBuf.find_last_of(L'\\');
-    if (lastSlashPos != std::wstring::npos) pathBuf.erase(lastSlashPos + 1);
-    std::wstring filePath = pathBuf + wideString;
-
+    auto filePath = makeFilePath(filename);
     // Initialize COM
    
     HRESULT hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
