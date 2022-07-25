@@ -33,10 +33,14 @@ constant int TextLineLength = DrawBufferWidth / TextCharacterW;
 globalvar std::mutex memoryMutex;
 
 struct TestBedMemory {
-    std::array<uint8_t, 1024 * 1024> scratch;
     // video
     alignas(128) VRAM vram;
     alignas(128) std::array<uint32_t, 256> palette;
+
+    // images
+    alignas(8) Image<uint8_t, 320, 256, ImageOrigin::TopLeft> imageDecoded;
+    alignas(8) Image<uint8_t, 320, 256, ImageOrigin::TopLeft> faubigDecoded;
+    alignas(8) Image<uint8_t, 32, 24, ImageOrigin::TopLeft> faufauDecoded;
 
     // audio
     FrequencyModulator<SineWave<float>, TriangleWave<float>> tone;
@@ -70,14 +74,11 @@ struct TestBedMemory {
     Timer spriteAnimationTimer;
     int currentSpriteFrame;
 
-    // images
-    alignas(8) Image<uint8_t, 320, 256, ImageOrigin::TopLeft> imageDecoded;
-    alignas(8) Image<uint8_t, 320, 256, ImageOrigin::TopLeft> faubigDecoded;
-    alignas(8) Image<uint8_t, 32, 24, ImageOrigin::TopLeft> faufauDecoded;
-
     // mouse clicks
     Vec2i points[2];
     int currentPoint;
+    
+    std::array<uint8_t, 300 * 1024> scratch;
 };
 
 
