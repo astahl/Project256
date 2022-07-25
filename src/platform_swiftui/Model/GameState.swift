@@ -37,6 +37,7 @@ class GameState : ObservableObject {
     let platformCallbacks = PlatformCallbacks(readFile: loadDataDEBUG(filenamePtr:destination:bufferSize:), readImage: loadImageDEBUG(filenamePtr:destination:width:height:))
 
     init(settings: GameSettings?) {
+        memory.initializeMemory(as: UInt8.self, repeating: UInt8.zero, count: MemorySize)
         self.settings = settings ?? GameSettings()
         self.platformInput = PlatformInput(settings: self.settings)
         self.platformAudio = PlatformAudio(memory: self.memory)

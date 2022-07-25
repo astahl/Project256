@@ -109,7 +109,7 @@ struct TestBed {
         auto lock = std::scoped_lock(memoryMutex);
         // initialize main memory
         if (input.frameNumber == 0) {
-            memory = TestBedMemory{};
+            std::memset(&memory, 0, sizeof(TestBedMemory));
 
             std::memset(memory.palette.data(), 0xFF, memory.palette.size() * 4);
             Palette::writeTo(memory.palette.data());
