@@ -22,17 +22,15 @@ struct CircularIndex {
 	}
 
 	constexpr CircularIndex& operator++() {
-		return *this = value + 1;
+		return *this += 1;
 	}
 
 	constexpr CircularIndex& operator-=(auto i) {
-		set(value - i);
-		return *this;
+		return *this = value - i;
 	}
 
 	constexpr CircularIndex& operator--() {
-		set(value - 1);
-		return *this;
+		return *this -= 1;
 	}
 
 	constexpr bool operator==(const CircularIndex& other) const {

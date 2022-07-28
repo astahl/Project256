@@ -96,7 +96,7 @@ struct TestBed {
     {
         if (input.frameNumber == 0) {
 #ifdef DEBUG
-            test_myCos();
+ //           test_myCos();
 #endif
         }
         using namespace ranges_at_home;
