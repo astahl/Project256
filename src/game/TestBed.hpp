@@ -240,6 +240,8 @@ struct TestBed {
         constant auto green = static_cast<VRAM::PixelType>(findNearest(Colors::Green, memory.palette).index);
         constant auto whitePixel = [&](const auto& p) { memory.vram.pixel(p) = white; };
         constant auto redPixel = [&](const auto& p) { memory.vram.pixel(p) = red; };
+        constant auto greenPixel = [&](const auto& p) { memory.vram.pixel(p) = green; };
+        constant auto lightBluePixel = [&](const auto& p) { memory.vram.pixel(p) = lightBlue; };
 
         auto clearColor = black;
         if (input.closeRequested) {
@@ -430,10 +432,19 @@ struct TestBed {
         // write controller state to the screen
         for (int i = 0; i < InputMaxControllers; ++i) {
             auto& controller = input.controllers[i];
-            if (!controller.isConnected)
-                continue;
 
             Vec2i p{ 10, (i + 1) * 10 };
+            for (auto p : Generators::HLine{p, 10}) {
+                if (!controller.isConnected)
+                    redPixel(p);
+                else
+                    greenPixel(p);
+            }
+            p.y += 1;
+            for (auto p : Generators::HLine{p, 10}) {
+                if (controller.isActive)
+                    lightBluePixel(p);
+            }
             for (auto& button : controller.buttons) {
                 if (button.endedDown)
                     whitePixel(p);

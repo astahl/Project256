@@ -39,7 +39,7 @@ class GameState : ObservableObject {
     init(settings: GameSettings?) {
         memory.initializeMemory(as: UInt8.self, repeating: UInt8.zero, count: MemorySize)
         self.settings = settings ?? GameSettings()
-        self.platformInput = PlatformInput(settings: self.settings)
+        self.platformInput = PlatformInput(settings: self.settings, input: &self.input)
         self.platformAudio = PlatformAudio(memory: self.memory)
         self.platformAudio.start()
     }
@@ -52,7 +52,7 @@ class GameState : ObservableObject {
             profiling.timingData.startTimer(eTimerTick)
         }
 
-        self.platformInput.updateGameInput(gameInput: &self.input, frameTime: self.frameTime.elapsed())
+        self.platformInput.updateGameInput(frameTime: self.frameTime.elapsed())
        
         PlatformProfiling.withInstance {
             profiling in
