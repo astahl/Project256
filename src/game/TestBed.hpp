@@ -20,6 +20,8 @@
 #include "Project256.h"
 #include <mutex>
 
+#include <iostream>
+
 
 using DrawBuffer = Image<uint32_t, DrawBufferWidth, DrawBufferHeight>;
 using VRAM = Image<uint8_t, DrawBufferWidth, DrawBufferHeight, ImageOrigin::BottomLeft>;
@@ -351,6 +353,8 @@ struct TestBed {
         // do some experimentation in the vram
         compiletime auto wrap = [](auto p) { return wrapAround2d(p, Vec2i(), Vec2i{DrawBufferWidth, DrawBufferHeight});};
         compiletime auto clip = [=](const auto& p) { return (Vec2i{0,0} <= p) && (p < BufferSize); };
+        compiletime auto clipped = filter(clip);
+        compiletime auto wrapped = transform(wrap);
 
         if (input.mouse.trackLength) {
             Vec2f mousePosition = input.mouse.track[input.mouse.trackLength - 1];
@@ -367,8 +371,6 @@ struct TestBed {
             }
 
             auto atMouse = transform(offset);
-            compiletime auto clipped = filter(clip);
-            compiletime auto wrapped = transform(wrap);
 
             compiletime auto rectangleGenerator = Rectangle{ Vec2i{-3,-3}, Vec2i{3, 3} };
 
@@ -434,30 +436,31 @@ struct TestBed {
             auto& controller = input.controllers[i];
 
             Vec2i p{ 10, (i + 1) * 10 };
-            for (auto p : Generators::HLine{p, 10}) {
+            for (auto p : Generators::HLine{p, -10}) {
                 if (!controller.isConnected)
                     redPixel(p);
                 else
                     greenPixel(p);
             }
             p.y += 1;
-            for (auto p : Generators::HLine{p, 10}) {
+            for (auto p : Generators::HLine{p, -10}) {
                 if (controller.isActive)
                     lightBluePixel(p);
             }
-            for (auto& button : controller.buttons) {
+            p.x += 2;
+            for (auto& button : array_view<const Button>{ &controller.shoulderLeft, InputControllerButtonCount }) {
                 if (button.endedDown)
                     whitePixel(p);
                 p.x += 2;
             }
 
-            for (auto& axis1 : controller.axes1) {
+            for (auto& axis1 : { controller.triggerLeft, controller.triggerRight } ) {
                 if (axis1.trigger.endedDown)
                     whitePixel(p);
                 p.x += 2;
             }
 
-            for (auto& axis2 : controller.axes2) {
+            for (auto& axis2 : {controller.stickLeft, controller.dPad, controller.stickRight}) {
                 if (axis2.up.endedDown)
                     whitePixel(p + Vec2i{ 1,1 });
                 if (axis2.down.endedDown)
@@ -466,7 +469,14 @@ struct TestBed {
                     whitePixel(p + Vec2i{ });
                 if (axis2.right.endedDown)
                     whitePixel(p + Vec2i{ 2,0 });
-                p.x += 4;
+
+                p.x += 8;
+
+                for (auto p : Generators::Line{p, round(p + 2 * axis2.end)} | clipped ) {
+                    whitePixel(p);
+                }
+
+                p.x += 8;
             }
 
             p.x = 10;

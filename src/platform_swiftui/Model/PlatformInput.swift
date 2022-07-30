@@ -21,28 +21,9 @@ extension GameButton {
     }
 
     mutating func pressed(_ down: Bool) {
-        self.transitionCount += 1
-        self.endedDown = down
-    }
-}
-
-
-extension GCControllerButtonInput {
-    func mapToInputButton(_ inputButton: UnsafeMutablePointer<GameButton>) {
-        self.pressedChangedHandler = {
-            button, value, pressed in
-            print(button)
-            inputButton.pointee.pressed(pressed)
-        }
-    }
-
-    func mapToInputAxis1(_ inputAxis1: UnsafeMutablePointer<Axis1>) {
-        self.valueChangedHandler = {
-            button, value, pressed in
-            print(button)
-            inputAxis1.pointee.end = value
-            inputAxis1.pointee.trigger.pressed(pressed)
-            inputAxis1.pointee.isAnalog = true
+        if self.endedDown != down {
+            self.transitionCount += 1
+            self.endedDown = down
         }
     }
 }
@@ -55,39 +36,41 @@ extension Axis2 {
     }
 
     mutating func analogToDigital(deadZone: Float) {
-        if self.end.y > deadZone {
-            if abs(self.end.x) < self.end.y {
-                self.up.press()
-            } else {
-                if (self.end.x > deadZone) {
-                    self.right.press()
-                } else if (self.end.x < -deadZone) {
-                    self.left.press()
-                }
-            }
-        } else if self.end.y < -deadZone {
-            if abs(self.end.x) < abs(self.end.y) {
-                self.down.press()
-            } else {
-                if (self.end.x > deadZone) {
-                    self.right.press()
-                } else if (self.end.x < -deadZone) {
-                    self.left.press()
-                }
-            }
+        self.left.pressed(self.end.x < -deadZone)
+        self.right.pressed(self.end.x > deadZone)
+        self.down.pressed(self.end.y < -deadZone)
+        self.up.pressed(self.end.y > deadZone)
+    }
+}
+
+extension GCControllerButtonInput {
+    func mapToInputButton(_ inputButton: UnsafeMutablePointer<GameButton>) {
+        self.pressedChangedHandler = {
+            button, value, pressed in
+            inputButton.pointee.pressed(pressed)
+        }
+    }
+
+    func mapToInputAxis1(_ inputAxis1: UnsafeMutablePointer<Axis1>) {
+        self.valueChangedHandler = {
+            button, value, pressed in
+            inputAxis1.pointee.end = value
+            inputAxis1.pointee.trigger.pressed(pressed)
+            inputAxis1.pointee.isAnalog = true
         }
     }
 }
+
 
 extension GCControllerDirectionPad {
     func mapToInputAxis2(_ inputAxis2: UnsafeMutablePointer<Axis2>) {
         self.valueChangedHandler = {
             dpad, x, y in
-            print(dpad)
             inputAxis2.pointee.end.x = x
             inputAxis2.pointee.end.y = y
-            inputAxis2.pointee.analogToDigital(deadZone: 0)
+            inputAxis2.pointee.analogToDigital(deadZone: 0.5)
             inputAxis2.pointee.isAnalog = dpad.isAnalog
+            inputAxis2.pointee.latches = dpad.isAnalog
         }
     }
 }
@@ -150,7 +133,7 @@ class PlatformInput {
                 }
             })
         subscriptions.insert(NotificationCenter.default.publisher(for: Notification.Name.GCMouseDidBecomeCurrent)
-            .sink { print("mouse: \($0.object!)") })
+            .sink { self.onCurrentMouse(gcMouse: $0.object as! GCMouse) })
         subscriptions.insert(NotificationCenter.default.publisher(for: Notification.Name.GCControllerDidBecomeCurrent)
             .sink { self.onCurrentController(gcController: $0.object as! GCController) })
     }
@@ -181,6 +164,21 @@ class PlatformInput {
             }
         }
     }
+
+    func onCurrentMouse(gcMouse: GCMouse) {
+        gcMouse.mouseInput?.mouseMovedHandler = {
+            mouseInput, x, y in
+            self.withKbmController {
+                kbmController in
+                kbmController.stickRight.end.x += x
+                kbmController.stickRight.end.y += y
+                kbmController.stickRight.isAnalog = true
+                kbmController.stickRight.analogToDigital(deadZone: 1)
+            }
+        }
+    }
+
+
 
 
     func updateGameInput(frameTime: (microseconds: Int64, seconds: Double)) {

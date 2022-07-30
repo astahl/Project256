@@ -31,24 +31,27 @@ Vec2f clipSpaceDrawBufferScale(unsigned int viewportWidth, unsigned int viewport
 void cleanInput(GameInput* input) {
     for (int i = 0; i < InputMaxControllers; ++i) {
         auto& controller = input->controllers[i];
+        Axis1* axis = &controller.triggerLeft;
         for (int axis1Index = 0; axis1Index < InputControllerAxis1Count; ++axis1Index)
         {
-            controller.axes1[axis1Index].trigger.transitionCount = 0;
-            controller.axes1[axis1Index].start = controller.axes1[axis1Index].end;
+            axis[axis1Index].trigger.transitionCount = 0;
+            axis[axis1Index].start = axis[axis1Index].end;
         }
+        Axis2* axis2 = &controller.stickLeft;
         for (int axis2Index = 0; axis2Index < InputControllerAxis1Count; ++axis2Index)
         {
-            controller.axes2[axis2Index].left.transitionCount = 0;
-            controller.axes2[axis2Index].up.transitionCount = 0;
-            controller.axes2[axis2Index].down.transitionCount = 0;
-            controller.axes2[axis2Index].right.transitionCount = 0;
-            controller.axes2[axis2Index].start = controller.axes2[axis2Index].end;
-            if (!controller.axes2[axis2Index].latches)
-                controller.axes2[axis2Index].end = Vec2f{};
+            axis2[axis2Index].left.transitionCount = 0;
+            axis2[axis2Index].up.transitionCount = 0;
+            axis2[axis2Index].down.transitionCount = 0;
+            axis2[axis2Index].right.transitionCount = 0;
+            axis2[axis2Index].start = axis2[axis2Index].end;
+            if (!axis2[axis2Index].latches)
+                axis2[axis2Index].end = Vec2f{};
         }
+        Button* button = &controller.shoulderLeft;
         for (int buttonIndex = 0; buttonIndex < InputControllerButtonCount; ++buttonIndex)
         {
-            controller.buttons[buttonIndex].transitionCount = 0;
+            button[buttonIndex].transitionCount = 0;
         }
     }
     auto& mouse = input->mouse;

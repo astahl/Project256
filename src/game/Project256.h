@@ -91,24 +91,9 @@ struct GameController {
     _Bool isConnected;
     // if any action is registered on buttons or axes
     _Bool isActive;
-    union {
-        struct {
-            struct Axis2 stickLeft, stickRight, dPad;
-        };
-        struct Axis2 axes2[InputControllerAxis2Count];
-    };
-    union {
-        struct {
-            struct Axis1 triggerLeft, triggerRight;
-        };
-        struct Axis1 axes1[InputControllerAxis1Count];
-    };
-    union {
-        struct {
-            struct Button shoulderLeft, shoulderRight, buttonBack, buttonStart, buttonX, buttonY, buttonA, buttonB, buttonStickLeft, buttonStickRight, buttonGripLeft, buttonGripRight;
-        };
-        struct Button buttons[InputControllerButtonCount];
-    };
+    struct Axis2 stickLeft, stickRight, dPad;
+    struct Axis1 triggerLeft, triggerRight;
+    struct Button shoulderLeft, shoulderRight, buttonBack, buttonStart, buttonX, buttonY, buttonA, buttonB, buttonStickLeft, buttonStickRight, buttonGripLeft, buttonGripRight;
 } CF_SWIFT_NAME(P256GameController);
 
 #pragma warning (pop)
