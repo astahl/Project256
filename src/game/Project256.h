@@ -83,8 +83,6 @@ enum ControllerSubType {
     ControllerSubTypeGenericSingleButton
 };
 
-#pragma warning (push)
-#pragma warning (disable : 4201)
 
 struct GameController {
     enum ControllerSubType subType;
@@ -95,8 +93,6 @@ struct GameController {
     struct Axis1 triggerLeft, triggerRight;
     struct Button shoulderLeft, shoulderRight, buttonBack, buttonStart, buttonX, buttonY, buttonA, buttonB, buttonStickLeft, buttonStickRight, buttonGripLeft, buttonGripRight;
 } CF_SWIFT_NAME(P256GameController);
-
-#pragma warning (pop)
 
 struct Tap {
 	struct Vec2i position;

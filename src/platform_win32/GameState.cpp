@@ -120,16 +120,16 @@ void PlatformInput::updateGameInput(GameInput& gameInput) {
         bool isAction = false;
         switch (keyEvent.virtualKeyCode) {
         case 'W': isAction = gamepadButton(kbm.stickLeft.up, down); break;
-        case 'A': isAction = gamepadButton(kbm.stickLeft.left, down); break;
         case 'S': isAction = gamepadButton(kbm.stickLeft.down, down); break;
+        case 'A': isAction = gamepadButton(kbm.stickLeft.left, down); break;
         case 'D': isAction = gamepadButton(kbm.stickLeft.right, down); break;
         case '1': isAction = gamepadButton(kbm.dPad.up, down); break;
-        case '2': isAction = gamepadButton(kbm.dPad.left, down); break;
-        case '4': isAction = gamepadButton(kbm.dPad.down, down); break;
-        case '3': isAction = gamepadButton(kbm.dPad.right, down); break;
+        case '2': isAction = gamepadButton(kbm.dPad.down, down); break;
+        case '3': isAction = gamepadButton(kbm.dPad.left, down); break;
+        case '4': isAction = gamepadButton(kbm.dPad.right, down); break;
         case VK_UP: isAction = gamepadButton(kbm.stickRight.up, down); break;
-        case VK_LEFT: isAction = gamepadButton(kbm.stickRight.left, down); break;
         case VK_DOWN: isAction = gamepadButton(kbm.stickRight.down, down); break;
+        case VK_LEFT: isAction = gamepadButton(kbm.stickRight.left, down); break;
         case VK_RIGHT: isAction = gamepadButton(kbm.stickRight.right, down); break;
 
         case VK_CONTROL: isAction = gamepadButton(kbm.shoulderLeft, down); break;

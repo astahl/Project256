@@ -128,9 +128,7 @@ class PlatformInput {
         self.settings = settings
         subscriptions.insert(NotificationCenter.default.publisher(for: Notification.Name.GCKeyboardDidConnect)
             .sink {
-                if let keyboard = $0.object as? GCKeyboard {
-                    print("keyboard: \(keyboard)" )
-                }
+                self.onConnectKeyboard(gcKeyboard: $0.object as! GCKeyboard)
             })
         subscriptions.insert(NotificationCenter.default.publisher(for: Notification.Name.GCMouseDidBecomeCurrent)
             .sink { self.onCurrentMouse(gcMouse: $0.object as! GCMouse) })
@@ -176,6 +174,53 @@ class PlatformInput {
                 kbmController.stickRight.analogToDigital(deadZone: 1)
             }
         }
+        self.withKbmController {
+            kbmController in
+            gcMouse.mouseInput?.leftButton.mapToInputButton(&kbmController.shoulderLeft)
+            gcMouse.mouseInput?.rightButton?.mapToInputButton(&kbmController.shoulderRight)
+        }
+    }
+
+    func onConnectKeyboard(gcKeyboard: GCKeyboard) {
+        self.withKbmController {
+            kbmController in
+            kbmController.isConnected = true
+        }
+        gcKeyboard.keyboardInput?.keyChangedHandler = {
+            keyboardInput, buttonInput, keyCode, pressed in
+            self.withKbmController {
+                kbmController in
+                kbmController.isActive = true
+                switch (keyCode) {
+                case .keyW: kbmController.stickLeft.up.pressed(pressed)
+                case .keyS: kbmController.stickLeft.down.pressed(pressed)
+                case .keyA: kbmController.stickLeft.left.pressed(pressed)
+                case .keyD: kbmController.stickLeft.right.pressed(pressed)
+                case .one: kbmController.dPad.up.pressed(pressed)
+                case .two: kbmController.dPad.down.pressed(pressed)
+                case .three: kbmController.dPad.left.pressed(pressed)
+                case .four: kbmController.dPad.right.pressed(pressed)
+                case .upArrow: kbmController.stickRight.up.pressed(pressed)
+                case .downArrow: kbmController.stickRight.down.pressed(pressed)
+                case .leftArrow: kbmController.stickRight.left.pressed(pressed)
+                case .rightArrow: kbmController.stickRight.right.pressed(pressed)
+
+                case .leftControl: kbmController.shoulderLeft.pressed(pressed)
+                case .leftShift: kbmController.shoulderRight.pressed(pressed)
+                case .spacebar: kbmController.buttonA.pressed(pressed)
+                case .keyF: kbmController.buttonB.pressed(pressed)
+                case .keyR: kbmController.buttonX.pressed(pressed)
+                case .keyC: kbmController.buttonY.pressed(pressed)
+
+                case .tab: kbmController.buttonStickRight.pressed(pressed)
+                case .escape: kbmController.buttonBack.pressed(pressed)
+                case .returnOrEnter: kbmController.buttonStart.pressed(pressed)
+
+                default: kbmController.isActive = false
+                }
+
+            }
+        }
     }
 
 
@@ -188,18 +233,19 @@ class PlatformInput {
                 kbmController.isConnected = true
                 if keyboard.isAnyKeyPressed {
                     kbmController.isActive = true
+                    kbmController.stickLeft.digitalToAnalog();
                 }
-                kbmController.stickLeft.up.pressed(keyboard.button(forKeyCode: GCKeyCode.keyW)?.isPressed ?? false);
-                kbmController.stickLeft.left.pressed(keyboard.button(forKeyCode: GCKeyCode.keyA)?.isPressed ?? false);
-                kbmController.stickLeft.down.pressed(keyboard.button(forKeyCode: GCKeyCode.keyS)?.isPressed ?? false);
-                kbmController.stickLeft.right.pressed(keyboard.button(forKeyCode: GCKeyCode.keyD)?.isPressed ?? false);
-                kbmController.stickLeft.digitalToAnalog();
+//                kbmController.stickLeft.up.pressed(keyboard.button(forKeyCode: GCKeyCode.keyW)?.isPressed ?? false);
+//                kbmController.stickLeft.left.pressed(keyboard.button(forKeyCode: GCKeyCode.keyA)?.isPressed ?? false);
+//                kbmController.stickLeft.down.pressed(keyboard.button(forKeyCode: GCKeyCode.keyS)?.isPressed ?? false);
+//                kbmController.stickLeft.right.pressed(keyboard.button(forKeyCode: GCKeyCode.keyD)?.isPressed ?? false);
+//                kbmController.stickLeft.digitalToAnalog();
             }
-
-            if let mouse = GCMouse.current?.mouseInput {
-                kbmController.isConnected = true
-                kbmController.shoulderRight.pressed(mouse.leftButton.isPressed)
-            }
+//
+//            if let mouse = GCMouse.current?.mouseInput {
+//                kbmController.isConnected = true
+//                kbmController.shoulderRight.pressed(mouse.leftButton.isPressed)
+//            }
         }
 
         currentGameInput.pointee.frameNumber = self.frameNumber
