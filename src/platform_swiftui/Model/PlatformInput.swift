@@ -139,6 +139,10 @@ class PlatformInput {
             .compactMap { $0.object as? GCMouse }
             .sink { self.onMouseBecomeCurrent($0) })
 
+        subscriptions.insert(NotificationCenter.default.publisher(for: Notification.Name.GCMouseDidStopBeingCurrent)
+            .compactMap { $0.object as? GCMouse }
+            .sink { self.onMouseStopBeingCurrent($0) })
+
         subscriptions.insert(NotificationCenter.default.publisher(for: Notification.Name.GCMouseDidConnect)
             .compactMap { $0.object as? GCMouse }
             .sink { self.onMouseConnect($0) })
