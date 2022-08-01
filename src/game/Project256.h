@@ -69,10 +69,10 @@ struct Axis2 {
 
 
 enum ControllerSubType {
-    ControllerSubTypeNone,
-    ControllerSubTypeKeyboard,
-    ControllerSubTypeMouse,
-    ControllerSubTypeKeyboardAndMouse,
+    ControllerSubTypeNone = 0,
+    ControllerSubTypeKeyboard = 1,
+    ControllerSubTypeMouse = 2,
+    ControllerSubTypeKeyboardAndMouse = 3,
     ControllerSubTypeXBox,
     ControllerSubTypeSteam,
     ControllerSubTypePlayStation,

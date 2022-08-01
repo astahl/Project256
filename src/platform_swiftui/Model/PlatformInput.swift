@@ -126,22 +126,60 @@ class PlatformInput {
     init(settings: GameSettings, input: UnsafeMutablePointer<GameInput>) {
         self.currentGameInput = input
         self.settings = settings
+
         subscriptions.insert(NotificationCenter.default.publisher(for: Notification.Name.GCKeyboardDidConnect)
-            .sink {
-                self.onConnectKeyboard(gcKeyboard: $0.object as! GCKeyboard)
-            })
+            .compactMap { $0.object as? GCKeyboard }
+            .sink { self.onKeyboardConnect($0) })
+
+        subscriptions.insert(NotificationCenter.default.publisher(for: Notification.Name.GCKeyboardDidDisconnect)
+            .compactMap { $0.object as? GCKeyboard }
+            .sink { self.onKeyboardDisconnect($0) })
+
         subscriptions.insert(NotificationCenter.default.publisher(for: Notification.Name.GCMouseDidBecomeCurrent)
-            .sink { self.onCurrentMouse(gcMouse: $0.object as! GCMouse) })
+            .compactMap { $0.object as? GCMouse }
+            .sink { self.onMouseBecomeCurrent($0) })
+
+        subscriptions.insert(NotificationCenter.default.publisher(for: Notification.Name.GCMouseDidConnect)
+            .compactMap { $0.object as? GCMouse }
+            .sink { self.onMouseConnect($0) })
+
+        subscriptions.insert(NotificationCenter.default.publisher(for: Notification.Name.GCMouseDidConnect)
+            .compactMap { $0.object as? GCMouse }
+            .sink { self.onMouseDisconnect($0) })
+
+        subscriptions.insert(NotificationCenter.default.publisher(for: Notification.Name.GCControllerDidConnect)
+            .compactMap { $0.object as? GCController }
+            .sink { self.onControllerConnect($0) })
+
+        subscriptions.insert(NotificationCenter.default.publisher(for: Notification.Name.GCControllerDidDisconnect)
+            .compactMap { $0.object as? GCController }
+            .sink { self.onControllerDisconnect($0) })
+
         subscriptions.insert(NotificationCenter.default.publisher(for: Notification.Name.GCControllerDidBecomeCurrent)
-            .sink { self.onCurrentController(gcController: $0.object as! GCController) })
+            .compactMap { $0.object as? GCController }
+            .sink { self.onControllerBecomeCurrent($0) })
+
+        subscriptions.insert(NotificationCenter.default.publisher(for: Notification.Name.GCControllerDidStopBeingCurrent)
+            .compactMap { $0.object as? GCController }
+            .sink { self.onControllerStopBeingCurrent($0) })
     }
 
-
-    func onCurrentController(gcController: GCController) {
-        if let extendedGamepad = gcController.extendedGamepad {
-            withController(index: 2) {
-                controller in
-
+    func onControllerConnect(_ gcController: GCController) {
+        if gcController.playerIndex == .indexUnset {
+            gcController.playerIndex = self.playerIndexForNewController()
+        }
+        withControllerForPlayer(gcController.playerIndex) {
+            controller in
+            controller.isConnected = true
+            if let microGamepad = gcController.microGamepad {
+                controller.subType = ControllerSubTypeGenericTwoButton
+                microGamepad.buttonA.mapToInputButton(&controller.buttonA)
+                microGamepad.buttonX.mapToInputButton(&controller.buttonX)
+                microGamepad.dpad.mapToInputAxis2(&controller.stickLeft)
+                microGamepad.buttonMenu.mapToInputButton(&controller.buttonStart)
+            }
+            if let extendedGamepad = gcController.extendedGamepad {
+                controller.subType = ControllerSubTypePlayStation
                 extendedGamepad.buttonA.mapToInputButton(&controller.buttonA)
                 extendedGamepad.buttonB.mapToInputButton(&controller.buttonB)
                 extendedGamepad.buttonX.mapToInputButton(&controller.buttonX)
@@ -157,13 +195,37 @@ class PlatformInput {
                 extendedGamepad.leftThumbstick.mapToInputAxis2(&controller.stickLeft)
                 extendedGamepad.rightThumbstick.mapToInputAxis2(&controller.stickRight)
                 extendedGamepad.dpad.mapToInputAxis2(&controller.dPad)
-                controller.isConnected = true
-                controller.isActive = true
             }
         }
     }
 
-    func onCurrentMouse(gcMouse: GCMouse) {
+    func onControllerDisconnect(_ gcController: GCController) {
+        withControllerForPlayer(gcController.playerIndex) {
+            controller in
+            controller.isConnected = false
+            controller.subType = ControllerSubTypeNone
+        }
+    }
+
+    func onControllerBecomeCurrent(_ gcController: GCController) {
+        if gcController.playerIndex == .indexUnset {
+            gcController.playerIndex = self.playerIndexForNewController()
+        }
+
+        withControllerForPlayer(gcController.playerIndex) {
+            controller in
+            controller.isActive = true
+        }
+    }
+
+    func onControllerStopBeingCurrent(_ gcController: GCController) {
+        withControllerForPlayer(gcController.playerIndex) {
+            controller in
+            controller.isActive = false
+        }
+    }
+
+    func onMouseBecomeCurrent(_ gcMouse: GCMouse) {
         gcMouse.mouseInput?.mouseMovedHandler = {
             mouseInput, x, y in
             self.withKbmController {
@@ -176,15 +238,64 @@ class PlatformInput {
         }
         self.withKbmController {
             kbmController in
-            gcMouse.mouseInput?.leftButton.mapToInputButton(&kbmController.shoulderLeft)
-            gcMouse.mouseInput?.rightButton?.mapToInputButton(&kbmController.shoulderRight)
+            gcMouse.mouseInput?.leftButton.mapToInputButton(&kbmController.triggerRight.trigger)
+            gcMouse.mouseInput?.rightButton?.mapToInputButton(&kbmController.triggerLeft.trigger)
+            gcMouse.mouseInput?.middleButton?.mapToInputButton(&kbmController.buttonStickRight)
         }
     }
 
-    func onConnectKeyboard(gcKeyboard: GCKeyboard) {
+    func onMouseStopBeingCurrent(_ gcMouse: GCMouse) {
+        gcMouse.mouseInput?.mouseMovedHandler = nil
+        gcMouse.mouseInput?.leftButton.valueChangedHandler = nil
+        gcMouse.mouseInput?.rightButton?.valueChangedHandler = nil
+        gcMouse.mouseInput?.middleButton?.valueChangedHandler = nil
+    }
+
+    func onMouseConnect(_ gcMouse: GCMouse) {
+        self.withKbmController {
+            kbmController in
+
+            kbmController.isConnected = true
+            switch kbmController.subType {
+            case ControllerSubTypeNone:
+                kbmController.subType = ControllerSubTypeMouse
+            case ControllerSubTypeKeyboard:
+                kbmController.subType = ControllerSubTypeKeyboardAndMouse
+            default:
+                break
+            }
+        }
+    }
+
+    func onMouseDisconnect(_ gcMouse: GCMouse) {
+        self.withKbmController {
+            kbmController in
+
+            switch kbmController.subType {
+            case ControllerSubTypeMouse:
+                kbmController.subType = ControllerSubTypeNone
+                kbmController.isConnected = false
+            case ControllerSubTypeKeyboardAndMouse:
+                kbmController.subType = ControllerSubTypeKeyboard
+            default:
+                break
+            }
+        }
+    }
+
+    func onKeyboardConnect(_ gcKeyboard: GCKeyboard) {
         self.withKbmController {
             kbmController in
             kbmController.isConnected = true
+
+            switch kbmController.subType {
+            case ControllerSubTypeNone:
+                kbmController.subType = ControllerSubTypeKeyboard
+            case ControllerSubTypeMouse:
+                kbmController.subType = ControllerSubTypeKeyboardAndMouse
+            default:
+                break
+            }
         }
         gcKeyboard.keyboardInput?.keyChangedHandler = {
             keyboardInput, buttonInput, keyCode, pressed in
@@ -223,7 +334,21 @@ class PlatformInput {
         }
     }
 
+    func onKeyboardDisconnect(_ gcKeyboard: GCKeyboard) {
+        self.withKbmController {
+            kbmController in
 
+            switch kbmController.subType {
+            case ControllerSubTypeKeyboard:
+                kbmController.subType = ControllerSubTypeNone
+                kbmController.isConnected = false
+            case ControllerSubTypeKeyboardAndMouse:
+                kbmController.subType = ControllerSubTypeMouse
+            default:
+                break
+            }
+        }
+    }
 
 
     func updateGameInput(frameTime: (microseconds: Int64, seconds: Double)) {
@@ -235,17 +360,7 @@ class PlatformInput {
                     kbmController.isActive = true
                     kbmController.stickLeft.digitalToAnalog();
                 }
-//                kbmController.stickLeft.up.pressed(keyboard.button(forKeyCode: GCKeyCode.keyW)?.isPressed ?? false);
-//                kbmController.stickLeft.left.pressed(keyboard.button(forKeyCode: GCKeyCode.keyA)?.isPressed ?? false);
-//                kbmController.stickLeft.down.pressed(keyboard.button(forKeyCode: GCKeyCode.keyS)?.isPressed ?? false);
-//                kbmController.stickLeft.right.pressed(keyboard.button(forKeyCode: GCKeyCode.keyD)?.isPressed ?? false);
-//                kbmController.stickLeft.digitalToAnalog();
             }
-//
-//            if let mouse = GCMouse.current?.mouseInput {
-//                kbmController.isConnected = true
-//                kbmController.shoulderRight.pressed(mouse.leftButton.isPressed)
-//            }
         }
 
         currentGameInput.pointee.frameNumber = self.frameNumber
@@ -299,10 +414,43 @@ class PlatformInput {
 #endif
     }
 
+    func playerIndexForNewController() -> GCControllerPlayerIndex {
+        if !currentGameInput.pointee.controllers.1.isConnected {
+            return .index1
+        }
+        if !currentGameInput.pointee.controllers.2.isConnected {
+            return .index2
+        }
+        if !currentGameInput.pointee.controllers.3.isConnected {
+            return .index3
+        }
+        if !currentGameInput.pointee.controllers.4.isConnected {
+            return .index4
+        }
+        return .indexUnset
+    }
+
     func withController(index: Int, action: @escaping ((inout P256GameController) -> Void))
     {
         withUnsafeMutableElementPointer(firstElement: &currentGameInput.pointee.controllers.0, offset: index) {
             action(&$0.pointee)
+        }
+    }
+
+    func withControllerForPlayer(_ playerIndex: GCControllerPlayerIndex, action: @escaping ((inout P256GameController) -> Void))
+    {
+        var index = 0
+        switch(playerIndex) {
+        case .index1: index = 1
+        case .index2: index = 2
+        case .index3: index = 3
+        case .index4: index = 4
+        default: index = 0
+        }
+        if index != 0 {
+            withUnsafeMutableElementPointer(firstElement: &currentGameInput.pointee.controllers.0, offset: index) {
+                action(&$0.pointee)
+            }
         }
     }
 
