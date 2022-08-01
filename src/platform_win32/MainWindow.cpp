@@ -125,8 +125,8 @@ void MainWindow::onMouseMove(POINTS points) {
         mouse.track[mouse.trackLength++] = pixelPos;
         mouse.endedOver = true;
     }
-    mouse.relativeMovement.x += static_cast<float>(points.x - mGameState->platform.lastCursorPosition.x) / scale.x;
-    mouse.relativeMovement.y -= static_cast<float>(points.y - mGameState->platform.lastCursorPosition.y) / scale.y;
+    mouse.relativeMovement.x = static_cast<float>(points.x - mGameState->platform.lastCursorPosition.x) / scale.x;
+    mouse.relativeMovement.y = -static_cast<float>(points.y - mGameState->platform.lastCursorPosition.y) / scale.y;
     mGameState->platform.lastCursorPosition = Vec2i{ .x = points.x, .y = points.y };
 }
 

@@ -436,16 +436,16 @@ struct TestBed {
             auto& controller = input.controllers[i];
 
             Vec2i p{ 10, (i + 1) * 10 };
-            for (auto p : Generators::HLine{p, -10}) {
+            for (auto x : Generators::HLine{p, -10}) {
                 if (!controller.isConnected)
-                    redPixel(p);
+                    redPixel(x);
                 else
-                    greenPixel(p);
+                    greenPixel(x);
             }
             p.y += 1;
-            for (auto p : Generators::HLine{p, -10}) {
+            for (auto x : Generators::HLine{p, -10}) {
                 if (controller.isActive)
-                    lightBluePixel(p);
+                    lightBluePixel(x);
             }
             p.x += 2;
             for (auto& button : array_view<const Button>{ &controller.shoulderLeft, InputControllerButtonCount }) {
@@ -472,8 +472,8 @@ struct TestBed {
 
                 p.x += 8;
 
-                for (auto p : Generators::Line{p, round(p + 2 * axis2.end)} | clipped ) {
-                    whitePixel(p);
+                for (auto x : Generators::Line{p, round(p + 2 * axis2.end)} | clipped ) {
+                    whitePixel(x);
                 }
 
                 p.x += 8;

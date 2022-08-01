@@ -64,6 +64,9 @@ void cleanInput(GameInput* input) {
     } else {
         mouse.trackLength = 0;
     }
+    mouse.relativeMovement.x = 0;
+    mouse.relativeMovement.y = 0;
+
 
     input->textLength = 0;
     input->closeRequested = false;
