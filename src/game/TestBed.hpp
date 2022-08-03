@@ -77,8 +77,8 @@ struct TestBedMemory {
     int currentSpriteFrame;
 
     // mouse clicks
-    Vec2i points[2];
-    int currentPoint;
+    Vec2i mouseDownPosition;
+    bool isMouseDown;
     
     std::array<uint8_t, 300 * 1024> scratch;
 };
@@ -182,11 +182,11 @@ struct TestBed {
             memory.tone.mod.amplitude = 1.0f;
 
             memory.sequencer = StepSequencer<>::withBpm(90);
-            memory.sequencer.steps[0] = { .amplitude = 1.0f, .frequency = Frequency(Note::A2) };
-            memory.sequencer.steps[4] = { .amplitude = 1.0f, .frequency = Frequency(Note::G3) };
-            memory.sequencer.steps[8] = { .amplitude = 1.0f, .frequency = Frequency(Note::G3) };
-            memory.sequencer.steps[12] = { .amplitude = 1.0f, .frequency = Frequency(Note::G3) };
-            memory.sequencer.steps[13] = { .amplitude = 1.0f, .frequency = Frequency(Note::E3) };
+            memory.sequencer.steps[0] = { .amplitude = 1.0f, .frequency = Frequency(Note::A3) };
+            memory.sequencer.steps[4] = { .amplitude = 1.0f, .frequency = Frequency(Note::G4) };
+            memory.sequencer.steps[8] = { .amplitude = 1.0f, .frequency = Frequency(Note::G4) };
+            memory.sequencer.steps[12] = { .amplitude = .5f, .frequency = Frequency(Note::G4) };
+            memory.sequencer.steps[14] = { .amplitude = .7f, .frequency = Frequency(Note::E4) };
 
             memory.envelope.percussive = false;
             memory.envelope.attack = 0.01f;
@@ -196,9 +196,9 @@ struct TestBed {
 
             memory.pewpew = {
                 .envelope {
-                    .attack = 0.1f,
+                    .attack = .01f,
                     .decay = .01f,
-                    .sustain = .1f,
+                    .sustain = 1.0f,
                     .release = .01f,
                     .percussive = true,
                 },
@@ -212,6 +212,7 @@ struct TestBed {
 
             memory.drumSequencer = StepSequencer<>::withBpm(90);
             memory.drumSequencer.steps[0] = { .amplitude = 1.0f };
+            memory.drumSequencer.steps[2] = { .amplitude = .5f };
             memory.drumSequencer.steps[4] = { .amplitude = 1.0f };
             memory.drumSequencer.steps[8] = { .amplitude = 1.0f };
 
@@ -364,12 +365,9 @@ struct TestBed {
                 return p + position;
             };
 
-            if (input.mouse.buttonLeft.endedDown) {
-                memory.points[memory.currentPoint] = position;
-            } else if (input.mouse.buttonLeft.transitionCount) {
-                memory.currentPoint = (memory.currentPoint + 1) % 2;
+            if (input.mouse.buttonLeft.transitionCount) {
+                memory.mouseDownPosition = position;
             }
-
             auto atMouse = transform(offset);
 
             compiletime auto rectangleGenerator = Rectangle{ Vec2i{-3,-3}, Vec2i{3, 3} };
@@ -426,11 +424,12 @@ struct TestBed {
             }
         }
 
-
-        if (memory.points[0] != memory.points[1])
-        for (auto p : Generators::Line{memory.points[0], memory.points[1]})
-            whitePixel(p);
-
+        if (input.mouse.buttonLeft.endedDown && input.mouse.trackLength > 0) {
+            Vec2i mousePosition = truncate(input.mouse.track[input.mouse.trackLength - 1]);
+            for (auto p : Generators::Line(memory.mouseDownPosition, mousePosition)) {
+                whitePixel(p);
+            }
+        }
         // write controller state to the screen
         for (int i = 0; i < InputMaxControllers; ++i) {
             auto& controller = input.controllers[i];
