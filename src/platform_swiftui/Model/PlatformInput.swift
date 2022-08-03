@@ -175,6 +175,16 @@ class PlatformInput {
         withControllerForPlayer(gcController.playerIndex) {
             controller in
             controller.isConnected = true
+
+            switch gcController.productCategory {
+            case GCProductCategoryXboxOne:
+                controller.subType = ControllerSubTypeXBox
+            case GCProductCategoryDualShock4, GCProductCategoryDualSense:
+                controller.subType = ControllerSubTypePlayStation
+            default:
+                controller.subType = ControllerSubTypeGeneric
+            }
+
             if let microGamepad = gcController.microGamepad {
                 controller.subType = ControllerSubTypeGenericTwoButton
                 microGamepad.buttonA.mapToInputButton(&controller.buttonA)
@@ -183,7 +193,6 @@ class PlatformInput {
                 microGamepad.buttonMenu.mapToInputButton(&controller.buttonStart)
             }
             if let extendedGamepad = gcController.extendedGamepad {
-                controller.subType = ControllerSubTypePlayStation
                 extendedGamepad.buttonA.mapToInputButton(&controller.buttonA)
                 extendedGamepad.buttonB.mapToInputButton(&controller.buttonB)
                 extendedGamepad.buttonX.mapToInputButton(&controller.buttonX)

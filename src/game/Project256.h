@@ -77,6 +77,7 @@ enum ControllerSubType {
     ControllerSubTypeSteam,
     ControllerSubTypePlayStation,
     ControllerSubTypeWiiMote,
+    ControllerSubTypeGeneric,
     ControllerSubTypeGenericSNES,
     ControllerSubTypeGenericNES,
     ControllerSubTypeGenericTwoButton,
