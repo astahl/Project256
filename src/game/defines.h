@@ -8,7 +8,7 @@
 #ifndef defines_h
 #define defines_h
 
-// clarifying defines for static
+/// clarifying defines for static
 #define compiletime static constexpr
 #define constant static const
 #define globalvar static
@@ -16,7 +16,7 @@
 #define localpersist static
 #define classmethod static
 
-// import Swift renaming macros
+/// import Swift renaming macros
 #ifdef __APPLE__
 #include "CoreFoundation/CFBase.h"
 #else

@@ -59,8 +59,12 @@ struct Project256App: App {
                         }
                 }
                 .onDisappear {
-                    self.subscriptions.profiling?.cancel()
-                    self.subscriptions.highfrequency?.cancel()
+                    print("disappear")
+
+//                    self.subscriptions.profiling?.cancel()
+//                    self.subscriptions.highfrequency?.cancel()
+                    // just quit when window is closed
+                    exit(EXIT_SUCCESS)
                 }
                 .background(.linearGradient(.init(colors: [Color.cyan, Color.purple]), startPoint: .topLeading, endPoint: .bottomTrailing))
 
@@ -84,6 +88,11 @@ struct Project256App: App {
                         .padding()
                     Spacer()
                 }
+            }
+        }
+        .commands {
+            // remove new window command
+            CommandGroup(replacing: .newItem) {
             }
         }
         #if os(macOS)

@@ -1,3 +1,25 @@
+/// TODOs
+///
+/// General
+///
+/// *
+///
+/// Windows
+///
+/// * Fix scaling blur issues (custom supersampling shader?)
+///
+/// Mac
+///
+/// * Fix Audio crackling issues
+/// * Window new/ close / quit handling
+///
+/// Linux
+///
+/// * [] Decide on project structure / platform technologies
+///  * Application framework? (GTK? Qt?)
+///  * Graphics? (Cairo, Vulkan?)
+///  * Gamepad input? (Steam?)
+///  * Sound Output? (PulseAudio, Alsa?)
 #ifndef PROJECT_256_H
 #define PROJECT_256_H
 
