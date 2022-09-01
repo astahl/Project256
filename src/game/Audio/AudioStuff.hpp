@@ -566,7 +566,7 @@ struct EnvelopeAdsr {
                 currentSection = Section::Ready;
             } else if (t < release) { // also check if envelope was retriggered, skip to ready and attack subsequently
                 float tRelease = t / release;
-                currentValue = std::lerp(sustain * amplitude, 0, tRelease);
+                currentValue = std::lerp(sustain * amplitude, 0.0f, tRelease);
             }
             else {
                 currentValue = 0;
