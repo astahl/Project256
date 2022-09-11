@@ -8,6 +8,7 @@
 #pragma once
 
 #include "Audio/AudioStuff.hpp"
+#include "Audio/Waves.hpp"
 #include "FML/RangesAtHome.hpp"
 #include "Drawing/InterleavedBitmaps.hpp"
 #include "Math/Vec2Math.hpp"
@@ -23,7 +24,7 @@
 #include <iostream>
 
 
-using DrawBuffer = Image<uint32_t, DrawBufferWidth, DrawBufferHeight>;
+
 using VRAM = Image<uint8_t, DrawBufferWidth, DrawBufferHeight, ImageOrigin::BottomLeft>;
 
 constant int TextCharacterW = 8;
@@ -92,6 +93,8 @@ void birdDirectionChange(TestBedMemory& memory) {
 }
 
 struct TestBed {
+    using DrawBuffer = Image<uint32_t, DrawBufferWidth, DrawBufferHeight>;
+    using AudioBuffer = Audio::PCM16StereoBuffer<AudioFramesPerBuffer>;
     using MemoryLayout = TestBedMemory;
 
     static GameOutput doGameThings(TestBedMemory& memory, const GameInput& input, const PlatformCallbacks& callbacks)
@@ -581,21 +584,18 @@ struct TestBed {
 
 
 
-    static void writeAudioBuffer(TestBedMemory& memory, void* buffer, const AudioBufferDescriptor& bufferDescriptor) {
-        struct Frame {
-            int16_t left, right;
-        };
+    static void writeAudioBuffer(TestBedMemory& memory, AudioBuffer& buffer, const AudioBufferDescriptor& bufferDescriptor) {
 
         auto lock = std::scoped_lock(memoryMutex);
         if (!memory.isInitialized) {
-            memset(buffer, 0, bufferDescriptor.framesPerBuffer * sizeof(Frame));
+            buffer.clear();
             return;
         }
 
         float timeStep = 1.0f / static_cast<float>(bufferDescriptor.sampleRate);
 
-        auto frames = reinterpret_cast<Frame*>(buffer);
-        for (unsigned int i = 0; i < bufferDescriptor.framesPerBuffer; ++i) {
+
+        for (auto& frame : buffer.frames) {
             auto& step = memory.sequencer.value();
             if (step.frequency > 0) {
                 memory.tone.carrier.frequency = step.frequency;
@@ -615,8 +615,8 @@ struct TestBed {
             auto result = mix / 4;
             int16_t value = static_cast<int16_t>(std::numeric_limits<int16_t>::max() * result);
 
-            frames[i].left = value;
-            frames[i].right = value;
+            frame.samples[0] = value;
+            frame.samples[1] = value;
             memory.sequencer.advance(timeStep);
             memory.drumSequencer.advance(timeStep);
             memory.pewpew.advance(timeStep);
