@@ -44,7 +44,6 @@ struct GameMemory {
 };
 
 
-
 struct Minesweeper {
 
     using DrawBuffer = Image<uint32_t, DrawBufferWidth, DrawBufferHeight>;
@@ -60,7 +59,10 @@ struct Minesweeper {
                 // check if initialisation is done
                 memory.state = GameState::Menu;
                 break;
-            case GameState::Menu: break;
+            case GameState::Menu:
+                // check if user selected start game
+                memory.state = GameState::Play;
+                break;
             case GameState::Play: break;
             case GameState::Pause: break;
             case GameState::Lose: break;
