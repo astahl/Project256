@@ -1,6 +1,11 @@
 #include "Project256.h"
-#include "TestBed.hpp"
 #include <cassert>
+//#include "TestBed.hpp"
+#include "Minesweeper.hpp"
+
+
+//using Game = TestBed;
+using Game = Minesweeper;
 
 extern "C" {
 
@@ -73,7 +78,6 @@ void cleanInput(GameInput* input) {
     input->tapCount = 0;
 }
 
-using Game = TestBed;
 
 GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks platform)
 {
@@ -96,7 +100,7 @@ void writeDrawBuffer(void* pMemory, void* buffer)
     assert(pMemory != nullptr);
 
     auto& memory = *reinterpret_cast<Game::MemoryLayout*>(pMemory);
-    auto& drawBuffer = *reinterpret_cast<DrawBuffer*>(buffer);
+    auto& drawBuffer = *reinterpret_cast<Game::DrawBuffer*>(buffer);
     Game::writeDrawBuffer(memory, drawBuffer);
 }
 
@@ -107,7 +111,8 @@ void writeAudioBuffer(void* pMemory, void* buffer, struct AudioBufferDescriptor 
     assert(pMemory != nullptr);
 
     auto& memory = *reinterpret_cast<Game::MemoryLayout*>(pMemory);
-    Game::writeAudioBuffer(memory, buffer, bufferDescriptor);
+    auto& audioBuffer = *reinterpret_cast<Game::AudioBuffer*>(buffer);
+    Game::writeAudioBuffer(memory, audioBuffer, bufferDescriptor);
     
 }
 
