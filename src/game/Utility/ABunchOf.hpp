@@ -7,15 +7,17 @@
 
 template<typename T, size_t N>
 struct ABunchOf {
+    std::size_t count = 0;
     std::ptrdiff_t insertIndex = 0;
-    std::array<T, N> storage = {};
     std::array<std::ptrdiff_t, N> insertMap = {};
+    std::array<T, N> storage = {};
 
     constexpr ABunchOf() {
         reset();
     }
 
     constexpr void reset() {
+        count = 0;
         insertIndex = 0;
         std::iota(insertMap.begin(), insertMap.end(), 1);
     }
@@ -27,6 +29,7 @@ struct ABunchOf {
         storage[insertAt] = value;
         insertIndex = insertMap[insertAt];
         insertMap[insertAt] = -1;
+        ++count;
         return insertAt;
     }
 
@@ -36,6 +39,7 @@ struct ABunchOf {
 
         insertMap[index] = insertIndex;
         insertIndex = index;
+        --count;
     }
 
     constexpr T& operator[](size_t index) {
@@ -58,5 +62,17 @@ struct ABunchOf {
 
     constexpr const T& at(size_t index) const {
         return storage.at(index);
+    }
+
+    constexpr bool empty() const {
+        return count == 0;
+    }
+
+    constexpr size_t size() const{
+        return count;
+    }
+
+    constexpr size_t max_size() const {
+        return N;
     }
 };
