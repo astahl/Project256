@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <bit>
 #include <string_view>
+#include <optional>
 #include "../FML/RangesAtHome.hpp"
 namespace Unicode {
 

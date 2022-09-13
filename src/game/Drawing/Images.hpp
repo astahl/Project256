@@ -46,9 +46,11 @@ struct Image {
             assert(static_cast<size_t>(x) < Width);
             return *(firstPixel + x);
         }
-        constexpr size_t size() { return Width; }
+        constexpr size_t size() const { return Width; }
         constexpr T* begin() { return firstPixel; }
         constexpr T* end() { return firstPixel + Width; }
+        constexpr const T* begin() const { return firstPixel; }
+        constexpr const T* end() const { return firstPixel + Width; }
     };
 
     template <bool Flipped, typename T = Pixel>
@@ -97,6 +99,10 @@ struct Image {
         return reinterpret_cast<uint8_t*>(pixels.data());
     }
 
+    constexpr void fill(const Pixel& pixelValue) {
+        pixels.fill(pixelValue);
+    }
+
     constexpr size_t bytesSize() {
         return pixels.size() * sizeof(PixelType);
     }
@@ -115,6 +121,14 @@ struct Image {
 
     constexpr Pixel& pixel(Vec2i pos) {
         return pixel(pos.x, pos.y);
+    }
+
+    constexpr const Pixel& at(Vec2i pos) const {
+        return pixels.at(pos.x + pos.y * Pitch);
+    }
+
+    constexpr Pixel& at(Vec2i pos) {
+        return pixels.at(pos.x + pos.y * Pitch);
     }
 
     constexpr LineType line(ptrdiff_t y) {
@@ -147,6 +161,10 @@ struct Image {
 
     constexpr size_t width() const {
         return Width;
+    }
+
+    constexpr Vec2i size2d() const {
+        return { Width, Height };
     }
 
     constexpr size_t pitch() const {

@@ -10,20 +10,26 @@
 #include "Project256.h"
 #include "Drawing/Palettes.hpp"
 #include "Drawing/Images.hpp"
+#include "Drawing/Generators.hpp"
 #include "Audio/Waves.hpp"
+#include "Math/Vec2Math.hpp"
+#include "FML/RangesAtHome.hpp"
+#include "Utility/Text.hpp"
 
-#include <variant>
+#include <array>
+#include <random>
+#include <algorithm>
 
 enum class CellState : uint8_t {
     Free,
-    NextToOne,
-    NextToTwo,
-    NextToThree,
-    NextToFour,
-    NextToFive,
-    NextToSix,
-    NextToSeven,
-    NextToEight,
+    NextToOne = 1,
+    NextToTwo = 2,
+    NextToThree = 3,
+    NextToFour = 4,
+    NextToFive = 5,
+    NextToSix = 6,
+    NextToSeven = 7,
+    NextToEight = 8,
     Mine,
     FlaggedFlag = 1 << 6,
     HiddenFlag = 1 << 7,
@@ -38,11 +44,127 @@ enum class GameState {
     Win,
 };
 
-struct GameMemory {
-    GameState state, previousState;
-    Image<CellState, 16, 16> board;
+const auto MINECOUNT = 32;
+const auto WIDTH = 16;
+const auto HEIGHT = 16;
+
+const auto CHARACTER_WIDTH = 8;
+const auto CHARACTER_HEIGHT = 8;
+const auto CHARACTER_MAP_SIZE = 256;
+const auto SCREEN_WIDTH = DrawBufferWidth / CHARACTER_WIDTH;
+const auto SCREEN_HEIGHT = DrawBufferHeight / CHARACTER_HEIGHT;
+
+struct ColorIndexPair {
+    uint8_t foreground;
+    uint8_t background;
 };
 
+using GameBoard_t = Image<CellState, WIDTH, HEIGHT>;
+
+struct Screen
+{
+    using Text_t = uint8_t;
+    using TextBuffer_t = Image<Text_t, SCREEN_WIDTH, SCREEN_HEIGHT>;
+    using ColorBuffer_t = Image<ColorIndexPair, SCREEN_WIDTH, SCREEN_HEIGHT>;
+    BitmapImage<CHARACTER_WIDTH, CHARACTER_HEIGHT * CHARACTER_MAP_SIZE> characters;
+    TextBuffer_t buffer;
+    ColorBuffer_t color;
+};
+
+using VideoBuffer_t = Image<uint8_t, DrawBufferWidth, DrawBufferHeight>;
+
+struct GameMemory {
+    std::array<uint32_t, 256> palette;
+    VideoBuffer_t videobuffer;
+
+    GameState state, previousState;
+    GameBoard_t board;
+    Vec2i selectedCell;
+
+    Screen screen;
+};
+
+void resetGame(GameMemory& memory) {
+    memory.selectedCell = {};
+    memory.board.fill(CellState::Free);
+
+    auto originIndex = Vec2i{0,0};
+    auto cornerIndex = memory.board.size2d() - Vec2i{1,1};
+
+    auto indices = (Generators::Rectangle(originIndex, cornerIndex) | ranges_at_home::toArray<WIDTH * HEIGHT>())();
+
+    std::array<Vec2i, MINECOUNT> minePositions;
+    std::sample(indices.begin(), indices.end(), minePositions.begin(),
+                MINECOUNT, std::mt19937{std::random_device{}()});
+
+    for (auto minePosition : minePositions) {
+        memory.board.pixel(minePosition) = CellState::Mine;
+    }
+
+    for (auto position : indices) {
+
+        if (memory.board.pixel(position) != CellState::Free) {
+            continue;
+        }
+        Vec2i neighborCornerMin = clamp(position - Vec2i{1,1}, originIndex, cornerIndex);
+        Vec2i neighborCornerMax = clamp(position + Vec2i{1,1}, originIndex, cornerIndex);
+        uint8_t mineCount = 0;
+        for (auto neighborPosition : Generators::Rectangle(neighborCornerMin, neighborCornerMax)) {
+            if (memory.board.pixel(neighborPosition) == CellState::Mine) {
+                ++mineCount;
+            }
+        }
+        memory.board.pixel(position) = static_cast<CellState>(mineCount);
+    }
+
+    for (auto& cell : memory.board.pixels) {
+        cell = static_cast<CellState>(static_cast<uint8_t>(cell) | static_cast<uint8_t>(CellState::HiddenFlag));
+
+    }
+}
+
+void showBoard(const GameBoard_t& board, Screen& screen) {
+    Vec2i offset {3,3};
+    for (int x = 0; x < board.width(); ++x) {
+        for (int y = 0; y < board.height(); ++y) {
+
+            Screen::Text_t t;
+
+            auto cell = board.at({x,y});
+            if ((static_cast<uint8_t>(cell) & static_cast<uint8_t>(CellState::FlaggedFlag)) == static_cast<uint8_t>(CellState::FlaggedFlag)) {
+                t = static_cast<Screen::Text_t>(CharacterRom::PET::SpecialCharacters::LineCrossDiag);
+            }
+            else if ((static_cast<uint8_t>(cell) & static_cast<uint8_t>(CellState::HiddenFlag)) == static_cast<uint8_t>(CellState::HiddenFlag)) {
+                t = 0xff;
+            }
+            else
+            {
+                switch (board.at({x, y})) {
+                    case CellState::Mine: t = static_cast<Screen::Text_t>(CharacterRom::PET::SpecialCharacters::Bullet); break;
+                    case CellState::NextToOne: t = CharacterRom::PET::CharacterTable['1']; break;
+                    case CellState::NextToTwo: t = CharacterRom::PET::CharacterTable['2']; break;
+                    case CellState::NextToThree: t = CharacterRom::PET::CharacterTable['3']; break;
+                    case CellState::NextToFour: t = CharacterRom::PET::CharacterTable['4']; break;
+                    case CellState::NextToFive: t = CharacterRom::PET::CharacterTable['5']; break;
+                    case CellState::NextToSix: t = CharacterRom::PET::CharacterTable['6']; break;
+                    case CellState::NextToSeven: t = CharacterRom::PET::CharacterTable['7']; break;
+                    case CellState::NextToEight: t = CharacterRom::PET::CharacterTable['8']; break;
+                    default: t = CharacterRom::PET::CharacterTable[' ']; break;
+                }
+            }
+
+            screen.buffer.at(offset + Vec2i{x, y}) = t;
+            screen.color.at(offset + Vec2i{x, y}) = {2, 0};
+        }
+    }
+}
+
+Vec2i mapPositions(auto position, const auto& imageFrom, const auto& imageTo) {
+    return {
+        static_cast<int>(position.x * imageTo.width() / imageFrom.width()),
+        static_cast<int>(position.y * imageTo.height() / imageFrom.height())
+    };
+}
 
 struct Minesweeper {
 
@@ -52,22 +174,89 @@ struct Minesweeper {
 
     static GameOutput doGameThings(MemoryLayout& memory, const GameInput& input, const PlatformCallbacks& callbacks)
     {
-        const bool isStateEntered = memory.state != memory.previousState;
         memory.previousState = memory.state;
+        bool textBufferChanged = false;
         switch(memory.state) {
             case GameState::Init:
+                PaletteVGA::writeTo(memory.palette.data());
+                callbacks.readFile(CharacterRom::PET::Filename.data(), memory.screen.characters.bytes(), memory.screen.characters.bytesSize());
+                memory.screen.buffer.fill(0xe9);
+                memory.screen.color.fill({ 0, 15 });
+                textBufferChanged = true;
                 // check if initialisation is done
                 memory.state = GameState::Menu;
                 break;
             case GameState::Menu:
                 // check if user selected start game
                 memory.state = GameState::Play;
+                resetGame(memory);
+                showBoard(memory.board, memory.screen);
+                textBufferChanged = true;
                 break;
-            case GameState::Play: break;
+            case GameState::Play:
+            {
+                auto mousePos = input.mouse.track[input.mouse.trackLength];
+                auto bufferPos = mapPositions(mousePos, memory.videobuffer, memory.screen.buffer);
+                bufferPos.y = static_cast<int>(memory.screen.buffer.height()) - bufferPos.y - 1;
+                auto boardPos = bufferPos - Vec2i{3,3};
+                if (boardPos >= Vec2i{0,0} && boardPos < memory.board.size2d()) {
+                    if (input.mouse.buttonLeft.transitionCount && !input.mouse.buttonLeft.endedDown) {
+                        auto& cell = memory.board.at(boardPos);
+                        cell = static_cast<CellState>(static_cast<uint8_t>(cell) & ~static_cast<uint8_t>(CellState::HiddenFlag));
+                        showBoard(memory.board, memory.screen);
+                        textBufferChanged = true;
+
+                        //memory.state = GameState::Menu;
+                    }
+                    if (input.mouse.buttonRight.transitionCount && !input.mouse.buttonRight.endedDown) {
+                        auto& cell = memory.board.at(boardPos);
+                        if (static_cast<uint8_t>(cell) & static_cast<uint8_t>(CellState::FlaggedFlag)) {
+                            cell = static_cast<CellState>(static_cast<uint8_t>(cell) & ~static_cast<uint8_t>(CellState::FlaggedFlag));
+                        } else {
+                            cell = static_cast<CellState>(static_cast<uint8_t>(cell) | static_cast<uint8_t>(CellState::FlaggedFlag));
+
+                        }
+                        showBoard(memory.board, memory.screen);
+                        textBufferChanged = true;
+
+                        //memory.state = GameState::Menu;
+                    }
+                    if (input.mouse.trackLength > 0) {
+                        showBoard(memory.board, memory.screen);
+                        memory.screen.color.at(bufferPos) = {10,9};
+                        textBufferChanged = true;
+                    }
+                }
+
+
+                break;
+            }
             case GameState::Pause: break;
             case GameState::Lose: break;
             case GameState::Win: break;
         }
+
+        if (textBufferChanged) {
+            uint8_t* drawPointer = memory.videobuffer.line(memory.videobuffer.height() - CHARACTER_HEIGHT).firstPixel;
+
+            for (const auto [textLine, colorLine] : (memory.screen.buffer.lines() & memory.screen.color.lines()))
+            {
+                uint8_t* linePointer = drawPointer;
+                for (int y = CHARACTER_HEIGHT - 1; y >= 0; --y) {
+                    uint64_t* dst = reinterpret_cast<uint64_t*>(linePointer);
+
+                    for (const auto [t, c] : (textLine & colorLine))
+                    {
+                        const uint64_t pixels8 = spread(memory.screen.characters.pixel(0, t * 8 + y));
+                        const uint64_t background = ~(pixels8 * 0xFF) / 0xFF;
+                        *dst++ = pixels8 * c.foreground | background * c.background;
+                    }
+                    linePointer += memory.videobuffer.pitch();
+                }
+                drawPointer -= memory.videobuffer.pitch() * CHARACTER_HEIGHT;
+            }
+        }
+
         return {};
     }
 
@@ -77,11 +266,45 @@ struct Minesweeper {
 
         Colors colors[] { Colors::Aqua, Colors::WhiteSmoke, Colors::HotPink, Colors::Black };
 
-        for (auto line : buffer.lines())
-        {
-            auto lineColor = colors[colorIndex++ % 4];
-            for (auto& pix : line) {
-                pix = 0xFF000000 | static_cast<unsigned int>(lineColor);
+        if (memory.state == GameState::Init) {
+            for (auto line : buffer.lines())
+            {
+                auto lineColor = colors[colorIndex++ % 4];
+                for (auto& pix : line) {
+                    pix = 0xFF000000 | static_cast<unsigned int>(lineColor);
+                }
+            }
+        } else {
+            constant auto stride = sizeof(uint64_t);
+            constant auto width = DrawBuffer{}.width();
+            static_assert (width % stride == 0);
+            constant auto height = DrawBuffer{}.height();
+
+            const uint32_t* palette = memory.palette.data();
+            uint64_t* src = reinterpret_cast<uint64_t*>(memory.videobuffer.data());
+            uint64_t* dst = reinterpret_cast<uint64_t*>(buffer.data());
+
+            constant auto dstpitch = DrawBuffer{}.pitch() / 2; // 64 bit batch = 2 x 32 bit values
+            constant auto srcpitch = VideoBuffer_t{}.pitch() / 8; // 64 bit batch = 8 x 8 bit values
+
+            for (uint32_t y = 0; y < height; ++y) {
+                auto srcLine = src;
+                auto dstLine = dst;
+                for (uint32_t x = 0; x < width; x += stride) {
+                    const uint64_t sourcePixel8 = *srcLine++;
+
+                    dstLine[0] = static_cast<uint64_t>(palette[sourcePixel8 >> 0 & 0xff]) |
+                        static_cast<uint64_t>(palette[sourcePixel8 >> 8 & 0xff]) << 32;
+                    dstLine[1] = static_cast<uint64_t>(palette[sourcePixel8 >> 16 & 0xff]) |
+                        static_cast<uint64_t>(palette[sourcePixel8 >> 24 & 0xff]) << 32;
+                    dstLine[2] = static_cast<uint64_t>(palette[sourcePixel8 >> 32 & 0xff]) |
+                        static_cast<uint64_t>(palette[sourcePixel8 >> 40 & 0xff]) << 32;
+                    dstLine[3] = static_cast<uint64_t>(palette[sourcePixel8 >> 48 & 0xff]) |
+                        static_cast<uint64_t>(palette[sourcePixel8 >> 56 & 0xff]) << 32;
+                    dstLine += 4;
+                }
+                src += srcpitch;
+                dst += dstpitch;
             }
         }
     }
