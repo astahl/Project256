@@ -10,17 +10,9 @@
 #include <cstdint>
 #include <type_traits>
 #include <array>
+#include <span>
+#include <ranges>
 
-template <typename T>
-concept anImage = requires(T& t) {
-    typename std::decay_t<T>::PixelType;
-    { t.width() } -> std::convertible_to<size_t>;
-    { t.height() } -> std::convertible_to<size_t>;
-    { t.pitch() } -> std::convertible_to<size_t>;
-    { t.originX() } -> std::convertible_to<ptrdiff_t>;
-    { t.originY()} -> std::convertible_to<ptrdiff_t>;
-    { t.pixel(ptrdiff_t{}, ptrdiff_t{}) } -> std::same_as<std::add_lvalue_reference_t<typename std::decay_t<T>::PixelType>>;
-};
 
 enum class ImageOrigin {
     BottomLeft,
@@ -34,125 +26,132 @@ enum class ImageLineOrder {
     TopToBottom
 };
 
-template <typename Pixel, size_t Width, size_t Height, ImageOrigin O = ImageOrigin::BottomLeft, size_t Pitch = Width>
+
+template <typename T>
+concept anImage = requires(T& t) {
+    typename std::decay_t<T>::PixelType;
+    { t.origin() } -> std::convertible_to<ImageOrigin>;
+    { t.lineOrder() } -> std::convertible_to<ImageLineOrder>;
+    { t.width() } -> std::convertible_to<size_t>;
+    { t.height() } -> std::convertible_to<size_t>;
+    { t.pitch() } -> std::convertible_to<size_t>;
+    { t.originX() } -> std::convertible_to<ptrdiff_t>;
+    { t.originY()} -> std::convertible_to<ptrdiff_t>;
+    { t.pixel(ptrdiff_t{}, ptrdiff_t{}) } -> std::same_as<std::add_lvalue_reference_t<typename std::decay_t<T>::PixelType>>;
+};
+
+template <typename T>
+concept aStaticImage = anImage<T> && requires(T& t) {
+    { T::Origin } -> std::convertible_to<ImageOrigin>;
+    { T::LineOrder } -> std::convertible_to<ImageLineOrder>;
+};
+
+template <typename T, size_t Width, size_t Height, ImageOrigin O = ImageOrigin::BottomLeft, size_t Pitch = Width>
 struct Image {
 
-    template <typename T = Pixel>
-    struct Line {
-        using PixelType = T;
-        T* firstPixel;
-        constexpr T& pixel(ptrdiff_t x) {
-            assert(x >= 0);
-            assert(static_cast<size_t>(x) < Width);
-            return *(firstPixel + x);
-        }
-        constexpr size_t size() const { return Width; }
-        constexpr T* begin() { return firstPixel; }
-        constexpr T* end() { return firstPixel + Width; }
-        constexpr const T* begin() const { return firstPixel; }
-        constexpr const T* end() const { return firstPixel + Width; }
-    };
+    using PixelType = T;
+    using LineSpanType = std::span<PixelType, Width>;
+    using PitchSpanType = std::span<PixelType, Pitch>;
+    using PitchArrayType = std::array<PixelType, Pitch>;
+    using LineStorageType = std::array<PitchArrayType, Height>;
+    using PixelViewType = std::span<PixelType, Pitch * Height>;
 
-    template <bool Flipped, typename T = Pixel>
-    struct LinesView {
-        using PixelType = T;
-        T* data;
-        struct Sentinel {};
-        struct Iterator {
-            T* iteratorData;
-            ptrdiff_t y {0};
-            constexpr Line<T> operator*() const { return {.firstPixel = iteratorData + y * Pitch}; }
-            constexpr Iterator& operator++() { ++y; return *this; }
-            constexpr bool operator!=(Sentinel) const { return y != Height; }
-        };
-        struct FlippedIterator {
-            T* iteratorData;
-            ptrdiff_t y {Height - 1};
-            constexpr Line<T> operator*() const { return {.firstPixel = iteratorData + y * Pitch}; }
-            constexpr FlippedIterator& operator++() { --y; return *this; }
-            constexpr bool operator!=(Sentinel) const { return y >= 0; }
-        };
-
-        constexpr auto begin() const {
-            if constexpr (Flipped)
-                return FlippedIterator{.iteratorData = data};
-            else return Iterator{.iteratorData = data};
-        }
-
-        constexpr Sentinel end() const { return {}; }
-        constexpr size_t size() const { return Height; }
-        constexpr size_t length() const { return Width; }
-    };
-
-    using PixelType = Pixel;
-    using LineType = Line<PixelType>;
     constant ImageOrigin Origin = O;
-    constant ImageLineOrder LineOrder = Origin == ImageOrigin::BottomLeft ? ImageLineOrder::BottomToTop : ImageLineOrder::TopToBottom;
+    constant ImageLineOrder LineOrder = (Origin == ImageOrigin::BottomLeft ? ImageLineOrder::BottomToTop : ImageLineOrder::TopToBottom);
 
-    std::array<Pixel, Pitch * Height> pixels;
+    constant size_t VisiblePixelCount = Width * Height;
+    constant size_t StoragePixelCount = Pitch * Height;
 
-    constexpr Pixel* data() {
-        return pixels.data();
+    struct LinesView {
+        using IteratorType = typename LineStorageType::iterator;
+        IteratorType mBegin;
+        IteratorType mEnd;
+
+        IteratorType begin() { return mBegin; }
+        IteratorType end() { return mEnd; }
+        IteratorType begin() const { return mBegin; }
+        IteratorType end() const { return mEnd; }
+    };
+
+    struct ConstLinesView {
+        using IteratorType = typename LineStorageType::const_iterator;
+        IteratorType mBegin;
+        IteratorType mEnd;
+
+        IteratorType begin() { return mBegin; }
+        IteratorType end() { return mEnd; }
+        IteratorType begin() const { return mBegin; }
+        IteratorType end() const { return mEnd; }
+    };
+
+    LineStorageType lines;
+
+    constexpr PixelType* data() {
+        return lines.front().data();
+    }
+
+    constexpr PixelViewType pixels() {
+        return PixelViewType{data(), Pitch * Height};
     }
 
     constexpr uint8_t* bytes() {
-        return reinterpret_cast<uint8_t*>(pixels.data());
+        return reinterpret_cast<uint8_t*>(data());
     }
 
-    constexpr void fill(const Pixel& pixelValue) {
-        pixels.fill(pixelValue);
+    constexpr void fill(const PixelType& pixelValue) {
+        for(PixelType& p : pixels()) {
+            p = pixelValue;
+        }
     }
 
-    constexpr size_t bytesSize() {
-        return pixels.size() * sizeof(PixelType);
+    constexpr size_t bytesSize() const {
+        return StoragePixelCount * sizeof(PixelType);
     }
 
     constexpr size_t size() const {
-        return pixels.size();
+        return StoragePixelCount;
     }
 
-    constexpr Pixel& pixel(ptrdiff_t x, ptrdiff_t y) {
-        assert(x < Width);
-        assert(y < Height);
-        assert(x >= 0);
-        assert(y >= 0);
-        return pixels.at(x + y * Pitch);
+    constexpr auto line(ptrdiff_t y) {
+        return LineSpanType{lines.at(y)};
     }
 
-    constexpr Pixel& pixel(Vec2i pos) {
+    constexpr const auto line(ptrdiff_t y) const {
+        return LineSpanType{lines.at(y)};
+    }
+
+    constexpr PixelType& pixel(ptrdiff_t x, ptrdiff_t y) {
+        return lines.at(y).at(x);
+    }
+
+    constexpr PixelType& pixel(Vec2i pos) {
         return pixel(pos.x, pos.y);
     }
 
-    constexpr const Pixel& at(Vec2i pos) const {
-        return pixels.at(pos.x + pos.y * Pitch);
+    constexpr const PixelType& at(Vec2i pos) const {
+        return lines.at(pos.y).at(pos.x);
     }
 
-    constexpr Pixel& at(Vec2i pos) {
-        return pixels.at(pos.x + pos.y * Pitch);
-    }
-
-    constexpr LineType line(ptrdiff_t y) {
-        assert(y >= 0);
-        assert(y < Height);
-        return { .firstPixel = &pixel(0, y) };
-    }
-
-    constexpr LineType lineFlipped(ptrdiff_t y) {
-        assert(y >= 0);
-        assert(y < Height);
-        return { .firstPixel = &pixel(0, Height - y - 1 ) };
+    constexpr PixelType& at(Vec2i pos) {
+        return lines.at(pos.y).at(pos.x);
     }
 
     template <ImageLineOrder DesiredLineOrder = LineOrder>
-    constexpr auto lines() {
-        constexpr bool Flipped = (DesiredLineOrder != LineOrder);
-        return LinesView<Flipped, Pixel> {.data = pixels.data() };
+    constexpr LinesView linesView() {
+        if constexpr (DesiredLineOrder == LineOrder) {
+            return LinesView{ .mBegin = lines.begin(), .mEnd = lines.end() };
+        } else {
+            return LinesView{ .mBegin = lines.rbegin(), .mEnd = lines.rend() };
+        }
     }
 
     template <ImageLineOrder DesiredLineOrder = LineOrder>
-    constexpr auto lines() const {
-        constexpr bool Flipped = (DesiredLineOrder != LineOrder);
-        return LinesView<Flipped, const Pixel> {.data = pixels.data() };
+    constexpr ConstLinesView linesView() const {
+        if constexpr (DesiredLineOrder == LineOrder) {
+            return ConstLinesView{ .mBegin = lines.cbegin(), .mEnd = lines.cend() };
+        } else {
+            return ConstLinesView{ .mBegin = lines.crbegin(), .mEnd = lines.crend() };
+        }
     }
 
     constexpr size_t height() const {
@@ -167,6 +166,10 @@ struct Image {
         return { Width, Height };
     }
 
+    constexpr Vec2i maxIndex() const {
+        return { Width - 1, Height - 1};
+    }
+
     constexpr size_t pitch() const {
         return Pitch;
     }
@@ -179,6 +182,13 @@ struct Image {
         return 0;
     }
 
+    constexpr ImageLineOrder lineOrder() const {
+        return LineOrder;
+    }
+
+    constexpr ImageOrigin origin() const {
+        return Origin;
+    }
 };
 
 
@@ -323,6 +333,13 @@ struct SubImageView {
         return mOriginY;
     }
 
+    constexpr ImageLineOrder lineOrder() const {
+        return LineOrder;
+    }
+
+    constexpr ImageOrigin origin() const {
+        return Origin;
+    }
 };
 
 

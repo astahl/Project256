@@ -143,6 +143,7 @@ concept aRange = requires(R& r) {
 && anIterator<iterator_t<R>>
 && aOneWayInequalityComparable<iterator_t<R>, sentinel_t<R>>;
 
+
 template <typename T>
 struct array_view {
     T* mPtr;
@@ -915,18 +916,69 @@ struct concatenator final {
     }
 };
 
+
 template <aRange T, aRange U>
 requires std::same_as<iter_value_t<T>, iter_value_t<U>>
-constexpr concatenator<T, U> operator^(T&& left, U&& right)
-{
-    return concatenator<T, U> {static_cast<T&&>(left), static_cast<U&&>(right)};
-}
+struct alternator final {
+    T left;
+    U right;
 
-template <aRange T, aRange U>
-constexpr pairwise_view<T, U> pairwise(T&& left, U&& right) {
-    return pairwise_view<T, U>{static_cast<T&&>(left), static_cast<U&&>(right)};
+    using InputIteratorLeft = iterator_t<T>;
+    using InputIteratorRight = iterator_t<U>;
+    using InputSentinelLeft = sentinel_t<T>;
+    using InputSentinelRight = sentinel_t<U>;
 
-}
+    struct sentinel {
+    };
+
+    struct iterator {
+        using Value = iter_value_t<T>;
+        InputIteratorLeft mLeft;
+        InputIteratorRight mRight;
+        InputSentinelLeft mLeftSentinel;
+        InputSentinelRight mRightSentinel;
+        bool mRightNext;
+
+        constexpr iterator& operator++() {
+            if (mRightNext && mRight != mRightSentinel) {
+                ++mRight;
+            } else if (mLeft != mLeftSentinel) {
+                ++mLeft;
+            }
+            mRightNext = !mRightNext;
+            return *this;
+        }
+
+        constexpr Value operator*() const {
+            if (!mRightNext) {
+                return *mLeft;
+            } else {
+                return *mRight;
+            }
+        }
+
+        constexpr bool operator!=(const sentinel& other) const {
+            return mRight != mRightSentinel || mLeft != mLeftSentinel;
+        }
+    };
+
+    constexpr auto begin() const {
+        return iterator {
+            .mLeft = ranges_at_home::begin(left),
+            .mRight = ranges_at_home::begin(right),
+            .mLeftSentinel = ranges_at_home::end(left),
+            .mRightSentinel = ranges_at_home::end(right)
+        };
+    }
+
+    constexpr auto end() const {
+        return sentinel {};
+    }
+
+    constexpr size_t size() const {
+        return left.size() + right.size();
+    }
+};
 
 }
 
@@ -943,3 +995,9 @@ constexpr ranges_at_home::pairwise_view<T, U> operator&(T&& left, U&& right)
     return ranges_at_home::pairwise_view<T, U> {static_cast<T&&>(left), static_cast<U&&>(right)};
 }
 
+template <ranges_at_home::aRange T, ranges_at_home::aRange U>
+requires std::same_as<ranges_at_home::iter_value_t<T>, ranges_at_home::iter_value_t<U>>
+constexpr ranges_at_home::alternator<T, U> operator*(T&& left, U&& right)
+{
+    return ranges_at_home::alternator<T, U> {static_cast<T&&>(left), static_cast<U&&>(right)};
+}

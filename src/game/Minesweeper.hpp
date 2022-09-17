@@ -69,6 +69,9 @@ struct Screen
     BitmapImage<CHARACTER_WIDTH, CHARACTER_HEIGHT * CHARACTER_MAP_SIZE> characters;
     TextBuffer_t buffer;
     ColorBuffer_t color;
+    Vec2i marker;
+    bool isDirty;
+    bool showMarker;
 };
 
 using VideoBuffer_t = Image<uint8_t, DrawBufferWidth, DrawBufferHeight>;
@@ -89,7 +92,7 @@ void resetGame(GameMemory& memory) {
     memory.board.fill(CellState::Free);
 
     auto originIndex = Vec2i{0,0};
-    auto cornerIndex = memory.board.size2d() - Vec2i{1,1};
+    auto cornerIndex = memory.board.maxIndex();
 
     auto indices = (Generators::Rectangle(originIndex, cornerIndex) | ranges_at_home::toArray<WIDTH * HEIGHT>())();
 
@@ -117,53 +120,60 @@ void resetGame(GameMemory& memory) {
         memory.board.pixel(position) = static_cast<CellState>(mineCount);
     }
 
-    for (auto& cell : memory.board.pixels) {
+    for (auto& cell : memory.board.pixels()) {
         cell = static_cast<CellState>(static_cast<uint8_t>(cell) | static_cast<uint8_t>(CellState::HiddenFlag));
-
     }
 }
 
 void showBoard(const GameBoard_t& board, Screen& screen) {
     Vec2i offset {3,3};
-    for (int x = 0; x < board.width(); ++x) {
-        for (int y = 0; y < board.height(); ++y) {
+    for (auto position : Generators::Rectangle(Vec2i{}, board.maxIndex()))
+    {
+        auto destination = position + offset;
+        Screen::Text_t t;
 
-            Screen::Text_t t;
-
-            auto cell = board.at({x,y});
-            if ((static_cast<uint8_t>(cell) & static_cast<uint8_t>(CellState::FlaggedFlag)) == static_cast<uint8_t>(CellState::FlaggedFlag)) {
-                t = static_cast<Screen::Text_t>(CharacterRom::PET::SpecialCharacters::LineCrossDiag);
-            }
-            else if ((static_cast<uint8_t>(cell) & static_cast<uint8_t>(CellState::HiddenFlag)) == static_cast<uint8_t>(CellState::HiddenFlag)) {
-                t = 0xff;
-            }
-            else
-            {
-                switch (board.at({x, y})) {
-                    case CellState::Mine: t = static_cast<Screen::Text_t>(CharacterRom::PET::SpecialCharacters::Bullet); break;
-                    case CellState::NextToOne: t = CharacterRom::PET::CharacterTable['1']; break;
-                    case CellState::NextToTwo: t = CharacterRom::PET::CharacterTable['2']; break;
-                    case CellState::NextToThree: t = CharacterRom::PET::CharacterTable['3']; break;
-                    case CellState::NextToFour: t = CharacterRom::PET::CharacterTable['4']; break;
-                    case CellState::NextToFive: t = CharacterRom::PET::CharacterTable['5']; break;
-                    case CellState::NextToSix: t = CharacterRom::PET::CharacterTable['6']; break;
-                    case CellState::NextToSeven: t = CharacterRom::PET::CharacterTable['7']; break;
-                    case CellState::NextToEight: t = CharacterRom::PET::CharacterTable['8']; break;
-                    default: t = CharacterRom::PET::CharacterTable[' ']; break;
-                }
-            }
-
-            screen.buffer.at(offset + Vec2i{x, y}) = t;
-            screen.color.at(offset + Vec2i{x, y}) = {2, 0};
+        auto cell = board.at(position);
+        if ((static_cast<uint8_t>(cell) & static_cast<uint8_t>(CellState::FlaggedFlag)) == static_cast<uint8_t>(CellState::FlaggedFlag)) {
+            t = static_cast<Screen::Text_t>(CharacterRom::PET::SpecialCharacters::LineCrossDiag);
         }
+        else if ((static_cast<uint8_t>(cell) & static_cast<uint8_t>(CellState::HiddenFlag)) == static_cast<uint8_t>(CellState::HiddenFlag)) {
+            t = 0xff;
+        }
+        else
+        {
+            switch (cell) {
+                case CellState::Mine: t = static_cast<Screen::Text_t>(CharacterRom::PET::SpecialCharacters::Bullet); break;
+                case CellState::NextToOne: t = CharacterRom::PET::CharacterTable['1']; break;
+                case CellState::NextToTwo: t = CharacterRom::PET::CharacterTable['2']; break;
+                case CellState::NextToThree: t = CharacterRom::PET::CharacterTable['3']; break;
+                case CellState::NextToFour: t = CharacterRom::PET::CharacterTable['4']; break;
+                case CellState::NextToFive: t = CharacterRom::PET::CharacterTable['5']; break;
+                case CellState::NextToSix: t = CharacterRom::PET::CharacterTable['6']; break;
+                case CellState::NextToSeven: t = CharacterRom::PET::CharacterTable['7']; break;
+                case CellState::NextToEight: t = CharacterRom::PET::CharacterTable['8']; break;
+                default: t = CharacterRom::PET::CharacterTable[' ']; break;
+            }
+        }
+
+        screen.buffer.at(destination) = t;
+        screen.color.at(destination) = {2, 0};
+
     }
 }
 
-Vec2i mapPositions(auto position, const auto& imageFrom, const auto& imageTo) {
-    return {
-        static_cast<int>(position.x * imageTo.width() / imageFrom.width()),
-        static_cast<int>(position.y * imageTo.height() / imageFrom.height())
-    };
+template <typename T, typename U> requires aStaticImage<T> && aStaticImage<U>
+Vec2i mapPositions(auto position, const T& imageFrom, const U& imageTo) {
+    if constexpr (T::LineOrder == U::LineOrder) {
+        return {
+            static_cast<int>(position.x * imageTo.width() / imageFrom.width()),
+            static_cast<int>(position.y * imageTo.height() / imageFrom.height())
+        };
+    } else {
+        return {
+            static_cast<int>(position.x * imageTo.width() / imageFrom.width()),
+            static_cast<int>(imageTo.height() - 1 - (position.y * imageTo.height() / imageFrom.height()))
+        };
+    }
 }
 
 struct Minesweeper {
@@ -175,14 +185,14 @@ struct Minesweeper {
     static GameOutput doGameThings(MemoryLayout& memory, const GameInput& input, const PlatformCallbacks& callbacks)
     {
         memory.previousState = memory.state;
-        bool textBufferChanged = false;
         switch(memory.state) {
             case GameState::Init:
                 PaletteVGA::writeTo(memory.palette.data());
                 callbacks.readFile(CharacterRom::PET::Filename.data(), memory.screen.characters.bytes(), memory.screen.characters.bytesSize());
-                memory.screen.buffer.fill(0xe9);
+                //memory.screen.buffer.fill(0xe9);
+                memory.screen.buffer.fill(CharacterRom::PET::CharacterTable[' ']);
                 memory.screen.color.fill({ 0, 15 });
-                textBufferChanged = true;
+                memory.screen.isDirty = true;
                 // check if initialisation is done
                 memory.state = GameState::Menu;
                 break;
@@ -191,41 +201,47 @@ struct Minesweeper {
                 memory.state = GameState::Play;
                 resetGame(memory);
                 showBoard(memory.board, memory.screen);
-                textBufferChanged = true;
+                memory.screen.isDirty = true;
                 break;
             case GameState::Play:
             {
-                auto mousePos = input.mouse.track[input.mouse.trackLength];
-                auto bufferPos = mapPositions(mousePos, memory.videobuffer, memory.screen.buffer);
-                bufferPos.y = static_cast<int>(memory.screen.buffer.height()) - bufferPos.y - 1;
-                auto boardPos = bufferPos - Vec2i{3,3};
+
+                auto boardPos = Vec2i{};
+                if (input.mouse.endedOver) {
+                    auto mousePos = input.mouse.track[input.mouse.trackLength - 1];
+                    auto screenBufferPos = mapPositions(mousePos, memory.videobuffer, memory.screen.buffer);
+                    boardPos = Vec2i{screenBufferPos.x, static_cast<int>(memory.screen.buffer.height()) - 1 - screenBufferPos.y} - Vec2i{3,3};
+                    memory.screen.marker = screenBufferPos;
+                    memory.screen.showMarker = true;
+                    memory.screen.isDirty = true;
+                } else {
+                    memory.screen.marker = Vec2i{-1,-1};
+                    memory.screen.showMarker = false;
+                }
+
                 if (boardPos >= Vec2i{0,0} && boardPos < memory.board.size2d()) {
-                    if (input.mouse.buttonLeft.transitionCount && !input.mouse.buttonLeft.endedDown) {
-                        auto& cell = memory.board.at(boardPos);
-                        cell = static_cast<CellState>(static_cast<uint8_t>(cell) & ~static_cast<uint8_t>(CellState::HiddenFlag));
-                        showBoard(memory.board, memory.screen);
-                        textBufferChanged = true;
+                    memory.selectedCell = boardPos;
+                }
+                if (input.mouse.buttonLeft.transitionCount && !input.mouse.buttonLeft.endedDown) {
+                    auto& cell = memory.board.at(memory.selectedCell);
+                    cell = static_cast<CellState>(static_cast<uint8_t>(cell) & ~static_cast<uint8_t>(CellState::HiddenFlag));
+                    showBoard(memory.board, memory.screen);
+                    memory.screen.isDirty = true;
 
-                        //memory.state = GameState::Menu;
-                    }
-                    if (input.mouse.buttonRight.transitionCount && !input.mouse.buttonRight.endedDown) {
-                        auto& cell = memory.board.at(boardPos);
-                        if (static_cast<uint8_t>(cell) & static_cast<uint8_t>(CellState::FlaggedFlag)) {
-                            cell = static_cast<CellState>(static_cast<uint8_t>(cell) & ~static_cast<uint8_t>(CellState::FlaggedFlag));
-                        } else {
-                            cell = static_cast<CellState>(static_cast<uint8_t>(cell) | static_cast<uint8_t>(CellState::FlaggedFlag));
+                    //memory.state = GameState::Menu;
+                }
+                if (input.mouse.buttonRight.transitionCount && !input.mouse.buttonRight.endedDown) {
+                    auto& cell = memory.board.at(memory.selectedCell);
+                    if (static_cast<uint8_t>(cell) & static_cast<uint8_t>(CellState::FlaggedFlag)) {
+                        cell = static_cast<CellState>(static_cast<uint8_t>(cell) & ~static_cast<uint8_t>(CellState::FlaggedFlag));
+                    } else {
+                        cell = static_cast<CellState>(static_cast<uint8_t>(cell) | static_cast<uint8_t>(CellState::FlaggedFlag));
 
-                        }
-                        showBoard(memory.board, memory.screen);
-                        textBufferChanged = true;
+                    }
+                    showBoard(memory.board, memory.screen);
+                    memory.screen.isDirty = true;
 
-                        //memory.state = GameState::Menu;
-                    }
-                    if (input.mouse.trackLength > 0) {
-                        showBoard(memory.board, memory.screen);
-                        memory.screen.color.at(bufferPos) = {10,9};
-                        textBufferChanged = true;
-                    }
+                    //memory.state = GameState::Menu;
                 }
 
 
@@ -236,10 +252,12 @@ struct Minesweeper {
             case GameState::Win: break;
         }
 
-        if (textBufferChanged) {
-            uint8_t* drawPointer = memory.videobuffer.line(memory.videobuffer.height() - CHARACTER_HEIGHT).firstPixel;
-
-            for (const auto [textLine, colorLine] : (memory.screen.buffer.lines() & memory.screen.color.lines()))
+        if (memory.screen.isDirty) {
+            auto line = memory.videobuffer.line(memory.videobuffer.height() - CHARACTER_HEIGHT);
+            uint8_t* drawPointer = line.data();
+            auto textLines = memory.screen.buffer.linesView();
+            auto colorLines = memory.screen.color.linesView();
+            for (const auto [textLine, colorLine] : (textLines & colorLines))
             {
                 uint8_t* linePointer = drawPointer;
                 for (int y = CHARACTER_HEIGHT - 1; y >= 0; --y) {
@@ -255,6 +273,18 @@ struct Minesweeper {
                 }
                 drawPointer -= memory.videobuffer.pitch() * CHARACTER_HEIGHT;
             }
+            memory.screen.isDirty = false;
+        }
+
+        if (memory.screen.showMarker) {
+            auto markerPosition = mapPositions(memory.screen.marker, memory.screen.buffer, memory.videobuffer);
+            for (auto pix :
+                 Generators::HLine(markerPosition, CHARACTER_WIDTH) ^ (Generators::VLine(markerPosition, CHARACTER_HEIGHT) * Generators::VLine(markerPosition + Vec2i{CHARACTER_WIDTH - 1, 0}, CHARACTER_HEIGHT)) ^
+                 Generators::HLine(markerPosition + Vec2i{0, CHARACTER_HEIGHT - 1}, CHARACTER_WIDTH)) {
+                if (pix >= Vec2i{} && pix < memory.videobuffer.size2d()) {
+                    memory.videobuffer.at(pix) = 1;
+                }
+            }
         }
 
         return {};
@@ -267,7 +297,7 @@ struct Minesweeper {
         Colors colors[] { Colors::Aqua, Colors::WhiteSmoke, Colors::HotPink, Colors::Black };
 
         if (memory.state == GameState::Init) {
-            for (auto line : buffer.lines())
+            for (auto line : buffer.linesView())
             {
                 auto lineColor = colors[colorIndex++ % 4];
                 for (auto& pix : line) {

@@ -14,7 +14,6 @@
 
 namespace Generators {
 
-
 struct Rectangle {
     Vec2i bottomLeft{};
     Vec2i topRight{};
