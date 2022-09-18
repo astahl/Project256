@@ -500,7 +500,7 @@ struct TestBed {
         blitSprite(memory.sprite, memory.currentSpriteFrame, memory.vram.data(), DrawBufferWidth, truncate(memory.birdPosition), Vec2i{}, Vec2i{DrawBufferWidth, DrawBufferHeight});
 
         // draw text buffer
-        uint8_t* drawPointer = memory.vram.line(memory.vram.height() - TextCharacterH).firstPixel;
+        uint8_t* drawPointer = memory.vram.line(memory.vram.height() - TextCharacterH).data();
         uint8_t* textPointer = memory.textBuffer.data();
         uint8_t* textColorPointer = memory.textColors.data();
 

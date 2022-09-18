@@ -79,6 +79,7 @@ using VideoBuffer_t = Image<uint8_t, DrawBufferWidth, DrawBufferHeight>;
 struct GameMemory {
     std::array<uint32_t, 256> palette;
     VideoBuffer_t videobuffer;
+    bool isVideoBufferDirty;
 
     GameState state, previousState;
     GameBoard_t board;
@@ -125,8 +126,7 @@ void resetGame(GameMemory& memory) {
     }
 }
 
-void showBoard(const GameBoard_t& board, Screen& screen) {
-    Vec2i offset {3,3};
+void showBoard(const GameBoard_t& board, Screen& screen, Vec2i offset) {
     for (auto position : Generators::Rectangle(Vec2i{}, board.maxIndex()))
     {
         auto destination = position + offset;
@@ -185,6 +185,7 @@ struct Minesweeper {
     static GameOutput doGameThings(MemoryLayout& memory, const GameInput& input, const PlatformCallbacks& callbacks)
     {
         memory.previousState = memory.state;
+        const Vec2i boardOffset{3,3};
         switch(memory.state) {
             case GameState::Init:
                 PaletteVGA::writeTo(memory.palette.data());
@@ -200,7 +201,7 @@ struct Minesweeper {
                 // check if user selected start game
                 memory.state = GameState::Play;
                 resetGame(memory);
-                showBoard(memory.board, memory.screen);
+                showBoard(memory.board, memory.screen, boardOffset);
                 memory.screen.isDirty = true;
                 break;
             case GameState::Play:
@@ -210,13 +211,17 @@ struct Minesweeper {
                 if (input.mouse.endedOver) {
                     auto mousePos = input.mouse.track[input.mouse.trackLength - 1];
                     auto screenBufferPos = mapPositions(mousePos, memory.videobuffer, memory.screen.buffer);
-                    boardPos = Vec2i{screenBufferPos.x, static_cast<int>(memory.screen.buffer.height()) - 1 - screenBufferPos.y} - Vec2i{3,3};
-                    memory.screen.marker = screenBufferPos;
-                    memory.screen.showMarker = true;
-                    memory.screen.isDirty = true;
-                } else {
-                    memory.screen.marker = Vec2i{-1,-1};
-                    memory.screen.showMarker = false;
+                    boardPos = Vec2i{screenBufferPos.x, static_cast<int>(memory.screen.buffer.height()) - 1 - screenBufferPos.y} - boardOffset;
+                    if (boardPos >= Vec2i{} && boardPos < memory.board.maxIndex()) {
+                        memory.selectedCell = boardPos;
+                        memory.screen.marker = screenBufferPos;
+                        memory.screen.showMarker = true;
+                        memory.screen.isDirty = true;
+                    }
+                    else {
+                        memory.screen.marker = Vec2i{-1,-1};
+                        memory.screen.showMarker = false;
+                    }
                 }
 
                 if (boardPos >= Vec2i{0,0} && boardPos < memory.board.size2d()) {
@@ -225,7 +230,7 @@ struct Minesweeper {
                 if (input.mouse.buttonLeft.transitionCount && !input.mouse.buttonLeft.endedDown) {
                     auto& cell = memory.board.at(memory.selectedCell);
                     cell = static_cast<CellState>(static_cast<uint8_t>(cell) & ~static_cast<uint8_t>(CellState::HiddenFlag));
-                    showBoard(memory.board, memory.screen);
+                    showBoard(memory.board, memory.screen, boardOffset);
                     memory.screen.isDirty = true;
 
                     //memory.state = GameState::Menu;
@@ -238,7 +243,7 @@ struct Minesweeper {
                         cell = static_cast<CellState>(static_cast<uint8_t>(cell) | static_cast<uint8_t>(CellState::FlaggedFlag));
 
                     }
-                    showBoard(memory.board, memory.screen);
+                    showBoard(memory.board, memory.screen, boardOffset);
                     memory.screen.isDirty = true;
 
                     //memory.state = GameState::Menu;
@@ -274,17 +279,19 @@ struct Minesweeper {
                 drawPointer -= memory.videobuffer.pitch() * CHARACTER_HEIGHT;
             }
             memory.screen.isDirty = false;
+            memory.isVideoBufferDirty = true;
         }
 
         if (memory.screen.showMarker) {
             auto markerPosition = mapPositions(memory.screen.marker, memory.screen.buffer, memory.videobuffer);
             for (auto pix :
-                 Generators::HLine(markerPosition, CHARACTER_WIDTH) ^ (Generators::VLine(markerPosition, CHARACTER_HEIGHT) * Generators::VLine(markerPosition + Vec2i{CHARACTER_WIDTH - 1, 0}, CHARACTER_HEIGHT)) ^
+                 Generators::HLine(markerPosition, CHARACTER_WIDTH) ^ ranges_at_home::alternate(Generators::VLine(markerPosition, CHARACTER_HEIGHT), Generators::VLine(markerPosition + Vec2i{CHARACTER_WIDTH - 1, 0}, CHARACTER_HEIGHT)) ^
                  Generators::HLine(markerPosition + Vec2i{0, CHARACTER_HEIGHT - 1}, CHARACTER_WIDTH)) {
                 if (pix >= Vec2i{} && pix < memory.videobuffer.size2d()) {
                     memory.videobuffer.at(pix) = 1;
                 }
             }
+            memory.isVideoBufferDirty = true;
         }
 
         return {};
@@ -296,6 +303,8 @@ struct Minesweeper {
 
         Colors colors[] { Colors::Aqua, Colors::WhiteSmoke, Colors::HotPink, Colors::Black };
 
+
+
         if (memory.state == GameState::Init) {
             for (auto line : buffer.linesView())
             {
@@ -304,7 +313,7 @@ struct Minesweeper {
                     pix = 0xFF000000 | static_cast<unsigned int>(lineColor);
                 }
             }
-        } else {
+        } else  if(memory.isVideoBufferDirty) {
             constant auto stride = sizeof(uint64_t);
             constant auto width = DrawBuffer{}.width();
             static_assert (width % stride == 0);
@@ -336,6 +345,7 @@ struct Minesweeper {
                 src += srcpitch;
                 dst += dstpitch;
             }
+            memory.isVideoBufferDirty = false;
         }
     }
 

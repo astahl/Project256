@@ -62,27 +62,38 @@ struct Image {
     constant size_t VisiblePixelCount = Width * Height;
     constant size_t StoragePixelCount = Pitch * Height;
 
-    struct LinesView {
-        using IteratorType = typename LineStorageType::iterator;
+    template <typename IteratorType, typename PixelT>
+    struct LinesViewT {
         IteratorType mBegin;
         IteratorType mEnd;
 
-        IteratorType begin() { return mBegin; }
-        IteratorType end() { return mEnd; }
-        IteratorType begin() const { return mBegin; }
-        IteratorType end() const { return mEnd; }
-    };
+        struct LinesViewIterator {
+            IteratorType pos;
+            constexpr auto& operator++() {
+                ++pos;
+                return *this;
+            }
 
-    struct ConstLinesView {
-        using IteratorType = typename LineStorageType::const_iterator;
-        IteratorType mBegin;
-        IteratorType mEnd;
+            constexpr auto operator*() const {
+                auto& line = *pos;
+                return std::span<PixelT, Width>{line};
+            }
 
-        IteratorType begin() { return mBegin; }
-        IteratorType end() { return mEnd; }
-        IteratorType begin() const { return mBegin; }
-        IteratorType end() const { return mEnd; }
+            constexpr bool operator!=(const LinesViewIterator& other) const {
+                return pos != other.pos;
+            }
+        };
+
+        LinesViewIterator begin() { return {mBegin}; }
+        LinesViewIterator end() { return {mEnd}; }
+        LinesViewIterator begin() const { return {mBegin}; }
+        LinesViewIterator end() const { return {mEnd}; }
     };
+    using LinesView = LinesViewT<typename LineStorageType::iterator, PixelType>;
+    using ReverseLinesView = LinesViewT<typename LineStorageType::reverse_iterator, PixelType>;
+    using ConstLinesView = LinesViewT<typename LineStorageType::const_iterator, const PixelType>;
+    using ConstReverseLinesView = LinesViewT<typename LineStorageType::const_reverse_iterator, const PixelType>;
+
 
     LineStorageType lines;
 
@@ -137,20 +148,20 @@ struct Image {
     }
 
     template <ImageLineOrder DesiredLineOrder = LineOrder>
-    constexpr LinesView linesView() {
+    constexpr auto linesView() {
         if constexpr (DesiredLineOrder == LineOrder) {
             return LinesView{ .mBegin = lines.begin(), .mEnd = lines.end() };
         } else {
-            return LinesView{ .mBegin = lines.rbegin(), .mEnd = lines.rend() };
+            return ReverseLinesView{ .mBegin = lines.rbegin(), .mEnd = lines.rend() };
         }
     }
 
     template <ImageLineOrder DesiredLineOrder = LineOrder>
-    constexpr ConstLinesView linesView() const {
+    constexpr auto linesView() const {
         if constexpr (DesiredLineOrder == LineOrder) {
             return ConstLinesView{ .mBegin = lines.cbegin(), .mEnd = lines.cend() };
         } else {
-            return ConstLinesView{ .mBegin = lines.crbegin(), .mEnd = lines.crend() };
+            return ConstReverseLinesView{ .mBegin = lines.crbegin(), .mEnd = lines.crend() };
         }
     }
 
@@ -414,21 +425,19 @@ constexpr SubImageView<T, Origin> makeSubImage(T&& image, ptrdiff_t x, ptrdiff_t
 }
 
 template <anImage T, anImage U>
-constexpr void imageCopy(const T& source, U&& destination) {
+requires(std::same_as<typename T::PixelType, typename U::PixelType>)
+constexpr void imageCopy(const T& source, U& destination) {
     using DestinationType = std::decay_t<U>;
     using Pixel = typename DestinationType::PixelType;
-    auto sourceLines = source.template lines<DestinationType::LineOrder>();
-    auto destinationLines = destination.lines();
+    auto sourceLines = source.template linesView<DestinationType::LineOrder>();
+    auto destinationLines = destination.linesView();
+    const size_t lineByteCount = std::min(source.width(), destination.width()) * sizeof(Pixel);
 
-    const size_t lineWidth = std::min(sourceLines.length(), destinationLines.length()) * sizeof(Pixel);
-    auto src = sourceLines.begin();
-    auto srcEnd = sourceLines.end();
-    auto dst = destinationLines.begin();
-    auto dstEnd = destinationLines.end();
-
-    while (src != srcEnd && dst != dstEnd) {
-        memcpy((*dst).firstPixel, (*src).firstPixel, lineWidth);
-        ++src; ++dst;
+    for (auto [src, dst] : sourceLines & destinationLines)
+    {
+        const Pixel* from = src.data();
+        Pixel* to = dst.data();
+        memcpy(to, from, lineByteCount);
     }
 }
 

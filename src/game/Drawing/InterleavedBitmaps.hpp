@@ -85,22 +85,24 @@ compiletime void doSwizzle(uint8_t* dst, const uint8_t* src, std::index_sequence
 
 template <typename T, endian Endianness = endian::native>
 struct Endian {
-    T value{};
+    std::array<uint8_t, sizeof(T)> raw{};
 
     template<endian OtherEndianness>
     constexpr Endian(const Endian<T, OtherEndianness>& other) {
         if constexpr (Endianness == OtherEndianness) {
-            value = other.value;
+            raw = other.raw;
         } else {
-            uint8_t* ptr = reinterpret_cast<uint8_t*>(&value);
-            const uint8_t* otherPtr = reinterpret_cast<const uint8_t*>(&other.value);
-            doSwizzle(ptr, otherPtr, std::make_index_sequence<sizeof(T)>());
+            doSwizzle(raw.data(), other.raw.data(), std::make_index_sequence<sizeof(T)>());
         }
+    }
+
+    T value() const {
+        return *reinterpret_cast<const T*>(raw.data());
     }
 
     T native() const {
         Endian<T, endian::native> val(*this);
-        return val.value;
+        return val.value();
     }
 };
 
@@ -212,7 +214,7 @@ struct ILBMDataParser {
         }
         readPointer += 4;
         Endian<int> length = *reinterpret_cast<const Endian<int, E>*>(readPointer);
-        if(length.value > dataSize - 8) {
+        if(length.native() > dataSize - 8) {
             assert(false); // endianness problem or buffer was too small
             return false;
         }
@@ -232,14 +234,14 @@ struct ILBMDataParser {
 
     std::ptrdiff_t findChunk(const char* name, std::ptrdiff_t offset = HEADER_PRELUDE_OFFSET) const {
         auto chunkPrelude = reinterpret_cast<const ILBMChunkPrelude<E>*>(data + offset);
-        Endian<DoubleWord> chunkLength = chunkPrelude->chunkLength;
-        while (offset < dataSize && !ILBMCompareNames(chunkPrelude->chunkName, name) && chunkLength.value.lower != 0) {
-            offset += chunkLength.value.lower + CHUNK_PRELUDE_SIZE + (chunkLength.value.lower % 2);
+        auto chunkLength = chunkPrelude->chunkLength.native();
+        while (offset < dataSize && !ILBMCompareNames(chunkPrelude->chunkName, name) && chunkLength.lower != 0) {
+            offset += chunkLength.lower + CHUNK_PRELUDE_SIZE + (chunkLength.lower % 2);
 
             chunkPrelude = reinterpret_cast<const ILBMChunkPrelude<E>*>(data + offset);
-            chunkLength = chunkPrelude->chunkLength;
+            chunkLength = chunkPrelude->chunkLength.native();
         }
-        if (chunkLength.value.lower == 0) {
+        if (chunkLength.lower == 0) {
             return CHUNK_NOT_FOUND;
         }
         if (offset > dataSize) {
@@ -254,8 +256,8 @@ struct ILBMDataParser {
             return ILBMColorMap{};
         }
         auto chunkPrelude = reinterpret_cast<const ILBMChunkPrelude<E>*>(data + offset);
-        Endian<DoubleWord> length = chunkPrelude->chunkLength;
-        return { length.value.lower / 3, reinterpret_cast<const ILBMColor*>(data + offset + CHUNK_PRELUDE_SIZE) };
+        auto length = chunkPrelude->chunkLength.native();
+        return { length.lower / 3, reinterpret_cast<const ILBMColor*>(data + offset + CHUNK_PRELUDE_SIZE) };
     }
 
     template <endian Target = endian::native>
@@ -294,8 +296,8 @@ struct ILBMDataParser {
             return ILBMBody{};
         }
         auto chunkPrelude = reinterpret_cast<const ILBMChunkPrelude<E>*>(data + offset);
-        Endian<DoubleWord> length = chunkPrelude->chunkLength;
-        return { length.value.lower, reinterpret_cast<const uint8_t*>(data + offset + CHUNK_PRELUDE_SIZE) };
+        auto length = chunkPrelude->chunkLength.native();
+        return { length.lower, reinterpret_cast<const uint8_t*>(data + offset + CHUNK_PRELUDE_SIZE) };
     }
 
     void deinterleaveInto(uint8_t* buffer, size_t bufferSize, size_t bufferPitch) {
@@ -308,6 +310,7 @@ struct ILBMDataParser {
         assert(width % 8 == 0);
         assert(bufferPitch >= width);
         assert(bufferSize >= height * bufferPitch);
+        assert(body.data != nullptr);
 #ifdef NDEBUG 
         // in release build the assert above is removed, so bufferSize becomes unreferenced if we don't do something
         bufferSize = bufferSize;

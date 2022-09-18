@@ -1,11 +1,11 @@
 #include "Project256.h"
 #include <cassert>
-//#include "TestBed.hpp"
+#include "TestBed.hpp"
 #include "Minesweeper.hpp"
 
 
-//using Game = TestBed;
-using Game = Minesweeper;
+using Game = TestBed;
+//using Game = Minesweeper;
 
 extern "C" {
 
