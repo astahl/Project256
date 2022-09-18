@@ -62,13 +62,16 @@ struct Image {
     constant size_t VisiblePixelCount = Width * Height;
     constant size_t StoragePixelCount = Pitch * Height;
 
-    template <typename IteratorType, typename PixelT>
+    template <typename TIterator, typename TPixel>
     struct LinesViewT {
-        IteratorType mBegin;
-        IteratorType mEnd;
+        using BaseIterator = TIterator;
+        using PixelType = TPixel;
+        BaseIterator mBegin;
+        BaseIterator mEnd;
 
-        struct LinesViewIterator {
-            IteratorType pos;
+        struct Iterator {
+            BaseIterator pos;
+            using LineSpan = std::span<PixelType, Width>;
             constexpr auto& operator++() {
                 ++pos;
                 return *this;
@@ -76,24 +79,98 @@ struct Image {
 
             constexpr auto operator*() const {
                 auto& line = *pos;
-                return std::span<PixelT, Width>{line};
+                return LineSpan{line};
             }
 
-            constexpr bool operator!=(const LinesViewIterator& other) const {
+            constexpr bool operator!=(const Iterator& other) const {
                 return pos != other.pos;
             }
         };
 
-        LinesViewIterator begin() { return {mBegin}; }
-        LinesViewIterator end() { return {mEnd}; }
-        LinesViewIterator begin() const { return {mBegin}; }
-        LinesViewIterator end() const { return {mEnd}; }
+        Iterator begin() { return {mBegin}; }
+        Iterator end() { return {mEnd}; }
+        Iterator begin() const { return {mBegin}; }
+        Iterator end() const { return {mEnd}; }
     };
     using LinesView = LinesViewT<typename LineStorageType::iterator, PixelType>;
     using ReverseLinesView = LinesViewT<typename LineStorageType::reverse_iterator, PixelType>;
     using ConstLinesView = LinesViewT<typename LineStorageType::const_iterator, const PixelType>;
     using ConstReverseLinesView = LinesViewT<typename LineStorageType::const_reverse_iterator, const PixelType>;
 
+    template <typename TLinesView>
+    struct PixelsViewT {
+        using LinesIterator = typename TLinesView::Iterator;
+        using PixelType = typename TLinesView::PixelType;
+        TLinesView linesView;
+
+        struct Iterator {
+            LinesIterator line;
+            using LineSpan = typename LinesIterator::LineSpan;
+            using LineSpanIterator = typename LineSpan::iterator;
+
+            LineSpanIterator pos;
+            LineSpanIterator end;
+
+            constexpr Iterator& operator++() {
+                if (pos != end) {
+                    ++pos;
+                }
+                else {
+                    ++line;
+                    LineSpan currentLine = *line;
+                    pos = currentLine.begin();
+                    end = currentLine.end();
+                }
+                return *this;
+            }
+
+            constexpr PixelType& operator*() const {
+                return *pos;
+            }
+
+            constexpr bool operator!=(const Iterator& other) const {
+                return line != other.line;
+            }
+        };
+
+        Iterator begin() {
+            auto line = linesView.begin();
+            return {
+                .line = line,
+                .pos = (*line).begin(),
+                .end = (*line).end()
+            };
+        }
+
+        Iterator end() {
+            auto line = linesView.end();
+            return {
+                .line = line,
+                .pos = (*line).begin(),
+                .end = (*line).end()
+            };
+        }
+        Iterator begin() const {
+            auto line = linesView.begin();
+            return {
+                .line = line,
+                .pos = (*line).cbegin(),
+                .end = (*line).cend()
+            };
+        }
+
+        Iterator end() const {
+            auto line = linesView.end();
+            return {
+                .line = line,
+                .pos = (*line).cbegin(),
+                .end = (*line).cend()
+            };
+        }
+    };
+
+    using PixelsView = PixelsViewT<LinesView>;
+    using ConstPixelsView = PixelsViewT<ConstLinesView>;
 
     LineStorageType lines;
 
@@ -101,8 +178,12 @@ struct Image {
         return lines.front().data();
     }
 
-    constexpr PixelViewType pixels() {
-        return PixelViewType{data(), Pitch * Height};
+    constexpr auto pixels() {
+        return PixelsView{linesView()};
+    }
+
+    constexpr auto pixels() const {
+        return ConstPixelsView{linesView()};
     }
 
     constexpr uint8_t* bytes() {

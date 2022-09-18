@@ -229,6 +229,15 @@ constexpr V clamp(V vec, V upper, V lower) {
     return V { std::clamp(vec.x, upper.x, lower.x), std::clamp(vec.y, upper.y, lower.y)};
 }
 
+template<aVec2 V>
+constexpr V max(V vec1, V vec2) {
+    return V { std::max(vec1.x, vec2.x), std::max(vec1.y, vec2.y)};
+}
+
+template<aVec2 V>
+constexpr V min(V vec1, V vec2) {
+    return V { std::min(vec1.x, vec2.x), std::min(vec1.y, vec2.y)};
+}
 
 template <typename T, size_t Rows, size_t Cols>
 struct Matrix{

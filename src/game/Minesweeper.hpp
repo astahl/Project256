@@ -33,7 +33,45 @@ enum class CellState : uint8_t {
     Mine,
     FlaggedFlag = 1 << 6,
     HiddenFlag = 1 << 7,
+    HiddenMine = Mine | HiddenFlag,
+    FlaggedMine = HiddenMine | FlaggedFlag,
 };
+
+template<typename T, T flag>
+requires(std::is_enum_v<T>)
+bool testFlag(const T value) {
+    using underlying_t = std::underlying_type_t<T>;
+    return (static_cast<underlying_t>(value) & static_cast<underlying_t>(flag)) == static_cast<underlying_t>(flag);
+}
+
+template<typename T, T flag>
+requires(std::is_enum_v<T>)
+void setFlag(T& value) {
+    using underlying_t = std::underlying_type_t<T>;
+    value = static_cast<T>(static_cast<underlying_t>(value) | static_cast<underlying_t>(flag));
+}
+
+template<typename T, T flag>
+requires(std::is_enum_v<T>)
+void unsetFlag(T& value) {
+    using underlying_t = std::underlying_type_t<T>;
+    value = static_cast<T>(static_cast<underlying_t>(value) & ~static_cast<underlying_t>(flag));
+}
+
+template<typename T, T flag>
+requires(std::is_enum_v<T>)
+bool toggleFlag(T& value) {
+    using underlying_t = std::underlying_type_t<T>;
+    bool isSet = testFlag<T, flag>(value);
+    if (isSet) {
+        unsetFlag<T, flag>(value);
+    }
+    else {
+        setFlag<T, flag>(value);
+    }
+    return !isSet;
+}
+
 
 enum class GameState {
     Init,
@@ -44,7 +82,7 @@ enum class GameState {
     Win,
 };
 
-const auto MINECOUNT = 32;
+const auto MINECOUNT = 4;
 const auto WIDTH = 16;
 const auto HEIGHT = 16;
 
@@ -84,6 +122,7 @@ struct GameMemory {
     GameState state, previousState;
     GameBoard_t board;
     Vec2i selectedCell;
+    Vec2i boardOffset;
 
     Screen screen;
 };
@@ -133,10 +172,10 @@ void showBoard(const GameBoard_t& board, Screen& screen, Vec2i offset) {
         Screen::Text_t t;
 
         auto cell = board.at(position);
-        if ((static_cast<uint8_t>(cell) & static_cast<uint8_t>(CellState::FlaggedFlag)) == static_cast<uint8_t>(CellState::FlaggedFlag)) {
+        if (testFlag<CellState, CellState::FlaggedFlag>(cell)) {
             t = static_cast<Screen::Text_t>(CharacterRom::PET::SpecialCharacters::LineCrossDiag);
         }
-        else if ((static_cast<uint8_t>(cell) & static_cast<uint8_t>(CellState::HiddenFlag)) == static_cast<uint8_t>(CellState::HiddenFlag)) {
+        else if (testFlag<CellState, CellState::HiddenFlag>(cell)) {
             t = 0xff;
         }
         else
@@ -176,6 +215,76 @@ Vec2i mapPositions(auto position, const T& imageFrom, const U& imageTo) {
     }
 }
 
+void onActionUnhideSelect(GameMemory& memory) {
+    const Vec2i boardPosition = memory.selectedCell;
+    if (boardPosition >= Vec2i{} && boardPosition <= memory.board.maxIndex()) {
+        CellState& cell = memory.board.at(boardPosition);
+        if (testFlag<CellState, CellState::HiddenFlag>(cell)) {
+            unsetFlag<CellState, CellState::HiddenFlag>(cell);
+
+            if (cell == CellState::Mine) {
+                memory.state = GameState::Lose;
+            }
+            if (cell == CellState::Free) {
+                // fill / uncover brute force whole board
+                int changedCells = 1;
+                while (changedCells) {
+                    changedCells = 0;
+                    for (auto pos : Generators::Rectangle({}, memory.board.maxIndex()))
+                    {
+                        auto& fillingCell = memory.board.at(pos);
+                        if (!testFlag<CellState, CellState::HiddenFlag>(fillingCell)) {
+                            continue;
+                        }
+                        auto cornerMin = max(pos - Vec2i{1,1}, Vec2i{});
+                        auto cornerMax = min(pos + Vec2i{1,1}, memory.board.maxIndex());
+                        for (auto neighborPos : Generators::Rectangle(cornerMin, cornerMax)) {
+                            if (neighborPos == pos) {
+                                continue;
+                            }
+                            auto& neighborCell = memory.board.at(neighborPos);
+                            if (neighborCell == CellState::Free) {
+                                unsetFlag<CellState, CellState::HiddenFlag>(fillingCell);
+                                unsetFlag<CellState, CellState::FlaggedFlag>(fillingCell);
+                                changedCells++;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+
+            }
+
+            auto cells = memory.board.pixels();
+            if (std::all_of(cells.begin(), cells.end(), [](auto& c) {
+                return !testFlag<CellState, CellState::HiddenFlag>(c) || c == CellState::HiddenMine || c == CellState::FlaggedMine;
+            })) {
+                memory.state = GameState::Win;
+            };
+
+            showBoard(memory.board, memory.screen, memory.boardOffset);
+            memory.screen.isDirty = true;
+        }
+    }
+}
+
+void onActionFlagSelected(GameMemory& memory) {
+    const Vec2i boardPosition = memory.selectedCell;
+    if (boardPosition >= Vec2i{} && boardPosition <= memory.board.maxIndex()) {
+        CellState& cell = memory.board.at(boardPosition);
+        if (testFlag<CellState, CellState::HiddenFlag>(cell)) {
+            toggleFlag<CellState, CellState::FlaggedFlag>(cell);
+            showBoard(memory.board, memory.screen, memory.boardOffset);
+            memory.screen.isDirty = true;
+        }
+    }
+}
+
+void checkWinCondition(GameMemory& memory) {
+
+}
+
 struct Minesweeper {
 
     using DrawBuffer = Image<uint32_t, DrawBufferWidth, DrawBufferHeight>;
@@ -185,7 +294,6 @@ struct Minesweeper {
     static GameOutput doGameThings(MemoryLayout& memory, const GameInput& input, const PlatformCallbacks& callbacks)
     {
         memory.previousState = memory.state;
-        const Vec2i boardOffset{3,3};
         switch(memory.state) {
             case GameState::Init:
                 PaletteVGA::writeTo(memory.palette.data());
@@ -193,6 +301,7 @@ struct Minesweeper {
                 //memory.screen.buffer.fill(0xe9);
                 memory.screen.buffer.fill(CharacterRom::PET::CharacterTable[' ']);
                 memory.screen.color.fill({ 0, 15 });
+                memory.boardOffset = {3,3};
                 memory.screen.isDirty = true;
                 // check if initialisation is done
                 memory.state = GameState::Menu;
@@ -201,7 +310,7 @@ struct Minesweeper {
                 // check if user selected start game
                 memory.state = GameState::Play;
                 resetGame(memory);
-                showBoard(memory.board, memory.screen, boardOffset);
+                showBoard(memory.board, memory.screen, memory.boardOffset);
                 memory.screen.isDirty = true;
                 break;
             case GameState::Play:
@@ -211,7 +320,7 @@ struct Minesweeper {
                 if (input.mouse.endedOver) {
                     auto mousePos = input.mouse.track[input.mouse.trackLength - 1];
                     auto screenBufferPos = mapPositions(mousePos, memory.videobuffer, memory.screen.buffer);
-                    boardPos = Vec2i{screenBufferPos.x, static_cast<int>(memory.screen.buffer.height()) - 1 - screenBufferPos.y} - boardOffset;
+                    boardPos = Vec2i{screenBufferPos.x, static_cast<int>(memory.screen.buffer.height()) - 1 - screenBufferPos.y} - memory.boardOffset;
                     if (boardPos >= Vec2i{} && boardPos < memory.board.maxIndex()) {
                         memory.selectedCell = boardPos;
                         memory.screen.marker = screenBufferPos;
@@ -228,33 +337,25 @@ struct Minesweeper {
                     memory.selectedCell = boardPos;
                 }
                 if (input.mouse.buttonLeft.transitionCount && !input.mouse.buttonLeft.endedDown) {
-                    auto& cell = memory.board.at(memory.selectedCell);
-                    cell = static_cast<CellState>(static_cast<uint8_t>(cell) & ~static_cast<uint8_t>(CellState::HiddenFlag));
-                    showBoard(memory.board, memory.screen, boardOffset);
-                    memory.screen.isDirty = true;
-
-                    //memory.state = GameState::Menu;
+                    onActionUnhideSelect(memory);
                 }
                 if (input.mouse.buttonRight.transitionCount && !input.mouse.buttonRight.endedDown) {
-                    auto& cell = memory.board.at(memory.selectedCell);
-                    if (static_cast<uint8_t>(cell) & static_cast<uint8_t>(CellState::FlaggedFlag)) {
-                        cell = static_cast<CellState>(static_cast<uint8_t>(cell) & ~static_cast<uint8_t>(CellState::FlaggedFlag));
-                    } else {
-                        cell = static_cast<CellState>(static_cast<uint8_t>(cell) | static_cast<uint8_t>(CellState::FlaggedFlag));
-
-                    }
-                    showBoard(memory.board, memory.screen, boardOffset);
-                    memory.screen.isDirty = true;
-
-                    //memory.state = GameState::Menu;
+                    onActionFlagSelected(memory);
                 }
-
 
                 break;
             }
             case GameState::Pause: break;
-            case GameState::Lose: break;
-            case GameState::Win: break;
+            case GameState::Lose:
+                if (input.mouse.buttonLeft.transitionCount && !input.mouse.buttonLeft.endedDown) {
+                    memory.state = GameState::Menu;
+                }
+                break;
+            case GameState::Win:
+                if (input.mouse.buttonLeft.transitionCount && !input.mouse.buttonLeft.endedDown) {
+                    memory.state = GameState::Menu;
+                }
+                break;
         }
 
         if (memory.screen.isDirty) {
