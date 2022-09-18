@@ -181,6 +181,9 @@ struct PET {
         Pi = 0x5e,
         HLineY7 = 0x63,
         HLineY0 = 0x64,
+        VLineX0 = 0x65,
+        HalfTone = 0x66,
+        VLineX7 = 0x67,
         LineCornerLowerRight = 0x7a,
     };
 

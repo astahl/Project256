@@ -82,7 +82,7 @@ enum class GameState {
     Win,
 };
 
-const auto MINECOUNT = 4;
+const auto MINECOUNT = 40;
 const auto WIDTH = 16;
 const auto HEIGHT = 16;
 
@@ -91,6 +91,7 @@ const auto CHARACTER_HEIGHT = 8;
 const auto CHARACTER_MAP_SIZE = 256;
 const auto SCREEN_WIDTH = DrawBufferWidth / CHARACTER_WIDTH;
 const auto SCREEN_HEIGHT = DrawBufferHeight / CHARACTER_HEIGHT;
+
 
 struct ColorIndexPair {
     uint8_t foreground;
@@ -170,32 +171,53 @@ void showBoard(const GameBoard_t& board, Screen& screen, Vec2i offset) {
     {
         auto destination = position + offset;
         Screen::Text_t t;
+        ColorIndexPair c = {1,0};
 
         auto cell = board.at(position);
         if (testFlag<CellState, CellState::FlaggedFlag>(cell)) {
             t = static_cast<Screen::Text_t>(CharacterRom::PET::SpecialCharacters::LineCrossDiag);
+            c = {static_cast<uint8_t>(PaletteC64::Color::white), 0};
         }
         else if (testFlag<CellState, CellState::HiddenFlag>(cell)) {
-            t = 0xff;
+            t = static_cast<Screen::Text_t>(CharacterRom::PET::SpecialCharacters::HalfTone);
+            c = {3, 14};
         }
         else
         {
             switch (cell) {
-                case CellState::Mine: t = static_cast<Screen::Text_t>(CharacterRom::PET::SpecialCharacters::Bullet); break;
-                case CellState::NextToOne: t = CharacterRom::PET::CharacterTable['1']; break;
-                case CellState::NextToTwo: t = CharacterRom::PET::CharacterTable['2']; break;
-                case CellState::NextToThree: t = CharacterRom::PET::CharacterTable['3']; break;
-                case CellState::NextToFour: t = CharacterRom::PET::CharacterTable['4']; break;
-                case CellState::NextToFive: t = CharacterRom::PET::CharacterTable['5']; break;
-                case CellState::NextToSix: t = CharacterRom::PET::CharacterTable['6']; break;
-                case CellState::NextToSeven: t = CharacterRom::PET::CharacterTable['7']; break;
-                case CellState::NextToEight: t = CharacterRom::PET::CharacterTable['8']; break;
+                case CellState::Mine:
+                    t = CharacterRom::PET::CharacterTable['*'];
+                    c = {static_cast<uint8_t>(PaletteC64::Color::red), 0}; break;
+                case CellState::NextToOne:
+                    t = CharacterRom::PET::CharacterTable['1'];
+                    c = {static_cast<uint8_t>(PaletteC64::Color::green), 0}; break;
+                case CellState::NextToTwo:
+                    t = CharacterRom::PET::CharacterTable['2'];
+                    c = {static_cast<uint8_t>(PaletteC64::Color::lightBlue), 0}; break;
+                case CellState::NextToThree:
+                    t = CharacterRom::PET::CharacterTable['3'];
+                    c = {static_cast<uint8_t>(PaletteC64::Color::yellow), 0}; break;
+                case CellState::NextToFour:
+                    t = CharacterRom::PET::CharacterTable['4'];
+                    c = {static_cast<uint8_t>(PaletteC64::Color::orange), 0}; break;
+                case CellState::NextToFive:
+                    t = CharacterRom::PET::CharacterTable['5'];
+                    c = {static_cast<uint8_t>(PaletteC64::Color::lightRed), 0}; break;
+                case CellState::NextToSix:
+                    t = CharacterRom::PET::CharacterTable['6'];
+                    c = {static_cast<uint8_t>(PaletteC64::Color::cyan), 0}; break;
+                case CellState::NextToSeven:
+                    t = CharacterRom::PET::CharacterTable['7'];
+                    c = {static_cast<uint8_t>(PaletteC64::Color::blue), 0}; break;
+                case CellState::NextToEight:
+                    t = CharacterRom::PET::CharacterTable['8'];
+                    c = {static_cast<uint8_t>(PaletteC64::Color::purple), 0}; break;
                 default: t = CharacterRom::PET::CharacterTable[' ']; break;
             }
         }
 
         screen.buffer.at(destination) = t;
-        screen.color.at(destination) = {2, 0};
+        screen.color.at(destination) = c;
 
     }
 }
@@ -281,9 +303,6 @@ void onActionFlagSelected(GameMemory& memory) {
     }
 }
 
-void checkWinCondition(GameMemory& memory) {
-
-}
 
 struct Minesweeper {
 
@@ -296,12 +315,12 @@ struct Minesweeper {
         memory.previousState = memory.state;
         switch(memory.state) {
             case GameState::Init:
-                PaletteVGA::writeTo(memory.palette.data());
+                PaletteC64::writeTo(memory.palette.data());
                 callbacks.readFile(CharacterRom::PET::Filename.data(), memory.screen.characters.bytes(), memory.screen.characters.bytesSize());
                 //memory.screen.buffer.fill(0xe9);
                 memory.screen.buffer.fill(CharacterRom::PET::CharacterTable[' ']);
-                memory.screen.color.fill({ 0, 15 });
-                memory.boardOffset = {3,3};
+                memory.screen.color.fill({ 3, 14 });
+                memory.boardOffset = (memory.screen.buffer.size2d() - memory.board.size2d()) / 2;
                 memory.screen.isDirty = true;
                 // check if initialisation is done
                 memory.state = GameState::Menu;
@@ -321,7 +340,7 @@ struct Minesweeper {
                     auto mousePos = input.mouse.track[input.mouse.trackLength - 1];
                     auto screenBufferPos = mapPositions(mousePos, memory.videobuffer, memory.screen.buffer);
                     boardPos = Vec2i{screenBufferPos.x, static_cast<int>(memory.screen.buffer.height()) - 1 - screenBufferPos.y} - memory.boardOffset;
-                    if (boardPos >= Vec2i{} && boardPos < memory.board.maxIndex()) {
+                    if (boardPos >= Vec2i{} && boardPos <= memory.board.maxIndex()) {
                         memory.selectedCell = boardPos;
                         memory.screen.marker = screenBufferPos;
                         memory.screen.showMarker = true;
@@ -332,7 +351,9 @@ struct Minesweeper {
                         memory.screen.showMarker = false;
                     }
                 }
-
+                if (input.controllers[0].buttonBack.transitionCount && input.controllers[0].buttonBack.endedDown) {
+                    memory.state = GameState::Menu; break;
+                }
                 if (boardPos >= Vec2i{0,0} && boardPos < memory.board.size2d()) {
                     memory.selectedCell = boardPos;
                 }

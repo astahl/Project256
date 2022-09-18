@@ -35,7 +35,7 @@ constant unsigned AudioFramesPerSecond = 48000;
 constant unsigned AudioChannelsPerFrame = 2;
 constant unsigned AudioBitsPerSample = 16;
 
-constant unsigned DrawBufferWidth = 320;
+constant unsigned DrawBufferWidth = 160;
 constant unsigned DrawBufferHeight = 200;
 
 constant unsigned DrawAspectH = 4;
