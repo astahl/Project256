@@ -425,6 +425,7 @@ struct Minesweeper {
         }
 
         return {
+            .shouldQuit = input.closeRequested,
             .shouldShowSystemCursor = true,
         };
     }
