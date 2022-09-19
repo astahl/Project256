@@ -135,6 +135,10 @@ struct GameMemory {
     Vec2i boardOffset;
 
     Screen screen;
+
+    int activeControllerIndex;
+    Vec2i moveSelector;
+    AutoResettingTimer moveTimer;
 };
 
 void resetGame(GameMemory& memory) {
@@ -324,6 +328,25 @@ struct Minesweeper {
     {
         using namespace ranges_at_home;
         using namespace Generators;
+        using namespace std::chrono_literals;
+
+        auto time = std::chrono::microseconds(input.upTime_microseconds);
+
+        auto output = GameOutput {
+            .shouldQuit = input.closeRequested,
+            .shouldShowSystemCursor = true,
+        };
+        bool controllerChanged = false;
+        for (int i = 0; i < input.controllerCount; ++i) {
+            if (input.controllers[i].isActive) {
+                if (memory.activeControllerIndex != i) {
+                    memory.activeControllerIndex = i;
+                    controllerChanged = true;
+                }
+            }
+        }
+        const GameController& controller = input.controllers[memory.activeControllerIndex];
+
         bool stateWasEntered = memory.previousState != memory.state;
         memory.previousState = memory.state;
         switch(memory.state) {
@@ -335,6 +358,7 @@ struct Minesweeper {
                 memory.screen.color.fill({ 3, 14 });
                 memory.boardOffset = (memory.screen.buffer.size2d() - memory.board.size2d()) / 2;
                 memory.screen.isDirty = true;
+                memory.moveTimer = AutoResettingTimer(time, 100ms);
                 // check if initialisation is done
                 memory.state = GameState::Menu;
                 break;
@@ -348,29 +372,36 @@ struct Minesweeper {
                 break;
             case GameState::Play:
             {
-
-                auto boardPos = Vec2i{};
-                if (input.mouse.endedOver) {
+                auto mouseOverBoardPos = Vec2i{};
+                if (input.mouse.endedOver && input.mouse.trackLength > 1) {
                     auto mousePos = input.mouse.track[input.mouse.trackLength - 1];
                     auto screenBufferPos = mapPositions(mousePos, memory.videobuffer, memory.screen.buffer);
-                    boardPos = Vec2i{screenBufferPos.x, static_cast<int>(memory.screen.buffer.height()) - 1 - screenBufferPos.y} - memory.boardOffset;
-                    if (boardPos >= Vec2i{} && boardPos <= memory.board.maxIndex()) {
-                        memory.selectedCell = boardPos;
+                    mouseOverBoardPos = Vec2i{screenBufferPos.x, static_cast<int>(memory.screen.buffer.height()) - 1 - screenBufferPos.y} - memory.boardOffset;
+                    if (mouseOverBoardPos >= Vec2i{} && mouseOverBoardPos <= memory.board.maxIndex()) {
+                        memory.selectedCell = mouseOverBoardPos;
                         memory.screen.marker = screenBufferPos;
                         memory.screen.showMarker = true;
                         memory.screen.isDirty = true;
+                        output.shouldShowSystemCursor = false;
                     }
                     else {
                         memory.screen.marker = Vec2i{-1,-1};
                         memory.screen.showMarker = false;
+                        memory.screen.isDirty = true;
                     }
                 }
-                if (input.controllers[0].buttonBack.transitionCount && input.controllers[0].buttonBack.endedDown) {
+                // back button
+                if (controller.buttonBack.transitionCount && controller.buttonBack.endedDown) {
                     memory.state = GameState::Menu; break;
                 }
-                if (boardPos >= Vec2i{0,0} && boardPos < memory.board.size2d()) {
-                    memory.selectedCell = boardPos;
-                }
+
+//                memory.moveSelector = round(controller.stickLeft.end);
+//
+//                if (memory.moveTimer.hasFired(time)) {
+//                    memory.selectedCell = memory.selectedCell + memory.moveSelector;
+//                    memory.screen.marker = memory.selectedCell + memory.boardOffset;
+//                    memory.screen.isDirty = true;
+//                }
                 if (input.mouse.buttonLeft.transitionCount && !input.mouse.buttonLeft.endedDown) {
                     onActionUnhideSelect(memory);
                 }
@@ -445,10 +476,7 @@ struct Minesweeper {
             memory.isVideoBufferDirty = true;
         }
 
-        return {
-            .shouldQuit = input.closeRequested,
-            .shouldShowSystemCursor = true,
-        };
+        return output;
     }
 
     static void writeDrawBuffer(MemoryLayout& memory, DrawBuffer& buffer)
@@ -502,8 +530,8 @@ struct Minesweeper {
     static void writeAudioBuffer(MemoryLayout& memory, AudioBuffer& buffer, const AudioBufferDescriptor& bufferDescriptor)
     {
         buffer.clear();
-        bufferDescriptor;
-        memory;
+        printf("%lf\n", bufferDescriptor.sampleTime / bufferDescriptor.sampleRate);
+        memory = memory;
     }
 
 };
