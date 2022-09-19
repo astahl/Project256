@@ -306,12 +306,15 @@ void onActionFlagSelected(GameMemory& memory) {
 
 struct Minesweeper {
 
+
     using DrawBuffer = Image<uint32_t, DrawBufferWidth, DrawBufferHeight>;
     using AudioBuffer = Audio::PCM16StereoBuffer<AudioFramesPerBuffer>;
     using MemoryLayout = GameMemory;
 
     static GameOutput doGameThings(MemoryLayout& memory, const GameInput& input, const PlatformCallbacks& callbacks)
     {
+        using namespace ranges_at_home;
+        using namespace Generators;
         memory.previousState = memory.state;
         switch(memory.state) {
             case GameState::Init:
@@ -384,13 +387,13 @@ struct Minesweeper {
             uint8_t* drawPointer = line.data();
             auto textLines = memory.screen.buffer.linesView();
             auto colorLines = memory.screen.color.linesView();
-            for (const auto [textLine, colorLine] : (textLines & colorLines))
+            for (const auto [textLine, colorLine] : zip(textLines, colorLines))
             {
                 uint8_t* linePointer = drawPointer;
                 for (int y = CHARACTER_HEIGHT - 1; y >= 0; --y) {
                     uint64_t* dst = reinterpret_cast<uint64_t*>(linePointer);
 
-                    for (const auto [t, c] : (textLine & colorLine))
+                    for (const auto [t, c] : zip(textLine, colorLine))
                     {
                         const uint64_t pixels8 = spread(memory.screen.characters.pixel(0, t * 8 + y));
                         const uint64_t background = ~(pixels8 * 0xFF) / 0xFF;
@@ -407,8 +410,13 @@ struct Minesweeper {
         if (memory.screen.showMarker) {
             auto markerPosition = mapPositions(memory.screen.marker, memory.screen.buffer, memory.videobuffer);
             for (auto pix :
-                 Generators::HLine(markerPosition, CHARACTER_WIDTH) ^ ranges_at_home::alternate(Generators::VLine(markerPosition, CHARACTER_HEIGHT), Generators::VLine(markerPosition + Vec2i{CHARACTER_WIDTH - 1, 0}, CHARACTER_HEIGHT)) ^
-                 Generators::HLine(markerPosition + Vec2i{0, CHARACTER_HEIGHT - 1}, CHARACTER_WIDTH)) {
+                 concat(
+                     concat(
+                         HLine(markerPosition, CHARACTER_WIDTH), 
+                         alternate(
+                             VLine(markerPosition, CHARACTER_HEIGHT), 
+                             VLine(markerPosition + Vec2i{CHARACTER_WIDTH - 1, 0}, CHARACTER_HEIGHT))),
+                    HLine(markerPosition + Vec2i{0, CHARACTER_HEIGHT - 1}, CHARACTER_WIDTH))) {
                 if (pix >= Vec2i{} && pix < memory.videobuffer.size2d()) {
                     memory.videobuffer.at(pix) = 1;
                 }
@@ -416,7 +424,9 @@ struct Minesweeper {
             memory.isVideoBufferDirty = true;
         }
 
-        return {};
+        return {
+            .shouldShowSystemCursor = true,
+        };
     }
 
     static void writeDrawBuffer(MemoryLayout& memory, DrawBuffer& buffer)
@@ -474,6 +484,8 @@ struct Minesweeper {
     static void writeAudioBuffer(MemoryLayout& memory, AudioBuffer& buffer, const AudioBufferDescriptor& bufferDescriptor)
     {
         buffer.clear();
+        bufferDescriptor;
+        memory;
     }
 
 };

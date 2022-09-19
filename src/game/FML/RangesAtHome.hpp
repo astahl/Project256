@@ -957,7 +957,7 @@ struct alternator final {
             }
         }
 
-        constexpr bool operator!=(const sentinel& other) const {
+        constexpr bool operator!=(const sentinel&) const {
             return mRight != mRightSentinel || mLeft != mLeftSentinel;
         }
     };
@@ -980,26 +980,24 @@ struct alternator final {
     }
 };
 
-template <ranges_at_home::aRange T, ranges_at_home::aRange U>
-requires std::same_as<ranges_at_home::iter_value_t<T>, ranges_at_home::iter_value_t<U>>
-constexpr ranges_at_home::alternator<T, U> alternate(T&& left, U&& right)
+template <aRange T, aRange U>
+requires std::same_as<iter_value_t<T>, iter_value_t<U>>
+constexpr alternator<T, U> alternate(T&& left, U&& right)
 {
-    return ranges_at_home::alternator<T, U> {static_cast<T&&>(left), static_cast<U&&>(right)};
+    return alternator<T, U> {static_cast<T&&>(left), static_cast<U&&>(right)};
 }
 
-
-}
-
-template <ranges_at_home::aRange T, ranges_at_home::aRange U>
-requires std::same_as<ranges_at_home::iter_value_t<T>, ranges_at_home::iter_value_t<U>>
-constexpr ranges_at_home::concatenator<T, U> operator^(T&& left, U&& right)
+template <aRange T, aRange U>
+constexpr pairwise_view<T, U> zip(T&& left, U&& right)
 {
-    return ranges_at_home::concatenator<T, U> {static_cast<T&&>(left), static_cast<U&&>(right)};
+    return pairwise_view<T, U> {static_cast<T&&>(left), static_cast<U&&>(right)};
 }
 
-template <ranges_at_home::aRange T, ranges_at_home::aRange U>
-constexpr ranges_at_home::pairwise_view<T, U> operator&(T&& left, U&& right)
+template <aRange T, aRange U>
+    requires std::same_as<iter_value_t<T>, iter_value_t<U>>
+constexpr concatenator<T, U> concat(T&& left, U&& right)
 {
-    return ranges_at_home::pairwise_view<T, U> {static_cast<T&&>(left), static_cast<U&&>(right)};
+    return concatenator<T, U> {static_cast<T&&>(left), static_cast<U&&>(right)};
 }
 
+}

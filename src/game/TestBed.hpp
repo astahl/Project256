@@ -380,7 +380,7 @@ struct TestBed {
                     memory.vram.pixel(wrap(p)) = green;
             }
 
-            compiletime auto crossGenerator = (HLine{{-3, 0}, 7} ^ VLine{{0, -3}, 7});
+            compiletime auto crossGenerator = concat(HLine{{-3, 0}, 7}, VLine{{0, -3}, 7});
             compiletime auto cross = (crossGenerator | toArray<size(crossGenerator)>{}).run();
             (cross | atMouse | wrapped | forEach(whitePixel)).run();
 

@@ -105,6 +105,7 @@ struct Image {
 
         struct Iterator {
             LinesIterator line;
+            LinesIterator endLine;
             using LineSpan = typename LinesIterator::LineSpan;
             using LineSpanIterator = typename LineSpan::iterator;
 
@@ -112,15 +113,19 @@ struct Image {
             LineSpanIterator end;
 
             constexpr Iterator& operator++() {
+
                 if (pos != end) {
                     ++pos;
                 }
-                else {
+                if (!(pos != end)) {
                     ++line;
-                    LineSpan currentLine = *line;
-                    pos = currentLine.begin();
-                    end = currentLine.end();
+                    if (line != endLine) {
+                        LineSpan currentLine = *line;
+                        pos = currentLine.begin();
+                        end = currentLine.end();
+                    }
                 }
+                
                 return *this;
             }
 
@@ -137,6 +142,7 @@ struct Image {
             auto line = linesView.begin();
             return {
                 .line = line,
+                .endLine = linesView.end(),
                 .pos = (*line).begin(),
                 .end = (*line).end()
             };
@@ -145,15 +151,14 @@ struct Image {
         Iterator end() {
             auto line = linesView.end();
             return {
-                .line = line,
-                .pos = (*line).begin(),
-                .end = (*line).end()
+                .line = line
             };
         }
         Iterator begin() const {
             auto line = linesView.begin();
             return {
                 .line = line,
+                .endLine = linesView.end(),
                 .pos = (*line).cbegin(),
                 .end = (*line).cend()
             };
@@ -162,9 +167,7 @@ struct Image {
         Iterator end() const {
             auto line = linesView.end();
             return {
-                .line = line,
-                .pos = (*line).cbegin(),
-                .end = (*line).cend()
+                .line = line
             };
         }
     };
@@ -514,7 +517,7 @@ constexpr void imageCopy(const T& source, U& destination) {
     auto destinationLines = destination.linesView();
     const size_t lineByteCount = std::min(source.width(), destination.width()) * sizeof(Pixel);
 
-    for (auto [src, dst] : sourceLines & destinationLines)
+    for (auto [src, dst] : ranges_at_home::zip(sourceLines, destinationLines))
     {
         const Pixel* from = src.data();
         Pixel* to = dst.data();
