@@ -113,6 +113,15 @@ struct Screen
     bool showMarker;
 };
 
+void print(Screen& screen, const std::u32string_view& str, Vec2i pos) {
+    auto line = Generators::HLine(pos, static_cast<int>(str.size()));
+    for (auto [character, position] : ranges_at_home::zip(str, line))
+    {
+        screen.buffer.at(position) = CharacterRom::PET::CharacterForCodepoint(character).value_or(static_cast<Screen::Text_t>(CharacterRom::PET::SpecialCharacters::Bullet));
+    }
+}
+
+
 using VideoBuffer_t = Image<uint8_t, DrawBufferWidth, DrawBufferHeight>;
 
 struct GameMemory {
@@ -315,6 +324,7 @@ struct Minesweeper {
     {
         using namespace ranges_at_home;
         using namespace Generators;
+        bool stateWasEntered = memory.previousState != memory.state;
         memory.previousState = memory.state;
         switch(memory.state) {
             case GameState::Init:
@@ -332,6 +342,7 @@ struct Minesweeper {
                 // check if user selected start game
                 memory.state = GameState::Play;
                 resetGame(memory);
+                memory.screen.buffer.fill(CharacterRom::PET::CharacterTable[' ']);
                 showBoard(memory.board, memory.screen, memory.boardOffset);
                 memory.screen.isDirty = true;
                 break;
@@ -371,6 +382,16 @@ struct Minesweeper {
             }
             case GameState::Pause: break;
             case GameState::Lose:
+                if (stateWasEntered) {
+                    for (auto& cell : memory.board.pixels()) {
+                        if (cell == CellState::HiddenMine) {
+                            cell = CellState::Mine;
+                        }
+                    }
+                    print(memory.screen, U"You Lost, qtπ", {1,1});
+                    showBoard(memory.board, memory.screen, memory.boardOffset);
+                    memory.screen.isDirty = true;
+                }
                 if (input.mouse.buttonLeft.transitionCount && !input.mouse.buttonLeft.endedDown) {
                     memory.state = GameState::Menu;
                 }
@@ -432,13 +453,9 @@ struct Minesweeper {
 
     static void writeDrawBuffer(MemoryLayout& memory, DrawBuffer& buffer)
     {
-        int colorIndex = 0;
-
-        Colors colors[] { Colors::Aqua, Colors::WhiteSmoke, Colors::HotPink, Colors::Black };
-
-
-
         if (memory.state == GameState::Init) {
+            int colorIndex = 0;
+            Colors colors[] { Colors::Aqua, Colors::WhiteSmoke, Colors::HotPink, Colors::Black };
             for (auto line : buffer.linesView())
             {
                 auto lineColor = colors[colorIndex++ % 4];
