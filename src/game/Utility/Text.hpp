@@ -15,7 +15,7 @@
 #include "../FML/RangesAtHome.hpp"
 namespace Unicode {
 
-enum class Codepoints : uint32_t {
+enum class Codepoints : char32_t {
     LowLine = 0x005f,
     VerticalLine = 0x007c,
     MiddleDot = 0x00b7,
@@ -72,7 +72,7 @@ struct Utf8CodepointsView {
     struct Iterator {
         InputIterator mInput;
         InputSentinel mEnd;
-        uint32_t mCode{0};
+        char32_t mCode{0};
         bool atEnd{false};
 
         constexpr uint32_t operator*() const {
@@ -187,7 +187,7 @@ struct PET {
         LineCornerLowerRight = 0x7a,
     };
 
-    compiletime std::optional<uint8_t> CharacterForCodepoint(uint32_t codePoint) {
+    compiletime std::optional<uint8_t> CharacterForCodepoint(char32_t codePoint) {
         // PET 0x20 - 0x3F is equal to ascii
         if (codePoint >= ' ' && codePoint <= '?') {
             return static_cast<uint8_t>(codePoint);

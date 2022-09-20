@@ -131,7 +131,10 @@ struct GameMemory {
 
     GameState state, previousState;
     GameBoard_t board;
+    int turnCount;
+
     Vec2i selectedCell;
+
     Vec2i boardOffset;
 
     Screen screen;
@@ -256,7 +259,7 @@ void onActionUnhideSelect(GameMemory& memory) {
         CellState& cell = memory.board.at(boardPosition);
         if (testFlag<CellState, CellState::HiddenFlag>(cell)) {
             unsetFlag<CellState, CellState::HiddenFlag>(cell);
-
+            ++memory.turnCount;
             if (cell == CellState::Mine) {
                 memory.state = GameState::Lose;
             }
@@ -367,6 +370,7 @@ struct Minesweeper {
                 memory.state = GameState::Play;
                 resetGame(memory);
                 memory.screen.buffer.fill(CharacterRom::PET::CharacterTable[' ']);
+                memory.turnCount = 0;
                 showBoard(memory.board, memory.screen, memory.boardOffset);
                 memory.screen.isDirty = true;
                 break;
@@ -419,7 +423,18 @@ struct Minesweeper {
                             cell = CellState::Mine;
                         }
                     }
-                    print(memory.screen, U"You Lost, qtπ", {1,1});
+
+
+                    std::array<char, SCREEN_WIDTH> buffer;
+                    size_t count = snprintf(buffer.data(), SCREEN_WIDTH, "You lost after %d turns", memory.turnCount);
+                    std::array<char32_t, SCREEN_WIDTH> bigBuffer;
+                    for (int i = 0; i < bigBuffer.size() && i < buffer.size(); ++i)
+                    {
+                        bigBuffer[i] = buffer[i];
+                    }
+                    std::u32string_view sv{bigBuffer.data(), count};
+
+                    print(memory.screen, sv, {0,1});
                     showBoard(memory.board, memory.screen, memory.boardOffset);
                     memory.screen.isDirty = true;
                 }
