@@ -103,8 +103,8 @@ using GameBoard_t = Image<CellState, WIDTH, HEIGHT>;
 struct Screen
 {
     using Text_t = uint8_t;
-    using TextBuffer_t = Image<Text_t, SCREEN_WIDTH, SCREEN_HEIGHT>;
-    using ColorBuffer_t = Image<ColorIndexPair, SCREEN_WIDTH, SCREEN_HEIGHT>;
+    using TextBuffer_t = Image<Text_t, SCREEN_WIDTH, SCREEN_HEIGHT, ImageOrigin::TopLeft>;
+    using ColorBuffer_t = Image<ColorIndexPair, SCREEN_WIDTH, SCREEN_HEIGHT, ImageOrigin::TopLeft>;
     BitmapImage<CHARACTER_WIDTH, CHARACTER_HEIGHT * CHARACTER_MAP_SIZE> characters;
     TextBuffer_t buffer;
     ColorBuffer_t color;
@@ -350,13 +350,20 @@ struct Minesweeper {
         }
         const GameController& controller = input.controllers[memory.activeControllerIndex];
 
+        bool up = controller.stickLeft.up.endedDown || controller.stickRight.up.endedDown || controller.dPad.up.endedDown;
+        bool down = controller.stickLeft.down.endedDown || controller.stickRight.down.endedDown || controller.dPad.down.endedDown;
+        bool left = controller.stickLeft.left.endedDown || controller.stickRight.left.endedDown || controller.dPad.left.endedDown;
+        bool right = controller.stickLeft.right.endedDown || controller.stickRight.right.endedDown || controller.dPad.right.endedDown;
+        auto buttonPressed = [](const auto& btn) { return btn.endedDown && btn.transitionCount; };
+        bool primary = buttonPressed(controller.buttonA) || buttonPressed(input.mouse.buttonLeft);
+        bool secondary = buttonPressed(controller.buttonB) || buttonPressed(input.mouse.buttonRight);
+
         bool stateWasEntered = memory.previousState != memory.state;
         memory.previousState = memory.state;
         switch(memory.state) {
             case GameState::Init:
                 PaletteC64::writeTo(memory.palette.data());
                 callbacks.readFile(CharacterRom::PET::Filename.data(), memory.screen.characters.bytes(), memory.screen.characters.bytesSize());
-                //memory.screen.buffer.fill(0xe9);
                 memory.screen.buffer.fill(CharacterRom::PET::CharacterTable[' ']);
                 memory.screen.color.fill({ 3, 14 });
                 memory.boardOffset = (memory.screen.buffer.size2d() - memory.board.size2d()) / 2;
@@ -371,6 +378,9 @@ struct Minesweeper {
                 resetGame(memory);
                 memory.screen.buffer.fill(CharacterRom::PET::CharacterTable[' ']);
                 memory.turnCount = 0;
+                memory.selectedCell = Vec2i();
+                memory.screen.marker = memory.selectedCell + memory.boardOffset;
+                memory.screen.showMarker = true;
                 showBoard(memory.board, memory.screen, memory.boardOffset);
                 memory.screen.isDirty = true;
                 break;
@@ -380,24 +390,40 @@ struct Minesweeper {
                 if (input.mouse.endedOver && input.mouse.trackLength > 1) {
                     auto mousePos = input.mouse.track[input.mouse.trackLength - 1];
                     auto screenBufferPos = mapPositions(mousePos, memory.videobuffer, memory.screen.buffer);
-                    mouseOverBoardPos = Vec2i{screenBufferPos.x, static_cast<int>(memory.screen.buffer.height()) - 1 - screenBufferPos.y} - memory.boardOffset;
+                    mouseOverBoardPos = screenBufferPos - memory.boardOffset;
                     if (mouseOverBoardPos >= Vec2i{} && mouseOverBoardPos <= memory.board.maxIndex()) {
-                        memory.selectedCell = mouseOverBoardPos;
-                        memory.screen.marker = screenBufferPos;
-                        memory.screen.showMarker = true;
-                        memory.screen.isDirty = true;
                         output.shouldShowSystemCursor = false;
                     }
                     else {
-                        memory.screen.marker = Vec2i{-1,-1};
-                        memory.screen.showMarker = false;
-                        memory.screen.isDirty = true;
+                        output.shouldShowSystemCursor = true;
                     }
+                    memory.selectedCell = mouseOverBoardPos + Vec2i{0,1};
+                } else if (memory.moveTimer.hasFired(time)) {
+                    if (up) {
+                        memory.selectedCell.y -= 1;
+                    }
+                    if (down) {
+                        memory.selectedCell.y += 1;
+                    }
+                    if (left) {
+                        memory.selectedCell.x -= 1;
+                    }
+                    if (right) {
+                        memory.selectedCell.x += 1;
+                    }
+
                 }
+                
+                memory.selectedCell = clamp(memory.selectedCell, Vec2i{}, memory.board.maxIndex());
+                memory.screen.marker = memory.selectedCell + memory.boardOffset;
+                memory.screen.showMarker = true;
+                memory.screen.isDirty = true;
+
                 // back button
-                if (controller.buttonBack.transitionCount && controller.buttonBack.endedDown) {
+                if (buttonPressed(controller.buttonBack)) {
                     memory.state = GameState::Menu; break;
                 }
+
 
 //                memory.moveSelector = round(controller.stickLeft.end);
 //
@@ -406,10 +432,10 @@ struct Minesweeper {
 //                    memory.screen.marker = memory.selectedCell + memory.boardOffset;
 //                    memory.screen.isDirty = true;
 //                }
-                if (input.mouse.buttonLeft.transitionCount && !input.mouse.buttonLeft.endedDown) {
+                if (primary) {
                     onActionUnhideSelect(memory);
                 }
-                if (input.mouse.buttonRight.transitionCount && !input.mouse.buttonRight.endedDown) {
+                if (secondary) {
                     onActionFlagSelected(memory);
                 }
 
@@ -438,12 +464,12 @@ struct Minesweeper {
                     showBoard(memory.board, memory.screen, memory.boardOffset);
                     memory.screen.isDirty = true;
                 }
-                if (input.mouse.buttonLeft.transitionCount && !input.mouse.buttonLeft.endedDown) {
+                if (primary) {
                     memory.state = GameState::Menu;
                 }
                 break;
             case GameState::Win:
-                if (input.mouse.buttonLeft.transitionCount && !input.mouse.buttonLeft.endedDown) {
+                if (primary) {
                     memory.state = GameState::Menu;
                 }
                 break;
@@ -481,9 +507,9 @@ struct Minesweeper {
                      concat(
                          HLine(markerPosition, CHARACTER_WIDTH), 
                          alternate(
-                             VLine(markerPosition, CHARACTER_HEIGHT), 
-                             VLine(markerPosition + Vec2i{CHARACTER_WIDTH - 1, 0}, CHARACTER_HEIGHT))),
-                    HLine(markerPosition + Vec2i{0, CHARACTER_HEIGHT - 1}, CHARACTER_WIDTH))) {
+                             VLine(markerPosition, -CHARACTER_HEIGHT),
+                             VLine(markerPosition + Vec2i{CHARACTER_WIDTH - 1, 0}, -CHARACTER_HEIGHT))),
+                    HLine(markerPosition + Vec2i{0, -CHARACTER_HEIGHT}, CHARACTER_WIDTH))) {
                 if (pix >= Vec2i{} && pix < memory.videobuffer.size2d()) {
                     memory.videobuffer.at(pix) = 1;
                 }
@@ -545,7 +571,7 @@ struct Minesweeper {
     static void writeAudioBuffer(MemoryLayout& memory, AudioBuffer& buffer, const AudioBufferDescriptor& bufferDescriptor)
     {
         buffer.clear();
-        printf("%lf\n", bufferDescriptor.sampleTime / bufferDescriptor.sampleRate);
+       // printf("%lf\n", bufferDescriptor.sampleTime / bufferDescriptor.sampleRate);
         memory = memory;
     }
 

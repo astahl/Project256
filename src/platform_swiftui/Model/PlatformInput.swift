@@ -382,6 +382,8 @@ class PlatformInput {
         self.upTime_microseconds += Int64(Double(frameTime.microseconds) * settings.timeScale)
         currentGameInput.pointee.elapsedTime_s = frameTime.seconds * settings.tickScale
 
+        currentGameInput.pointee.controllerCount = 5;
+
 #if os(macOS)
         for key in keyboardEvents {
             switch key {
