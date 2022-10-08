@@ -70,10 +70,9 @@ struct Utf8CodepointsView {
     struct Sentinel {};
 
     struct Iterator {
-        static const char32_t unread = 0xFFFFFFFF;
         InputIterator mInput;
         InputSentinel mEnd;
-        char32_t mCode{ unread };
+        char32_t mCode{ 0 };
         int mLength{ 0 };
         //bool atEnd{false};
 
@@ -95,25 +94,25 @@ struct Utf8CodepointsView {
         }
 
         constexpr void updateValue() {
-            auto inputCopy = mInput;
-
-            if (inputCopy != mEnd) {
-
-                uint8_t inputChar = *(inputCopy);
+            if (mInput != mEnd) {
+                auto inputCopy = mInput;
+                uint8_t inputChar = *(inputCopy++);
 
                 int onesCount = std::countl_one(inputChar);
             
+                // the length of the code point in the utf 8 stream
+                mLength = 1;
                 if (onesCount == 1 || onesCount > 4) {
+                    // somethings a bit fishy about this string, it's invalid utf8
                     mCode = inputChar;
                     return;
                 }
                 // the resulting unicode codepoint
-                mLength = 1;
                 mCode = (0b01111111 >> onesCount) & inputChar;
                 while ((inputCopy != mEnd) && (--onesCount > 0)) {
                     mCode <<= 6;
-                    inputChar = *(inputCopy++);
                     mLength++;
+                    inputChar = *(inputCopy++);
                     mCode |= inputChar & 0b00111111;
                 }
 
