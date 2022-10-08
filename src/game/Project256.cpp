@@ -5,8 +5,8 @@
 #include "Minesweeper.hpp"
 
 
-//using Game = TestBed;
-using Game = Minesweeper;
+using Game = TestBed;
+//using Game = Minesweeper;
 
 extern "C" {
 
@@ -90,7 +90,7 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
     static_assert(sizeof(Game::MemoryLayout) <= MemorySize, "MemorySize is too small to hold GameMemory struct");
 
     auto& memory = *reinterpret_cast<Game::MemoryLayout*>(pMemory);
-    GameInput& input = *pInput;
+    auto& input = *reinterpret_cast<FrameInput::Input*>(pInput);
 
     return Game::doGameThings(memory, input, platform);
 }

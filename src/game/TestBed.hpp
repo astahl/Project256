@@ -15,6 +15,7 @@
 #include "Drawing/Sprites.hpp"
 #include "Utility/Timers.hpp"
 #include "Utility/Text.hpp"
+#include "Utility/FrameInput.hpp"
 #include "Drawing/Images.hpp"
 #include "Drawing/Palettes.hpp"
 #include "Drawing/Generators.hpp"
@@ -97,7 +98,7 @@ struct TestBed {
     using AudioBuffer = Audio::PCM16StereoBuffer<AudioFramesPerBuffer>;
     using MemoryLayout = TestBedMemory;
 
-    static GameOutput doGameThings(TestBedMemory& memory, const GameInput& input, const PlatformCallbacks& callbacks)
+    static GameOutput doGameThings(TestBedMemory& memory, const FrameInput::Input& input, const PlatformCallbacks& callbacks)
     {
         if (input.frameNumber == 0) {
 #ifdef DEBUG
@@ -284,10 +285,10 @@ struct TestBed {
         auto subImage2 = makeSubImage(memory.vram, 100, 100, 16, 16);
         imageBlitWithTransparentColor(subImage, subImage2, 0);
 
-        if (input.textLength) {
-            auto text = array_view<const char>{input.text_utf8, input.textLength};
+        if (!input.text.empty()) {
+            auto text = input.text.span();
 
-            for (auto utf8 : Utf8CodepointsView<array_view<const char>>{text}) {
+            for (auto utf8 : Utf8CodepointsView<decltype(text)>{text}) {
                 if (utf8 < 128) {
                     // input is in ASCII range
                     switch (utf8) {
@@ -360,8 +361,8 @@ struct TestBed {
         compiletime auto clipped = filter(clip);
         compiletime auto wrapped = transform(wrap);
 
-        if (input.mouse.trackLength) {
-            Vec2f mousePosition = input.mouse.track[input.mouse.trackLength - 1];
+        if (!input.mouse.track.empty()) {
+            Vec2f mousePosition = input.mouse.track.back();
             Vec2i position = truncate(mousePosition);
 
             auto offset = [=](const auto& p) {
@@ -427,8 +428,8 @@ struct TestBed {
             }
         }
 
-        if (input.mouse.buttonLeft.endedDown && input.mouse.trackLength > 0) {
-            Vec2i mousePosition = truncate(input.mouse.track[input.mouse.trackLength - 1]);
+        if (input.mouse.buttonLeft.endedDown && !input.mouse.track.empty()) {
+            Vec2i mousePosition = truncate(input.mouse.track.back());
             for (auto p : Generators::Line(memory.mouseDownPosition, mousePosition)) {
                 whitePixel(p);
             }
@@ -491,7 +492,8 @@ struct TestBed {
 
         // update
         auto birdDistance = itof(memory.birdTarget) - memory.birdPosition;
-        memory.birdPosition = memory.birdPosition + static_cast<float>(input.elapsedTime_s) * memory.birdSpeed * normalized(birdDistance);
+        float seconds = static_cast<float>(input.elapsedTime_s.count());
+        memory.birdPosition = memory.birdPosition + seconds * memory.birdSpeed * normalized(birdDistance);
         memory.birdPosition = clamp(memory.birdPosition, Vec2f{}, Vec2f{DrawBufferWidth - 1, DrawBufferHeight - 1});
 
         memory.vram.pixel(memory.birdTarget) = lightBlue;

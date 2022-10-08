@@ -139,7 +139,7 @@ struct GameMemory {
 
     Screen screen;
 
-    int activeControllerIndex;
+    uint32_t activeControllerIndex;
     Vec2i moveSelector;
     AutoResettingTimer moveTimer;
 };
@@ -327,7 +327,7 @@ struct Minesweeper {
     using AudioBuffer = Audio::PCM16StereoBuffer<AudioFramesPerBuffer>;
     using MemoryLayout = GameMemory;
 
-    static GameOutput doGameThings(MemoryLayout& memory, const FrameInput& input, const PlatformCallbacks& callbacks)
+    static GameOutput doGameThings(MemoryLayout& memory, const FrameInput::Input& input, const PlatformCallbacks& callbacks)
     {
         using namespace ranges_at_home;
         using namespace Generators;
@@ -340,7 +340,7 @@ struct Minesweeper {
             .shouldShowSystemCursor = true,
         };
         bool controllerChanged = false;
-        for (auto i = 0; static_cast<unsigned>(i) < input.controllerCount; ++i) {
+        for (uint32_t i = 0; i < input.controllers.size(); ++i) {
             if (input.controllers[i].isActive) {
                 if (memory.activeControllerIndex != i) {
                     memory.activeControllerIndex = i;
@@ -387,8 +387,8 @@ struct Minesweeper {
             case GameState::Play:
             {
                 auto mouseOverBoardPos = Vec2i{};
-                if (input.mouse.endedOver && input.mouse.trackLength > 1) {
-                    auto mousePos = input.mouse.track[input.mouse.trackLength - 1];
+                if (input.mouse.endedOver && input.mouse.track.size() > 1) {
+                    auto mousePos = input.mouse.track.back();
                     auto screenBufferPos = mapPositions(mousePos, memory.videobuffer, memory.screen.buffer);
                     mouseOverBoardPos = screenBufferPos - memory.boardOffset;
                     if (mouseOverBoardPos >= Vec2i{} && mouseOverBoardPos <= memory.board.maxIndex()) {
@@ -568,12 +568,11 @@ struct Minesweeper {
         }
     }
 
-    static void writeAudioBuffer(MemoryLayout& memory, AudioBuffer& buffer, const AudioBufferDescriptor& bufferDescriptor)
+    static void writeAudioBuffer(MemoryLayout& memory, AudioBuffer& buffer, const AudioBufferDescriptor& /*bufferDescriptor*/)
     {
         buffer.clear();
        // printf("%lf\n", bufferDescriptor.sampleTime / bufferDescriptor.sampleRate);
         memory = memory;
-        bufferDescriptor;
     }
 
 };
