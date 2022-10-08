@@ -70,39 +70,61 @@ struct Utf8CodepointsView {
     struct Sentinel {};
 
     struct Iterator {
+        static const char32_t unread = 0xFFFFFFFF;
         InputIterator mInput;
         InputSentinel mEnd;
-        char32_t mCode{0};
-        bool atEnd{false};
+        char32_t mCode{ unread };
+        int mLength{ 0 };
+        //bool atEnd{false};
 
         constexpr uint32_t operator*() const {
             return mCode;
         }
 
         constexpr Iterator& operator++() {
-            if (!(mInput != mEnd)) {
-                atEnd = true;
+            while ((mInput != mEnd) && (mLength > 0)) {
+                mInput++;
+                mLength--;
             }
-            uint8_t inputChar = *(mInput++);
-
-            int onesCount = std::countl_one(inputChar);
-            if(onesCount == 1 || onesCount > 4) {
-                mCode = inputChar;
-                return *this;
-            }
-            // the resulting unicode codepoint
-            mCode = (0b01111111 >> onesCount) & inputChar;
-            while ((mInput != mEnd) && (--onesCount > 0)) {
-                mCode <<= 6;
-                inputChar = *(mInput++);
-                mCode |= inputChar & 0b00111111;
-            }
+            updateValue();
             return *this;
         }
 
         constexpr bool operator!=(const Sentinel&) const {
-            return !atEnd;
+            return mLength > 0 && mInput != mEnd;
         }
+
+        constexpr void updateValue() {
+            auto inputCopy = mInput;
+
+            if (inputCopy != mEnd) {
+
+                uint8_t inputChar = *(inputCopy);
+
+                int onesCount = std::countl_one(inputChar);
+            
+                if (onesCount == 1 || onesCount > 4) {
+                    mCode = inputChar;
+                    return;
+                }
+                // the resulting unicode codepoint
+                mLength = 1;
+                mCode = (0b01111111 >> onesCount) & inputChar;
+                while ((inputCopy != mEnd) && (--onesCount > 0)) {
+                    mCode <<= 6;
+                    inputChar = *(inputCopy++);
+                    mLength++;
+                    mCode |= inputChar & 0b00111111;
+                }
+
+            }
+            else
+            {
+                mLength = 0;
+                mCode = 0;
+            }
+        }
+
     };
 
     constexpr Iterator begin() const {
@@ -110,7 +132,7 @@ struct Utf8CodepointsView {
             .mInput = ranges_at_home::begin(inputRange),
             .mEnd = ranges_at_home::end(inputRange),
         };
-        ++it;
+        it.updateValue();
         return it;
     }
 
