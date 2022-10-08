@@ -92,6 +92,7 @@ const auto CHARACTER_MAP_SIZE = 256;
 const auto SCREEN_WIDTH = DrawBufferWidth / CHARACTER_WIDTH;
 const auto SCREEN_HEIGHT = DrawBufferHeight / CHARACTER_HEIGHT;
 
+using CharROM = CharacterRom::PET;
 
 struct ColorIndexPair {
     uint8_t foreground;
@@ -202,33 +203,33 @@ void showBoard(const GameBoard_t& board, Screen& screen, Vec2i offset) {
         {
             switch (cell) {
                 case CellState::Mine:
-                    t = CharacterRom::PET::CharacterTable['*'];
+                    t = CharROM::CharacterTable['*'];
                     c = {static_cast<uint8_t>(PaletteC64::Color::red), 0}; break;
                 case CellState::NextToOne:
-                    t = CharacterRom::PET::CharacterTable['1'];
+                    t = CharROM::CharacterTable['1'];
                     c = {static_cast<uint8_t>(PaletteC64::Color::green), 0}; break;
                 case CellState::NextToTwo:
-                    t = CharacterRom::PET::CharacterTable['2'];
+                    t = CharROM::CharacterTable['2'];
                     c = {static_cast<uint8_t>(PaletteC64::Color::lightBlue), 0}; break;
                 case CellState::NextToThree:
-                    t = CharacterRom::PET::CharacterTable['3'];
+                    t = CharROM::CharacterTable['3'];
                     c = {static_cast<uint8_t>(PaletteC64::Color::yellow), 0}; break;
                 case CellState::NextToFour:
-                    t = CharacterRom::PET::CharacterTable['4'];
+                    t = CharROM::CharacterTable['4'];
                     c = {static_cast<uint8_t>(PaletteC64::Color::orange), 0}; break;
                 case CellState::NextToFive:
-                    t = CharacterRom::PET::CharacterTable['5'];
+                    t = CharROM::CharacterTable['5'];
                     c = {static_cast<uint8_t>(PaletteC64::Color::lightRed), 0}; break;
                 case CellState::NextToSix:
-                    t = CharacterRom::PET::CharacterTable['6'];
+                    t = CharROM::CharacterTable['6'];
                     c = {static_cast<uint8_t>(PaletteC64::Color::cyan), 0}; break;
                 case CellState::NextToSeven:
-                    t = CharacterRom::PET::CharacterTable['7'];
+                    t = CharROM::CharacterTable['7'];
                     c = {static_cast<uint8_t>(PaletteC64::Color::blue), 0}; break;
                 case CellState::NextToEight:
-                    t = CharacterRom::PET::CharacterTable['8'];
+                    t = CharROM::CharacterTable['8'];
                     c = {static_cast<uint8_t>(PaletteC64::Color::purple), 0}; break;
-                default: t = CharacterRom::PET::CharacterTable[' ']; break;
+                default: t = CharROM::CharacterTable[' ']; break;
             }
         }
 
@@ -333,6 +334,7 @@ struct Minesweeper {
         using namespace Generators;
         using namespace std::chrono_literals;
 
+        constant auto color = ColorIndexPair{3,14};
         auto time = std::chrono::microseconds(input.upTime_microseconds);
 
         auto output = GameOutput {
@@ -363,9 +365,9 @@ struct Minesweeper {
         switch(memory.state) {
             case GameState::Init:
                 PaletteC64::writeTo(memory.palette.data());
-                callbacks.readFile(CharacterRom::PET::Filename.data(), memory.screen.characters.bytes(), memory.screen.characters.bytesSize());
-                memory.screen.buffer.fill(CharacterRom::PET::CharacterTable[' ']);
-                memory.screen.color.fill({ 3, 14 });
+                callbacks.readFile(CharROM::Filename.data(), memory.screen.characters.bytes(), memory.screen.characters.bytesSize());
+                memory.screen.buffer.fill(CharROM::CharacterTable[' ']);
+                memory.screen.color.fill(color);
                 memory.boardOffset = (memory.screen.buffer.size2d() - memory.board.size2d()) / 2;
                 memory.screen.isDirty = true;
                 memory.moveTimer = AutoResettingTimer(time, 100ms);
@@ -373,16 +375,24 @@ struct Minesweeper {
                 memory.state = GameState::Menu;
                 break;
             case GameState::Menu:
-                // check if user selected start game
-                memory.state = GameState::Play;
-                resetGame(memory);
-                memory.screen.buffer.fill(CharacterRom::PET::CharacterTable[' ']);
-                memory.turnCount = 0;
-                memory.selectedCell = Vec2i();
-                memory.screen.marker = memory.selectedCell + memory.boardOffset;
-                memory.screen.showMarker = true;
-                showBoard(memory.board, memory.screen, memory.boardOffset);
-                memory.screen.isDirty = true;
+                if (stateWasEntered) {
+                    memory.screen.buffer.fill(CharROM::CharacterTable[' ']);
+                    memory.screen.buffer.at({3, 3}) = CharROM::CharacterTable['S'];
+                    memory.screen.color.fill(color);
+                    memory.screen.isDirty = true;
+                }
+                if (primary) {
+                    // check if user selected start game
+                    memory.state = GameState::Play;
+                    resetGame(memory);
+                    memory.screen.buffer.fill(CharROM::CharacterTable[' ']);
+                    memory.turnCount = 0;
+                    memory.selectedCell = Vec2i();
+                    memory.screen.marker = memory.selectedCell + memory.boardOffset;
+                    memory.screen.showMarker = true;
+                    showBoard(memory.board, memory.screen, memory.boardOffset);
+                    memory.screen.isDirty = true;
+                }
                 break;
             case GameState::Play:
             {
