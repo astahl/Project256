@@ -124,8 +124,8 @@ struct Tap {
 
 struct Mouse {
 	struct Button buttonLeft, buttonRight, buttonMiddle;
-	struct Vec2f track[InputMouseMaxTrackLength];
     unsigned trackLength;
+	struct Vec2f track[InputMouseMaxTrackLength];
     _Bool endedOver;
 	struct Vec2f relativeMovement;
 	struct Vec2f scroll;
@@ -137,16 +137,16 @@ struct GameInput {
     long long upTime_microseconds;
     long long unsigned frameNumber;
 
-    struct GameController controllers[InputMaxControllers];
-    unsigned controllerCount;
+        unsigned controllerCount;
+        struct GameController controllers[InputMaxControllers];
 
-    struct Tap taps[InputMaxTaps];
     unsigned tapCount;
+    struct Tap taps[InputMaxTaps];
+
+    unsigned textLength;
+    char text_utf8[InputMaxTextLength];
 
     struct Mouse mouse;
-
-    char text_utf8[InputMaxTextLength];
-    unsigned textLength;
 
     _Bool closeRequested;
 };

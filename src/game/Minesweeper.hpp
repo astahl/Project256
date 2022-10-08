@@ -327,7 +327,7 @@ struct Minesweeper {
     using AudioBuffer = Audio::PCM16StereoBuffer<AudioFramesPerBuffer>;
     using MemoryLayout = GameMemory;
 
-    static GameOutput doGameThings(MemoryLayout& memory, const GameInput& input, const PlatformCallbacks& callbacks)
+    static GameOutput doGameThings(MemoryLayout& memory, const FrameInput& input, const PlatformCallbacks& callbacks)
     {
         using namespace ranges_at_home;
         using namespace Generators;
@@ -340,7 +340,7 @@ struct Minesweeper {
             .shouldShowSystemCursor = true,
         };
         bool controllerChanged = false;
-        for (int i = 0; i < input.controllerCount; ++i) {
+        for (auto i = 0; static_cast<unsigned>(i) < input.controllerCount; ++i) {
             if (input.controllers[i].isActive) {
                 if (memory.activeControllerIndex != i) {
                     memory.activeControllerIndex = i;
@@ -573,6 +573,7 @@ struct Minesweeper {
         buffer.clear();
        // printf("%lf\n", bufferDescriptor.sampleTime / bufferDescriptor.sampleRate);
         memory = memory;
+        bufferDescriptor;
     }
 
 };

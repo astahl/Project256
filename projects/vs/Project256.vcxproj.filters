@@ -125,6 +125,9 @@
     <ClInclude Include="..\..\src\game\Utility\ABunchOf.hpp">
       <Filter>Header Files\Utility</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\game\Utility\FrameInput.hpp">
+      <Filter>Header Files\Utility</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="..\..\src\platform_win32\Shader.hlsl">

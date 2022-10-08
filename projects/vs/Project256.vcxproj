@@ -42,6 +42,7 @@
     <ClInclude Include="..\..\src\game\TestBed.hpp" />
     <ClInclude Include="..\..\src\game\Utility\ABunchOf.hpp" />
     <ClInclude Include="..\..\src\game\Utility\CircularIndex.hpp" />
+    <ClInclude Include="..\..\src\game\Utility\FrameInput.hpp" />
     <ClInclude Include="..\..\src\game\Utility\Text.hpp" />
     <ClInclude Include="..\..\src\game\Utility\Timers.hpp" />
     <ClInclude Include="..\..\src\platform_win32\Direct3D12View.h" />
@@ -194,6 +195,7 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <TreatWarningAsError>true</TreatWarningAsError>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\..\src\game;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
