@@ -288,42 +288,46 @@ struct TestBed {
         if (!input.text.empty()) {
             auto text = input.text.span();
 
-            for (auto utf8 : Utf8CodepointsView<decltype(text)>{text}) {
-                if (utf8 < 128) {
+            for (auto codePoint : Unicode::CodepointsView<decltype(text)>{text}) {
+                if (codePoint < 128) {
                     // input is in ASCII range
-                    switch (utf8) {
-                        case '+': memory.textBuffer[memory.textCursorPosition]++; break;
-                        case '-': memory.textBuffer[memory.textCursorPosition]--; break;
-                        case 0x7F: // Delete == backspace on modern keyboards
-                        case 0x08: // backspace
+                    switch (codePoint) {
+                        case Unicode::PlusSign:
+                            memory.textBuffer[memory.textCursorPosition]++;
+                            break;
+                        case Unicode::HyphenMinus:
+                            memory.textBuffer[memory.textCursorPosition]--;
+                            break;
+                        case Unicode::Delete: // Delete == backspace on modern keyboards
+                        case Unicode::Backspace: // backspace
                             if (memory.textCursorPosition > 0) {
                                 memory.textBuffer[--memory.textCursorPosition] = Text::CharacterTable[' '];
                             }
                             break;
-                        case 0x09: // tab
+                        case Unicode::Tab: // tab
                             memory.textCursorPosition += 4 - ((memory.textCursorPosition) % 4);
                             break;
-                        case 0x19: // untab
+                        case Unicode::EndOfMedium: // untab
                             memory.textCursorPosition -= 4 - ((memory.textCursorPosition) % 4);
                             break;
-                        case 0x0D: // Carriage Return (Enter on mac)
+                        case Unicode::CarriageReturn: // Carriage Return (Enter on mac)
                         {
                             int lineNumber = memory.textCursorPosition / TextLineLength;
                             memory.textCursorPosition = (lineNumber + 1) * TextLineLength;
                             break;
                         }
                         default: {
-                            uint8_t outputChar = Text::CharacterTable[utf8];
+                            uint8_t outputChar = Text::CharacterTable[codePoint];
                             if (outputChar != 0xFF) {
                                 memory.textBuffer[memory.textCursorPosition++] = outputChar;
                             } else {
-                                auto character = Text::CharacterForCodepoint(utf8);
+                                auto character = Text::CharacterForCodepoint(codePoint);
                                 if (character) {
                                     memory.textBuffer[memory.textCursorPosition++] = *character;
                                 }
                                 else {
-                                    char upper = static_cast<uint8_t>(utf8) >> 4;
-                                    char lower = static_cast<uint8_t>(utf8) & 0xF;
+                                    char upper = static_cast<uint8_t>(codePoint) >> 4;
+                                    char lower = static_cast<uint8_t>(codePoint) & 0xF;
                                     memory.textBuffer[memory.textCursorPosition++] = Text::CharacterTable[upper > 9 ? (upper - 10) + 'a' : upper + '0'];
                                     memory.textBuffer[memory.textCursorPosition++] = Text::CharacterTable[lower > 9 ? (lower - 10) + 'a' : lower + '0'];
                                 }
@@ -331,21 +335,23 @@ struct TestBed {
                         }
                     }
                 } else {
-                    switch (utf8) {
+                    switch (codePoint) {
                         // MacBook Arrow Keys
-                        case 0xF700: memory.textCursorPosition -= TextLineLength; break;
-                        case 0xF701: memory.textCursorPosition += TextLineLength; break;
-                        case 0xF702: memory.textCursorPosition -= 1; break;
-                        case 0xF703: memory.textCursorPosition += 1; break;
+                        case Unicode::AppleMacBookArrowUp: memory.textCursorPosition -= TextLineLength; break;
+                        case Unicode::AppleMacBookArrowDown: memory.textCursorPosition += TextLineLength; break;
+                        case Unicode::AppleMacBookArrowLeft: memory.textCursorPosition -= 1; break;
+                        case Unicode::AppleMacBookArrowRight: memory.textCursorPosition += 1; break;
                         // macbook fn + backspace = delete?
-                        case 0xF728: memory.textBuffer[memory.textCursorPosition] = Text::CharacterTable[' ']; break;
+                        case Unicode::AppleMacBookDelete: memory.textBuffer[memory.textCursorPosition] = Text::CharacterTable[' ']; break;
                         default:
                         {
-                            auto character = Text::CharacterForCodepoint(utf8);
+                            auto character = Text::CharacterForCodepoint(codePoint);
                             if (character) {
                                 memory.textBuffer[memory.textCursorPosition++] = *character;
                             }
-                            printf("%x\n", utf8);
+                            else {
+                                printf("No Character for Codepoint: U+%04x in String \"%s\" \n", codePoint, reinterpret_cast<const char*>(text.data()));
+                            }
                         }
                     }
                 }
@@ -380,7 +386,7 @@ struct TestBed {
                 for (auto p : rectangleGenerator | atMouse | clipped)
                     memory.vram.pixel(wrap(p)) = green;
             }
-
+            
             compiletime auto crossGenerator = concat(HLine{{-3, 0}, 7}, VLine{{0, -3}, 7});
             compiletime auto cross = (crossGenerator | toArray<size(crossGenerator)>{}).run();
             (cross | atMouse | wrapped | forEach(whitePixel)).run();

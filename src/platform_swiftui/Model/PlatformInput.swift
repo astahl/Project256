@@ -387,9 +387,8 @@ class PlatformInput {
 #if os(macOS)
         for key in keyboardEvents {
             switch key {
-            case .Down(_, let characters?, let modifiers):
+            case .Down(_, let characters?, _):
                 currentGameInput.pointee.appendText(text: characters)
-                print(modifiers)
             default: break
             }
         }

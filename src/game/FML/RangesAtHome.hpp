@@ -143,6 +143,9 @@ concept aRange = requires(R& r) {
 && anIterator<iterator_t<R>>
 && aOneWayInequalityComparable<iterator_t<R>, sentinel_t<R>>;
 
+template <typename R, typename T>
+concept aRangeOf = aRange<R> && std::is_same_v<T, iter_value_t<R>>;
+
 
 template <typename T>
 struct array_view {
