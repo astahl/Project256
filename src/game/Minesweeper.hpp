@@ -92,6 +92,9 @@ const auto CHARACTER_MAP_SIZE = 256;
 const auto SCREEN_WIDTH = DrawBufferWidth / CHARACTER_WIDTH;
 const auto SCREEN_HEIGHT = DrawBufferHeight / CHARACTER_HEIGHT;
 
+static_assert(WIDTH * CHARACTER_WIDTH <= DrawBufferWidth);
+static_assert(HEIGHT * CHARACTER_HEIGHT <= DrawBufferHeight);
+
 using CharROM = CharacterRom::PET;
 
 struct ColorIndexPair {
@@ -118,7 +121,9 @@ void print(Screen& screen, const std::u32string_view& str, Vec2i pos) {
     auto line = Generators::HLine(pos, static_cast<int>(str.size()));
     for (auto [character, position] : ranges_at_home::zip(str, line))
     {
-        screen.buffer.at(position) = CharacterRom::PET::CharacterForCodepoint(character).value_or(static_cast<Screen::Text_t>(CharacterRom::PET::SpecialCharacters::Bullet));
+        if (position < screen.buffer.maxIndex() && position >= Vec2i{0,0}) {
+            screen.buffer.at(position) = CharacterRom::PET::CharacterForCodepoint(character).value_or(static_cast<Screen::Text_t>(CharacterRom::PET::SpecialCharacters::Bullet));
+        }
     }
 }
 
@@ -357,7 +362,7 @@ struct Minesweeper {
         bool left = controller.stickLeft.left.endedDown || controller.stickRight.left.endedDown || controller.dPad.left.endedDown;
         bool right = controller.stickLeft.right.endedDown || controller.stickRight.right.endedDown || controller.dPad.right.endedDown;
         auto buttonPressed = [](const auto& btn) { return btn.endedDown && btn.transitionCount; };
-        bool primary = buttonPressed(controller.buttonA) || buttonPressed(input.mouse.buttonLeft);
+        bool primary = buttonPressed(controller.buttonA) || buttonPressed(input.mouse.buttonLeft) || !input.taps.empty();
         bool secondary = buttonPressed(controller.buttonB) || buttonPressed(input.mouse.buttonRight);
 
         bool stateWasEntered = memory.previousState != memory.state;
@@ -408,7 +413,14 @@ struct Minesweeper {
                         output.shouldShowSystemCursor = true;
                     }
                     memory.selectedCell = mouseOverBoardPos + Vec2i{0,1};
-                } else if (memory.moveTimer.hasFired(time)) {
+                }
+                else if (!input.taps.empty()) {
+                    auto tapPos = input.taps.back().position;
+                    auto screenBufferPos = mapPositions(tapPos, memory.videobuffer, memory.screen.buffer);
+                    mouseOverBoardPos = screenBufferPos - memory.boardOffset;
+                    memory.selectedCell = mouseOverBoardPos + Vec2i{0,1};
+                }
+                else if (memory.moveTimer.hasFired(time)) {
                     if (up) {
                         memory.selectedCell.y -= 1;
                     }

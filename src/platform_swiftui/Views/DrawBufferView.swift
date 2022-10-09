@@ -9,41 +9,44 @@ import SwiftUI
 
 typealias DrawBufferSource = (_ oldDrawBuffer: DrawBuffer?) -> DrawBuffer?
 
+var pixelPositionConv: PointConversion?
+
 struct DrawBufferView: View {
     var drawBuffer: DrawBuffer?
     var drawBufferSource: DrawBufferSource?
-
-    let metalView: MetalView
+    var metalView: MetalView
 
     init(drawBuffer: DrawBuffer)
     {
         self.drawBuffer = drawBuffer
-        metalView = MetalView(drawBuffer: drawBuffer)
+        metalView = MetalView(drawBuffer: drawBuffer, beforeDraw: nil)
+        metalView.updateHandler = self.onMtkViewUpdate(view:)
     }
 
     init(drawBufferSource: @escaping DrawBufferSource)
     {
         self.drawBufferSource = drawBufferSource
-        metalView = MetalView(drawBuffer: nil)
+        metalView = MetalView(drawBuffer: nil, beforeDraw: {
+            drawBuffer in
+            return drawBufferSource(drawBuffer)
+        })
+        metalView.updateHandler = self.onMtkViewUpdate(view:)
     }
 
-    func pixelPosition(_ locationInView: CGPoint?) -> CGPoint?
+    func pixelPosition(_ locationInView: CGPoint?, flipY: Bool) -> CGPoint?
     {
         if let location = locationInView {
-            return metalView.pixelPosition?(location)
+            return pixelPositionConv?(location, flipY)
         }
         return nil
     }
 
+    func onMtkViewUpdate(view: MyMTKView) {
+        pixelPositionConv = view.positionOnBuffer(locationInView:flipY:)
+    }
+
     var body: some View {
         metalView
-            .beforeDraw {
-                drawBuffer in
-                if let source = drawBufferSource {
-                    return source(drawBuffer)
-                }
-                return drawBuffer
-            }
     }
 }
 

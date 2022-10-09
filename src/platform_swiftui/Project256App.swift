@@ -18,11 +18,10 @@ struct Project256App: App {
         var highfrequency: AnyCancellable? = nil
     }
 
-    @State var profilingString: String = .init()
+    @State var profilingString = String()
     @State var gameState: GameState
     @State var gameSettings: GameSettings
 
-    var profilingBuffer = UnsafeMutableBufferPointer<CChar>.allocate(capacity: 1000)
     var subscriptions: AppSubscriptions
 
     init() {
@@ -50,10 +49,10 @@ struct Project256App: App {
                             date in
                             PlatformProfiling.withInstance {
                                 profiling in
-
-                            let length = profiling.timingData.printTo(buffer: profilingBuffer.baseAddress!, size: Int32(profilingBuffer.count))
-                            profilingString = String.init(bytesNoCopy: profilingBuffer.baseAddress!, length: Int(length), encoding: .ascii, freeWhenDone: false)!
-
+                                profilingString = String(unsafeUninitializedCapacity: 1000) {
+                                    buffer in
+                                    return Int(profiling.timingData.printTo(buffer: buffer.baseAddress!, size: Int32(buffer.count)))
+                                }
                                 profiling.timingData.clear()
                             }
                         }
@@ -80,14 +79,14 @@ struct Project256App: App {
                             .sink(receiveValue: self.doTick)
                     }
                 })
-                HStack {
-                    Text(profilingString)
-                        .font(.body.monospaced())
-                        .multilineTextAlignment(.leading)
-                        .shadow(radius: 5)
-                        .padding()
-                    Spacer()
-                }
+//                HStack {
+//                    Text(profilingString)
+//                        .font(.body.monospaced())
+//                        .multilineTextAlignment(.leading)
+//                        .shadow(radius: 5)
+//                        .padding()
+//                    Spacer()
+//                }
             }
         }
         .commands {

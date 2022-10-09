@@ -35,8 +35,8 @@ constant unsigned AudioFramesPerSecond = 48000;
 constant unsigned AudioChannelsPerFrame = 2;
 constant unsigned AudioBitsPerSample = 16;
 
-constant unsigned DrawBufferWidth = 320;
-constant unsigned DrawBufferHeight = 200;
+constant unsigned DrawBufferWidth = 160;
+constant unsigned DrawBufferHeight = 160;
 
 constant unsigned DrawAspectH = 4;
 constant unsigned DrawAspectV = 3;
@@ -118,7 +118,7 @@ struct GameController {
 } CF_SWIFT_NAME(P256GameController);
 
 struct Tap {
-	struct Vec2i position;
+	struct Vec2f position;
 	float force;
 };
 

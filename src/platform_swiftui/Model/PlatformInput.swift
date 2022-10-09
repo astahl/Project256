@@ -90,6 +90,16 @@ extension GameInput {
         }
         self.textLength += UInt32(count)
     }
+
+    mutating func appendTap(position: CGPoint, force: Float = 1.0) {
+        let offset = Int(self.tapCount)
+        withUnsafeMutableElementPointer(firstElement: &self.taps.0, offset: offset) {
+            ptr in
+            ptr.pointee.position = Vec2f(x: Float(position.x), y: Float(position.y))
+            ptr.pointee.force = force
+        }
+        self.tapCount += 1
+    }
 }
 
 
@@ -515,5 +525,8 @@ class PlatformInput {
         mouseClickEvents.append(click)
     }
 #endif
+    func tap(position: CGPoint) {
+        currentGameInput.pointee.appendTap(position: position)
+    }
 }
 

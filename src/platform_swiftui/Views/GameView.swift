@@ -38,14 +38,23 @@ struct GameView: View {
                     var changedEvent = moveEvent
                     switch moveEvent {
                         case .Move(let locationInView, let relative):
-                            changedEvent = .Move(locationInView: drawBufferView.pixelPosition(locationInView), relative: relative)
+                            changedEvent = .Move(locationInView: drawBufferView.pixelPosition(locationInView, flipY: false), relative: relative)
                         case .Drag(let locationInView, let relative, let button):
-                            changedEvent = .Drag(locationInView: drawBufferView.pixelPosition(locationInView), relative: relative, button: button)
+                            changedEvent = .Drag(locationInView: drawBufferView.pixelPosition(locationInView, flipY: false), relative: relative, button: button)
                         default: break
                     }
                     state.platformInput.pushMouseMoveEvent(changedEvent)
                 },
                 click: { state.platformInput.pushMouseClickEvent($0) })
+        #endif
+        #if os(iOS)
+            .onTapGesture {
+                locationInView in
+                if let pixelPosition = drawBufferView.pixelPosition(locationInView, flipY: true) {
+                    print(pixelPosition)
+                    state.platformInput.tap(position: pixelPosition)
+                }
+            }
         #endif
     }
 }

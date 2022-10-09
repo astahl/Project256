@@ -21,7 +21,8 @@ extension Color {
 }
 
 typealias BeforeDrawHandler = (_ buffer: DrawBuffer) -> DrawBuffer?
-typealias PointConversion = (_ point: CGPoint) -> CGPoint?
+typealias PointConversion = (_ point: CGPoint, _ flipY: Bool) -> CGPoint?
+typealias UpdateHandler = (_ view: MyMTKView) -> Void
 
 
 class MyMTKView : MTKView {
@@ -154,8 +155,11 @@ class MyMTKView : MTKView {
         commandBuffer.commit()
     }
 
-    func positionOnBuffer(locationInView: CGPoint) -> CGPoint? {
-        let normalizedPos = CGPoint(x: locationInView.x / self.frame.width, y: locationInView.y / self.frame.height)
+    func positionOnBuffer(locationInView: CGPoint, flipY: Bool) -> CGPoint? {
+        var normalizedPos = CGPoint(x: locationInView.x / self.frame.width, y: locationInView.y / self.frame.height)
+        if (flipY) {
+            normalizedPos.y = 1.0 - normalizedPos.y;
+        }
         let scaleX = CGFloat(self.scale.x)
         let scaleY = CGFloat(self.scale.y)
         let pos = normalizedPos
@@ -170,19 +174,15 @@ class MyMTKView : MTKView {
     }
 }
 
-final class MetalView {
+struct MetalView {
     private var beforeDrawHandler: BeforeDrawHandler?
-    var pixelPosition: PointConversion?
+    var updateHandler: UpdateHandler?
     var drawBuffer: DrawBuffer?
     var prefferedFrameRate: FPSTargets = ._60
-    init(drawBuffer: DrawBuffer?)
+    init(drawBuffer: DrawBuffer?, beforeDraw: BeforeDrawHandler?)
     {
         self.drawBuffer = drawBuffer
-    }
-
-    func beforeDraw(_ handler: @escaping(BeforeDrawHandler)) -> MetalView {
-        self.beforeDrawHandler = handler
-        return self
+        self.beforeDrawHandler = beforeDraw
     }
 
 }
@@ -192,19 +192,20 @@ extension MetalView : NSViewRepresentable {
     typealias NSViewType = MyMTKView
     
     func makeNSView(context: Context) -> MyMTKView {
-        return MyMTKView(frame: .zero, drawBuffer: drawBuffer)
+        let view = MyMTKView(frame: .zero, drawBuffer: drawBuffer)
+        self.updateHandler?(view)
+        return view
     }
     
     func updateNSView(_ nsView: MyMTKView, context: Context) {
         nsView.beforeDrawHandler = self.beforeDrawHandler
-        pixelPosition = nsView.positionOnBuffer(locationInView:)
         if self.prefferedFrameRate == .Stop {
             nsView.isPaused = true
         } else {
             nsView.isPaused = false
             nsView.preferredFramesPerSecond = self.prefferedFrameRate.rawValue
         }
-
+        self.updateHandler?(nsView)
     }
 }
 #else
@@ -212,18 +213,20 @@ extension MetalView : UIViewRepresentable {
     typealias UIViewType = MyMTKView
     
     func makeUIView(context: Context) -> MyMTKView {
-        return MyMTKView(frame: .zero, drawBuffer: drawBuffer)
+        let view = MyMTKView(frame: .zero, drawBuffer: drawBuffer)
+        self.updateHandler?(view)
+        return view
     }
     
     func updateUIView(_ uiView: MyMTKView, context: Context) {
         uiView.beforeDrawHandler = self.beforeDrawHandler
-        pixelPosition = uiView.positionOnBuffer(locationInView:)
         if self.prefferedFrameRate == .Stop {
             uiView.isPaused = true
         } else {
             uiView.isPaused = false
             uiView.preferredFramesPerSecond = self.prefferedFrameRate.rawValue
         }
+        self.updateHandler?(uiView)
     }
 }
 #endif
@@ -232,7 +235,7 @@ extension MetalView : UIViewRepresentable {
 struct MetalView_Previews: PreviewProvider {
     static var previews: some View {
         MetalView(
-            drawBuffer: .init(withTestPattern: .Checkerboard(.init(gray: 0.0, alpha: 0.0), .init(red: 1.0, green: 0, blue: 0, alpha: 1), size: 10)))
+            drawBuffer: .init(withTestPattern: .Checkerboard(.init(gray: 0.0, alpha: 0.0), .init(red: 1.0, green: 0, blue: 0, alpha: 1), size: 10)), beforeDraw: nil)
         .background(.blue)
     }
 }
