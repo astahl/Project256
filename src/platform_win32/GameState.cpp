@@ -295,6 +295,14 @@ bool readImageDEBUG(const char* filename, unsigned int* buffer, int width, int h
     return true;
 }
 
+void logStringDEBUG(const char* utf8NullTerminatedString)
+{
+    int requiredWideLength = MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, utf8NullTerminatedString, -1, NULL, 0);
+    std::wstring wideString(requiredWideLength, L'\0');
+    MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, utf8NullTerminatedString, -1, wideString.data(), static_cast<int>(wideString.size()));
+    OutputDebugStringW(wideString.c_str());
+}
+
 
 GameOutput GameState::tick() {
     profiling_time_interval(&GameState::timingData, eTimerTickToTick, eTimingTickToTick);
@@ -311,6 +319,7 @@ GameOutput GameState::tick() {
     output = doGameThings(&input, memory, {
         .readFile = readFileDEBUG,
         .readImage = readImageDEBUG,
+        .log = logStringDEBUG,
         });
     profiling_time_interval(&GameState::timingData, eTimerTick, eTimingTickDo);
 

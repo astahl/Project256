@@ -156,6 +156,8 @@ struct PlatformCallbacks {
     long long (*readFile)(const char*, unsigned char*, long long);
     // filename, argb buffer, width, height -> success
     _Bool (*readImage)(const char*, unsigned int*, int, int);
+    // null terminated utf8 string
+    void (*log)(const char*);
 };
 
 struct AudioBufferDescriptor {

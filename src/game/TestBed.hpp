@@ -350,7 +350,9 @@ struct TestBed {
                                 memory.textBuffer[memory.textCursorPosition++] = *character;
                             }
                             else {
-                                printf("No Character for Codepoint: U+%05x in String \"%s\" \n", static_cast<uint32_t>(codePoint), reinterpret_cast<const char*>(text.data()));
+                                char printBuffer[100]{};
+                                snprintf(printBuffer, 100, "No Character for Codepoint: U+%05x in String \"%s\" \n", static_cast<uint32_t>(codePoint), reinterpret_cast<const char*>(text.data()));
+                                callbacks.log(printBuffer);
                             }
                         }
                     }
