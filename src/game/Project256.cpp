@@ -5,8 +5,8 @@
 #include "Minesweeper.hpp"
 
 
-using Game = TestBed;
-//using Game = Minesweeper;
+//using Game = TestBed;
+using Game = Minesweeper;
 
 extern "C" {
 
