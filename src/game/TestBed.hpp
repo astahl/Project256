@@ -239,12 +239,12 @@ struct TestBed {
         }
 
 
-        constant auto black = static_cast<VRAM::PixelType>(findNearest(Colors::Black, memory.palette).index);
-        constant auto white = static_cast<VRAM::PixelType>(findNearest(Colors::White, memory.palette).index);
-        constant auto cyan = static_cast<VRAM::PixelType>(findNearest(Colors::Cyan, memory.palette).index);
-        constant auto lightBlue = static_cast<VRAM::PixelType>(findNearest(Colors::LightBlue, memory.palette).index);
-        constant auto red = static_cast<VRAM::PixelType>(findNearest(Colors::Red, memory.palette).index);
-        constant auto green = static_cast<VRAM::PixelType>(findNearest(Colors::Green, memory.palette).index);
+        constant auto black = static_cast<VRAM::PixelType>(findNearest(WebColorRGB::Black, memory.palette).index);
+        constant auto white = static_cast<VRAM::PixelType>(findNearest(WebColorRGB::White, memory.palette).index);
+        constant auto cyan = static_cast<VRAM::PixelType>(findNearest(WebColorRGB::Cyan, memory.palette).index);
+        constant auto lightBlue = static_cast<VRAM::PixelType>(findNearest(WebColorRGB::LightBlue, memory.palette).index);
+        constant auto red = static_cast<VRAM::PixelType>(findNearest(WebColorRGB::Red, memory.palette).index);
+        constant auto green = static_cast<VRAM::PixelType>(findNearest(WebColorRGB::Green, memory.palette).index);
         constant auto whitePixel = [&](const auto& p) { memory.vram.pixel(p) = white; };
         constant auto redPixel = [&](const auto& p) { memory.vram.pixel(p) = red; };
         constant auto greenPixel = [&](const auto& p) { memory.vram.pixel(p) = green; };
@@ -427,7 +427,7 @@ struct TestBed {
         if (input.mouse.buttonLeft.transitionCount) {
             localpersist Note note[4] = {Note::A4, Note::C5, Note::E5, Note::G5};
             localpersist int currentNote = 0;
-            if (input.mouse.buttonLeft.endedDown) {
+            if (input.mouse.buttonLeft.endedDown ) {
                 memory.voice.on(note[currentNote], 1.0f);
             }
             else {

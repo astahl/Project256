@@ -546,12 +546,12 @@ struct Minesweeper {
     {
         if (memory.state == GameState::Init) {
             int colorIndex = 0;
-            Colors colors[] { Colors::Aqua, Colors::WhiteSmoke, Colors::HotPink, Colors::Black };
+            WebColorRGB colors[] { WebColorRGB::Aqua, WebColorRGB::WhiteSmoke, WebColorRGB::HotPink, WebColorRGB::Black };
             for (auto line : buffer.linesView())
             {
                 auto lineColor = colors[colorIndex++ % 4];
                 for (auto& pix : line) {
-                    pix = 0xFF000000 | static_cast<unsigned int>(lineColor);
+                    pix = 0xFF000000 | static_cast<ColorARGB>(lineColor);
                 }
             }
         } else  if(memory.isVideoBufferDirty) {

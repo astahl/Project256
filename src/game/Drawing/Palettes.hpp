@@ -15,7 +15,48 @@
 #include "../defines.h"
 
 
-enum class Colors : uint32_t {
+using ColorARGB = uint32_t;
+
+template <typename T>
+struct ColorComponents {
+    T b, g, r, a;
+};
+
+using Color4i = ColorComponents<uint8_t>;
+using Color4f = ColorComponents<float>;
+
+
+template <typename T>
+ColorComponents<T> operator-(const ColorComponents<T>& l, const ColorComponents<T>& r)
+{
+    return {
+        .b = l.b - r.b,
+        .g = l.g - r.g,
+        .r = l.r - r.r,
+        .a = l.a - r.a,
+    };
+}
+
+enum class ColorMask : ColorARGB {
+    Alpha = 0xFF'00'00'00,
+    Red = 0x00'FF'00'00,
+    Green = 0x00'00'FF'00,
+    Blue = 0x00'00'00'FF,
+};
+
+enum class ColorOffset : uint8_t {
+    Alpha = 24,
+    Red = 16,
+    Green = 8,
+    Blue = 0,
+};
+
+template<ColorMask Mask, ColorOffset Offset>
+compiletime uint8_t getComponent(ColorARGB color) {
+    return static_cast<uint8_t>((static_cast<uint32_t>(color) & static_cast<uint32_t>(Mask)) >> static_cast<uint8_t>(Offset));
+}
+
+enum class WebColorRGB : ColorARGB {
     //Pink colors
     MediumVioletRed = 0xC7'15'85,
     DeepPink = 0xFF'14'93,
@@ -171,7 +212,7 @@ enum class Colors : uint32_t {
 
 
 // uses SMPTE 240M conversion
-compiletime uint32_t YCbCrToARGB(double Y, double Cb, double Cr) {
+compiletime ColorARGB YCbCrToARGB(double Y, double Cb, double Cr) {
     double KB = 0.087;
     double KR = 0.212;
     double KG = 1 - KB - KR;
@@ -186,53 +227,62 @@ compiletime uint32_t YCbCrToARGB(double Y, double Cb, double Cr) {
     std::clamp(static_cast<int>(256 * B), 0, 255);
 }
 
-compiletime uint32_t makeARGB(uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha = 255)
+compiletime ColorARGB makeARGB(uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha = 255)
 {
     return static_cast<uint32_t>(alpha) << 24 |
     static_cast<uint32_t>(red) << 16 |
     static_cast<uint32_t>(green) << 8 | blue;
 }
 
-compiletime uint32_t makeARGB(double red, double green, double blue, double alpha = 1.0)
+compiletime ColorARGB makeARGB(double red, double green, double blue, double alpha = 1.0)
 {
     return static_cast<uint32_t>(alpha * 255) << 24 |
     static_cast<uint32_t>(red * 255) << 16 |
     static_cast<uint32_t>(green * 255) << 8 | static_cast<uint32_t>(blue * 255);
 }
 
-compiletime std::array<float, 4> toFP32(uint32_t color) {
+compiletime Color4i toColor4i(ColorARGB color) {
     return {
-        static_cast<float>((0xFF'00'00'00 & color) >> 24) / 255.0f,
-        static_cast<float>((0x00'FF'00'00 & color) >> 16) / 255.0f,
-        static_cast<float>((0x00'00'FF'00 & color) >> 8) / 255.0f,
-        static_cast<float>((0x00'00'00'FF & color) >> 0) / 255.0f,
+        .b = getComponent<ColorMask::Blue, ColorOffset::Blue>(color),
+        .g = getComponent<ColorMask::Green, ColorOffset::Green>(color),
+        .r = getComponent<ColorMask::Red, ColorOffset::Red>(color),
+        .a = getComponent<ColorMask::Alpha, ColorOffset::Alpha>(color)
+    };
+}
+
+compiletime Color4f toFP32(ColorARGB color) {
+    return {
+        .b = static_cast<float>(getComponent<ColorMask::Blue, ColorOffset::Blue>(color)) / 255.0f,
+        .g = static_cast<float>(getComponent<ColorMask::Green, ColorOffset::Green>(color)) / 255.0f,
+        .r = static_cast<float>(getComponent<ColorMask::Red, ColorOffset::Red>(color)) / 255.0f,
+        .a = static_cast<float>(getComponent<ColorMask::Alpha, ColorOffset::Alpha>(color)) / 255.0f,
     };
 }
 
 template<uint8_t InputBitDepthPerChannel>
-compiletime uint32_t expandTo8Bit(uint32_t input, uint8_t alpha = 255)
+compiletime ColorARGB expandTo8Bit(uint32_t inputRGB, uint8_t alpha = 255)
 {
     constexpr uint32_t componentMask = 0xFF & ~(0xFF << InputBitDepthPerChannel);
-    double blue = static_cast<double>(input & componentMask) / componentMask;
-    double green = static_cast<double>((input >> InputBitDepthPerChannel) & componentMask) / componentMask;
-    double red = static_cast<double>((input >> (2*InputBitDepthPerChannel)) & componentMask) / componentMask;
+    double blue = static_cast<double>(inputRGB & componentMask) / componentMask;
+    double green = static_cast<double>((inputRGB >> InputBitDepthPerChannel) & componentMask) / componentMask;
+    double red = static_cast<double>((inputRGB >> (2*InputBitDepthPerChannel)) & componentMask) / componentMask;
     return makeARGB(red, green, blue, static_cast<double>(alpha) / 255);
 }
 
 template<uint8_t OutputBitDepthPerChannel>
-compiletime uint32_t quantizeToXBit(uint32_t input, uint8_t alpha = 255)
+compiletime ColorARGB quantizeToXBit(uint32_t inputRGB, uint8_t alpha = 255)
 {
     constexpr int moveDownBy = 8 - OutputBitDepthPerChannel;
-    uint8_t blue = ((input) & 0xFF) >> moveDownBy;
-    uint8_t green = ((input >> 8) & 0xFF) >> moveDownBy;
-    uint8_t red = ((input >> 16) & 0xFF) >> moveDownBy;
+    uint8_t blue = ((inputRGB) & 0xFF) >> moveDownBy;
+    uint8_t green = ((inputRGB >> 8) & 0xFF) >> moveDownBy;
+    uint8_t red = ((inputRGB >> 16) & 0xFF) >> moveDownBy;
     return makeARGB(red, green, blue, alpha);
 }
 
 template <typename T>
 struct FindNearestResult {
     T index;
-    uint32_t argb;
+    ColorARGB argb;
     float deltaSquared;
 };
 
@@ -240,12 +290,12 @@ template <typename TColor, typename TColorSpace, typename TIndex = typename TCol
 compiletime FindNearestResult<TIndex>
 findNearest(TColor color, const TColorSpace& colorSpace) {
     FindNearestResult<TIndex> result{ .deltaSquared = std::numeric_limits<float>::infinity() };
-    auto a = toFP32(static_cast<uint32_t>(color));
+    Color4f a = toFP32(static_cast<ColorARGB>(color));
     TIndex index{};
-    for (const uint32_t candidateColor : colorSpace) {
-        auto b = toFP32(candidateColor);
-        decltype(a) c = {a[0] - b[0], a[1] - b[1], a[2] - b[2], a[3] - b[3]};
-        float deltaSquared = (c[0] * c[0] + c[1] * c[1] + c[2] * c[2] + c[3] * c[3]);
+    for (const ColorARGB candidateColor : colorSpace) {
+        Color4f b = toFP32(candidateColor);
+        Color4f c = a - b;
+        float deltaSquared = (c.a * c.a + c.r * c.r + c.g * c.g + c.b * c.b);
         if (deltaSquared < result.deltaSquared) {
             result = {
                 .index = index,
@@ -258,14 +308,14 @@ findNearest(TColor color, const TColorSpace& colorSpace) {
     return result;
 }
 
-union ColorArgb {
-    struct Components { uint8_t b, g, r, a; } components;
-    uint32_t value;
+union ColorArgbWrapper {
+    Color4i components;
+    ColorARGB value;
 };
 
-constexpr ColorArgb operator+(ColorArgb left, ColorArgb right)
+constexpr ColorArgbWrapper operator+(ColorArgbWrapper left, ColorArgbWrapper right)
 {
-    return ColorArgb {
+    return ColorArgbWrapper {
         .components {
             .b = static_cast<uint8_t>(std::clamp(left.components.b + right.components.b, 0, 255)),
             .g = static_cast<uint8_t>(std::clamp(left.components.g + right.components.g, 0, 255)),
@@ -275,9 +325,9 @@ constexpr ColorArgb operator+(ColorArgb left, ColorArgb right)
     };
 }
 
-constexpr ColorArgb operator-(ColorArgb left, ColorArgb right)
+constexpr ColorArgbWrapper operator-(ColorArgbWrapper left, ColorArgbWrapper right)
 {
-    return ColorArgb {
+    return ColorArgbWrapper {
         .components {
             .b = static_cast<uint8_t>(std::clamp(left.components.b - right.components.b, 0, 255)),
             .g = static_cast<uint8_t>(std::clamp(left.components.g - right.components.g, 0, 255)),
@@ -287,9 +337,9 @@ constexpr ColorArgb operator-(ColorArgb left, ColorArgb right)
     };
 }
 
-constexpr ColorArgb shiftRightMult(ColorArgb color, int shift, int mult)
+constexpr ColorArgbWrapper shiftRightMult(ColorArgbWrapper color, int shift, int mult)
 {
-    return ColorArgb {
+    return ColorArgbWrapper {
         .components {
             .b = static_cast<uint8_t>((color.components.b * mult >> shift)),
             .g = static_cast<uint8_t>((color.components.g * mult >> shift)),
@@ -300,21 +350,21 @@ constexpr ColorArgb shiftRightMult(ColorArgb color, int shift, int mult)
 }
 
 template <int Width, typename TColorSpace, typename T, bool Dither = true, typename TIndex = typename TColorSpace::difference_type>
-compiletime void ConvertBitmapFrom32BppToIndex(const uint32_t* source, int width, int height, const TColorSpace& colorSpace, T* destination) {
+compiletime void ConvertBitmapFrom32BppToIndex(const ColorARGB* source, int width, int height, const TColorSpace& colorSpace, T* destination) {
     if constexpr (Dither) {
         constexpr int W = Width + 2;
-        ColorArgb errors[(W) * 2]{};
-        const ColorArgb* src = reinterpret_cast<const ColorArgb*>(source);
+        ColorArgbWrapper errors[(W) * 2]{};
+        const ColorArgbWrapper* src = reinterpret_cast<const ColorArgbWrapper*>(source);
         for (int y = 0; y < height; ++y) {
             for (int x = 0; x < width; ++x) {
 
-                ColorArgb sourceColor = src[x + y * width];
-                ColorArgb errorAtSource = errors[x + 1];
-                ColorArgb sourceWithError = sourceColor + errorAtSource;
+                ColorArgbWrapper sourceColor = src[x + y * width];
+                ColorArgbWrapper errorAtSource = errors[x + 1];
+                ColorArgbWrapper sourceWithError = sourceColor + errorAtSource;
                 auto nearest = findNearest(sourceWithError.value, colorSpace);
                 destination[x + y * width] = static_cast<T>(nearest.index);
 
-                ColorArgb written{.value = nearest.argb};
+                ColorArgbWrapper written{.value = nearest.argb};
                 auto error = sourceWithError - written;
                 errors[x + 2] = shiftRightMult(error, 4, 7) + errors[x + 2];
                 errors[x + W] = shiftRightMult(error, 4, 3) + errors[x + W];
@@ -323,13 +373,13 @@ compiletime void ConvertBitmapFrom32BppToIndex(const uint32_t* source, int width
             }
             for (int x = 0; x < W; ++x) {
                 errors[x] = errors[x + W];
-                errors[x + W] = ColorArgb{};
+                errors[x + W] = ColorArgbWrapper{};
             }
         }
     } else {
         for (int y = 0; y < height; ++y)
             for (int x = 0; x < width; ++x) {
-                uint32_t sourceColor = *(source++);
+                ColorARGB sourceColor = *(source++);
                 auto nearest = findNearest(sourceColor, colorSpace);
                 *(destination++) = nearest.index;
             }
