@@ -40,6 +40,11 @@ func loadImageDEBUG(filenamePtr: UnsafePointer<CChar>?, destination: UnsafeMutab
     return true
 }
 
+func printDEBUG(utf8StringPtr: UnsafePointer<CChar>?)
+{
+    print(String(utf8String: utf8StringPtr!)!)
+}
+
 func timestamp() -> Int64 {
     var time = timeval()
     gettimeofday(&time, nil)

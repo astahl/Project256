@@ -34,7 +34,7 @@ class GameState : ObservableObject {
     var isMouseHidden = false
 
     var drawBuffer = DrawBuffer()
-    let platformCallbacks = PlatformCallbacks(readFile: loadDataDEBUG(filenamePtr:destination:bufferSize:), readImage: loadImageDEBUG(filenamePtr:destination:width:height:))
+    let platformCallbacks = PlatformCallbacks(readFile: loadDataDEBUG(filenamePtr:destination:bufferSize:), readImage: loadImageDEBUG(filenamePtr:destination:width:height:), log: printDEBUG(utf8StringPtr:))
 
     init(settings: GameSettings?) {
         memory.initializeMemory(as: UInt8.self, repeating: UInt8.zero, count: MemorySize)
