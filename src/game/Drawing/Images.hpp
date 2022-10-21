@@ -37,8 +37,12 @@ concept anImage = requires(T& t) {
     { t.pitch() } -> std::convertible_to<size_t>;
     { t.originX() } -> std::convertible_to<ptrdiff_t>;
     { t.originY()} -> std::convertible_to<ptrdiff_t>;
-    { t.pixel(ptrdiff_t{}, ptrdiff_t{}) } -> std::same_as<std::add_lvalue_reference_t<typename std::decay_t<T>::PixelType>>;
+    { t.at(Vec2i{}) } -> std::same_as<std::add_lvalue_reference_t<typename std::decay_t<T>::PixelType>>;
 };
+
+template <typename T, typename U>
+concept anImageOf = anImage<T> && std::is_same_v<typename std::decay_t<T>::PixelType, U>;
+
 
 template <typename T>
 concept aStaticImage = anImage<T> && requires(T& t) {
@@ -215,14 +219,6 @@ struct Image {
         return LineSpanType{lines.at(y)};
     }
 
-    constexpr PixelType& pixel(ptrdiff_t x, ptrdiff_t y) {
-        return lines.at(y).at(x);
-    }
-
-    constexpr PixelType& pixel(Vec2i pos) {
-        return pixel(pos.x, pos.y);
-    }
-
     constexpr const PixelType& at(Vec2i pos) const {
         return lines.at(pos.y).at(pos.x);
     }
@@ -367,23 +363,27 @@ struct SubImageView {
     ptrdiff_t mOriginX, mOriginY;
 
     constexpr Pixel* data() {
-        return &pixel(0,0);
+        return &at(0,0);
     }
 
     constexpr size_t size() const {
         return mWidth * mHeight;
     }
 
-    constexpr Pixel& pixel(ptrdiff_t x, ptrdiff_t y) {
-        assert(x < (mWidth + mOriginX));
-        assert(y < (mHeight + mOriginY));
-        assert(x >= mOriginX);
-        assert(y >= mOriginY);
-        return image.pixel((x + mOriginX), (y + mOriginY));
+    constexpr Pixel& at(Vec2i pos) {
+        assert(pos.x < (mWidth + mOriginX));
+        assert(pos.y < (mHeight + mOriginY));
+        assert(pos.x >= mOriginX);
+        assert(pos.y >= mOriginY);
+        return image.at(pos.x + mOriginX, pos.y + mOriginY);
     }
 
-    constexpr Pixel& pixel(Vec2i pos) {
-        return pixel(pos.x, pos.y);
+    constexpr const Pixel& at(Vec2i pos) const {
+        assert(pos.x < (mWidth + mOriginX));
+        assert(pos.y < (mHeight + mOriginY));
+        assert(pos.x >= mOriginX);
+        assert(pos.y >= mOriginY);
+        return image.at(pos.x + mOriginX, pos.y + mOriginY);
     }
 
     template <ImageLineOrder DesiredLineOrder = LineOrder>
@@ -488,6 +488,10 @@ constexpr uint64_t spread(const BitmapCell<uint8_t>& cell) {
         | (c & Cell::mask[6]) << 47
         | (c & Cell::mask[7]) << 56;
 
+}
+
+constexpr bool isValidImageIndex(anImage auto image, const Vec2i& index) {
+    return index.x >= 0 && index.x < image.width() && index.y >= 0 && index.y < image.height();
 }
 
 

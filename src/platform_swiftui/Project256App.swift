@@ -79,14 +79,14 @@ struct Project256App: App {
                             .sink(receiveValue: self.doTick)
                     }
                 })
-//                HStack {
-//                    Text(profilingString)
-//                        .font(.body.monospaced())
-//                        .multilineTextAlignment(.leading)
-//                        .shadow(radius: 5)
-//                        .padding()
-//                    Spacer()
-//                }
+                HStack {
+                    Text(profilingString)
+                        .font(.body.monospaced())
+                        .multilineTextAlignment(.leading)
+                        .shadow(radius: 5)
+                        .padding()
+                    Spacer()
+                }
             }
         }
         .commands {

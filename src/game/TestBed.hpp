@@ -245,10 +245,10 @@ struct TestBed {
         constant auto lightBlue = static_cast<VRAM::PixelType>(findNearest(WebColorRGB::LightBlue, memory.palette).index);
         constant auto red = static_cast<VRAM::PixelType>(findNearest(WebColorRGB::Red, memory.palette).index);
         constant auto green = static_cast<VRAM::PixelType>(findNearest(WebColorRGB::Green, memory.palette).index);
-        constant auto whitePixel = [&](const auto& p) { memory.vram.pixel(p) = white; };
-        constant auto redPixel = [&](const auto& p) { memory.vram.pixel(p) = red; };
-        constant auto greenPixel = [&](const auto& p) { memory.vram.pixel(p) = green; };
-        constant auto lightBluePixel = [&](const auto& p) { memory.vram.pixel(p) = lightBlue; };
+        constant auto whitePixel = [&](const auto& p) { memory.vram.at(p) = white; };
+        constant auto redPixel = [&](const auto& p) { memory.vram.at(p) = red; };
+        constant auto greenPixel = [&](const auto& p) { memory.vram.at(p) = green; };
+        constant auto lightBluePixel = [&](const auto& p) { memory.vram.at(p) = lightBlue; };
 
         auto clearColor = black;
         if (input.closeRequested) {
@@ -386,7 +386,7 @@ struct TestBed {
 
             if (input.mouse.buttonLeft.endedDown) {
                 for (auto p : rectangleGenerator | atMouse | clipped)
-                    memory.vram.pixel(wrap(p)) = green;
+                    memory.vram.at(wrap(p)) = green;
             }
             
             compiletime auto crossGenerator = concat(HLine{{-3, 0}, 7}, VLine{{0, -3}, 7});
@@ -504,7 +504,7 @@ struct TestBed {
         memory.birdPosition = memory.birdPosition + seconds * memory.birdSpeed * normalized(birdDistance);
         memory.birdPosition = clamp(memory.birdPosition, Vec2f{}, Vec2f{DrawBufferWidth - 1, DrawBufferHeight - 1});
 
-        memory.vram.pixel(memory.birdTarget) = lightBlue;
+        memory.vram.at(memory.birdTarget) = lightBlue;
 
         // draw
         blitSprite(memory.sprite, memory.currentSpriteFrame, memory.vram.data(), DrawBufferWidth, truncate(memory.birdPosition), Vec2i{}, Vec2i{DrawBufferWidth, DrawBufferHeight});
@@ -524,7 +524,7 @@ struct TestBed {
                     {
                         const uint8_t t = textPointer[pos];
                         const uint8_t color = textColorPointer[pos];
-                        const uint64_t pixels8 = spread(memory.characterROM.pixel(0, t * 8 + y));
+                        const uint64_t pixels8 = spread(memory.characterROM.at({0, t * 8 + y}));
                         const uint64_t background = ~(pixels8 * 0xFF) / 0xFF;
                         // colors! top nibble is background, bottom nibble foreground
                         *dst++ = pixels8 * (color & 0xF) | background * (color >> 4);

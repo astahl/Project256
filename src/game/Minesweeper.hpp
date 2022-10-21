@@ -86,14 +86,11 @@ const auto MINECOUNT = 40;
 const auto WIDTH = 16;
 const auto HEIGHT = 16;
 
+using GameBoard_t = Image<CellState, WIDTH, HEIGHT>;
+
 const auto CHARACTER_WIDTH = 8;
 const auto CHARACTER_HEIGHT = 8;
 const auto CHARACTER_MAP_SIZE = 256;
-const auto SCREEN_WIDTH = DrawBufferWidth / CHARACTER_WIDTH;
-const auto SCREEN_HEIGHT = DrawBufferHeight / CHARACTER_HEIGHT;
-
-static_assert(WIDTH * CHARACTER_WIDTH <= DrawBufferWidth);
-static_assert(HEIGHT * CHARACTER_HEIGHT <= DrawBufferHeight);
 
 using CharROM = CharacterRom::PET;
 
@@ -102,14 +99,17 @@ struct ColorIndexPair {
     uint8_t background;
 };
 
-using GameBoard_t = Image<CellState, WIDTH, HEIGHT>;
 
 struct Screen
 {
+    constant int Columns = DrawBufferWidth / CHARACTER_WIDTH;
+    constant int Lines = DrawBufferHeight / CHARACTER_HEIGHT;
+    constant int CharacterWidth = CHARACTER_WIDTH;
+    constant int CharacterHeight = CHARACTER_HEIGHT;
     using Text_t = uint8_t;
-    using TextBuffer_t = Image<Text_t, SCREEN_WIDTH, SCREEN_HEIGHT, ImageOrigin::TopLeft>;
-    using ColorBuffer_t = Image<ColorIndexPair, SCREEN_WIDTH, SCREEN_HEIGHT, ImageOrigin::TopLeft>;
-    BitmapImage<CHARACTER_WIDTH, CHARACTER_HEIGHT * CHARACTER_MAP_SIZE> characters;
+    using TextBuffer_t = Image<Text_t, Columns, Lines, ImageOrigin::TopLeft>;
+    using ColorBuffer_t = Image<ColorIndexPair, Columns, Lines, ImageOrigin::TopLeft>;
+    BitmapImage<CharacterWidth, CharacterHeight * CHARACTER_MAP_SIZE> characters;
     TextBuffer_t buffer;
     ColorBuffer_t color;
     Vec2i marker;
@@ -117,16 +117,55 @@ struct Screen
     bool showMarker;
 };
 
-void print(Screen& screen, const std::u32string_view& str, Vec2i pos) {
-    auto line = Generators::HLine(pos, static_cast<int>(str.size()));
-    for (auto [character, position] : ranges_at_home::zip(str, line))
+void print(Screen& screen, const std::u32string_view& str, ranges_at_home::aRangeOf<Vec2i> auto positions, std::optional<ColorIndexPair> color = std::nullopt) {
+    for (auto [character, position] : ranges_at_home::zip(str, positions))
     {
-        if (position < screen.buffer.maxIndex() && position >= Vec2i{0,0}) {
+        if (isValidImageIndex(screen.buffer, position)) {
             screen.buffer.at(position) = CharacterRom::PET::CharacterForCodepoint(character).value_or(static_cast<Screen::Text_t>(CharacterRom::PET::SpecialCharacters::Bullet));
+            if (color.has_value()) {
+                screen.color.at(position) = color.value();
+            }
         }
     }
 }
 
+void print(Screen& screen, const std::string_view& str, ranges_at_home::aRangeOf<Vec2i> auto positions, std::optional<ColorIndexPair> color = std::nullopt) {
+    for (auto [character, position] : ranges_at_home::zip(str, positions))
+    {
+        if (isValidImageIndex(screen.buffer, position)) {
+            screen.buffer.at(position) = CharacterRom::PET::CharacterForCodepoint(character).value_or(static_cast<Screen::Text_t>(CharacterRom::PET::SpecialCharacters::Bullet));
+            if (color.has_value()) {
+                screen.color.at(position) = color.value();
+            }
+        }
+    }
+}
+
+
+void draw(const Screen& screen, anImageOf<uint8_t> auto& destination)
+{
+    using namespace ranges_at_home;
+    auto line = destination.line(destination.height() - CHARACTER_HEIGHT);
+    uint8_t* drawPointer = line.data();
+    auto textLines = screen.buffer.linesView();
+    auto colorLines = screen.color.linesView();
+    for (const auto [textLine, colorLine] : zip(textLines, colorLines))
+    {
+        uint8_t* linePointer = drawPointer;
+        for (int y = CHARACTER_HEIGHT - 1; y >= 0; --y) {
+            uint64_t* dst = reinterpret_cast<uint64_t*>(linePointer);
+
+            for (const auto [t, c] : zip(textLine, colorLine))
+            {
+                const uint64_t pixels8 = spread(screen.characters.at({0, t * 8 + y}));
+                const uint64_t background = ~(pixels8 * 0xFF) / 0xFF;
+                *dst++ = pixels8 * c.foreground | background * c.background;
+            }
+            linePointer += destination.pitch();
+        }
+        drawPointer -= destination.pitch() * CHARACTER_HEIGHT;
+    }
+}
 
 using VideoBuffer_t = Image<uint8_t, DrawBufferWidth, DrawBufferHeight>;
 
@@ -164,23 +203,23 @@ void resetGame(GameMemory& memory) {
                 MINECOUNT, std::mt19937{std::random_device{}()});
 
     for (auto minePosition : minePositions) {
-        memory.board.pixel(minePosition) = CellState::Mine;
+        memory.board.at(minePosition) = CellState::Mine;
     }
 
     for (auto position : indices) {
 
-        if (memory.board.pixel(position) != CellState::Free) {
+        if (memory.board.at(position) != CellState::Free) {
             continue;
         }
         Vec2i neighborCornerMin = clamp(position - Vec2i{1,1}, originIndex, cornerIndex);
         Vec2i neighborCornerMax = clamp(position + Vec2i{1,1}, originIndex, cornerIndex);
         uint8_t mineCount = 0;
         for (auto neighborPosition : Generators::Rectangle(neighborCornerMin, neighborCornerMax)) {
-            if (memory.board.pixel(neighborPosition) == CellState::Mine) {
+            if (memory.board.at(neighborPosition) == CellState::Mine) {
                 ++mineCount;
             }
         }
-        memory.board.pixel(position) = static_cast<CellState>(mineCount);
+        memory.board.at(position) = static_cast<CellState>(mineCount);
     }
 
     for (auto& cell : memory.board.pixels()) {
@@ -339,7 +378,7 @@ struct Minesweeper {
         using namespace Generators;
         using namespace std::chrono_literals;
 
-        constant auto color = ColorIndexPair{3,14};
+        constant auto color = ColorIndexPair{13,4};
         auto time = std::chrono::microseconds(input.upTime_microseconds);
 
         auto output = GameOutput {
@@ -382,8 +421,11 @@ struct Minesweeper {
             case GameState::Menu:
                 if (stateWasEntered) {
                     memory.screen.buffer.fill(CharROM::CharacterTable[' ']);
-                    memory.screen.buffer.at({3, 3}) = CharROM::CharacterTable['S'];
                     memory.screen.color.fill(color);
+
+                    print(memory.screen, "NonSquPix", Generators::Rectangle({0,0}, {2,2}), ColorIndexPair{15,6});
+                    print(memory.screen, "areels", Generators::Rectangle({3,1}, {5,2}), ColorIndexPair{4,14});
+
                     memory.screen.isDirty = true;
                 }
                 if (primary) {
@@ -395,6 +437,7 @@ struct Minesweeper {
                     memory.selectedCell = Vec2i();
                     memory.screen.marker = memory.selectedCell + memory.boardOffset;
                     memory.screen.showMarker = true;
+
                     showBoard(memory.board, memory.screen, memory.boardOffset);
                     memory.screen.isDirty = true;
                 }
@@ -473,16 +516,11 @@ struct Minesweeper {
                     }
 
 
-                    std::array<char, SCREEN_WIDTH> buffer;
-                    size_t count = snprintf(buffer.data(), SCREEN_WIDTH, "You lost after %d turns", memory.turnCount);
-                    std::array<char32_t, SCREEN_WIDTH> bigBuffer;
-                    for (int i = 0; i < bigBuffer.size() && i < buffer.size(); ++i)
-                    {
-                        bigBuffer[i] = buffer[i];
-                    }
-                    std::u32string_view sv{bigBuffer.data(), count};
+                    std::array<char, 128> buffer;
+                    size_t count = snprintf(buffer.data(), 128, "You lost after %d turns", memory.turnCount);
+                    std::string_view sv{buffer.data(), count};
 
-                    print(memory.screen, sv, {0,1});
+                    print(memory.screen, sv, Generators::Rectangle({0,1}, {10,3}));
                     showBoard(memory.board, memory.screen, memory.boardOffset);
                     memory.screen.isDirty = true;
                 }
@@ -510,7 +548,7 @@ struct Minesweeper {
 
                     for (const auto [t, c] : zip(textLine, colorLine))
                     {
-                        const uint64_t pixels8 = spread(memory.screen.characters.pixel(0, t * 8 + y));
+                        const uint64_t pixels8 = spread(memory.screen.characters.at({0, t * 8 + y}));
                         const uint64_t background = ~(pixels8 * 0xFF) / 0xFF;
                         *dst++ = pixels8 * c.foreground | background * c.background;
                     }
