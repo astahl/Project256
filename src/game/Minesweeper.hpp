@@ -100,16 +100,17 @@ struct ColorIndexPair {
 };
 
 
+template <int NCols, int NLines, int CharW, int CharH>
 struct Screen
 {
-    constant int Columns = DrawBufferWidth / CHARACTER_WIDTH;
-    constant int Lines = DrawBufferHeight / CHARACTER_HEIGHT;
-    constant int CharacterWidth = CHARACTER_WIDTH;
-    constant int CharacterHeight = CHARACTER_HEIGHT;
+    constant int ColumnCount = NCols;
+    constant int LineCount = NLines;
+    constant int CharacterWidth = CharW;
+    constant int CharacterHeight = CharH;
     using Text_t = uint8_t;
-    using TextBuffer_t = Image<Text_t, Columns, Lines, ImageOrigin::TopLeft>;
-    using ColorBuffer_t = Image<ColorIndexPair, Columns, Lines, ImageOrigin::TopLeft>;
-    BitmapImage<CharacterWidth, CharacterHeight * CHARACTER_MAP_SIZE> characters;
+    using TextBuffer_t = Image<Text_t, ColumnCount, LineCount, ImageOrigin::TopLeft>;
+    using ColorBuffer_t = Image<ColorIndexPair, ColumnCount, LineCount, ImageOrigin::TopLeft>;
+    std::array<BitmapImage<CharacterWidth, CharacterHeight>, CHARACTER_MAP_SIZE> characters;
     TextBuffer_t buffer;
     ColorBuffer_t color;
     Vec2i marker;
@@ -117,11 +118,13 @@ struct Screen
     bool showMarker;
 };
 
-void print(Screen& screen, const std::u32string_view& str, ranges_at_home::aRangeOf<Vec2i> auto positions, std::optional<ColorIndexPair> color = std::nullopt) {
+using Screen_t = Screen<DrawBufferWidth / CHARACTER_WIDTH, DrawBufferHeight / CHARACTER_HEIGHT, CHARACTER_WIDTH, CHARACTER_HEIGHT>;
+
+void print(Screen_t& screen, const std::u32string_view& str, ranges_at_home::aRangeOf<Vec2i> auto positions, std::optional<ColorIndexPair> color = std::nullopt) {
     for (auto [character, position] : ranges_at_home::zip(str, positions))
     {
         if (isValidImageIndex(screen.buffer, position)) {
-            screen.buffer.at(position) = CharacterRom::PET::CharacterForCodepoint(character).value_or(static_cast<Screen::Text_t>(CharacterRom::PET::SpecialCharacters::Bullet));
+            screen.buffer.at(position) = CharacterRom::PET::CharacterForCodepoint(character).value_or(static_cast<Screen_t::Text_t>(CharacterRom::PET::SpecialCharacters::Bullet));
             if (color.has_value()) {
                 screen.color.at(position) = color.value();
             }
@@ -129,11 +132,11 @@ void print(Screen& screen, const std::u32string_view& str, ranges_at_home::aRang
     }
 }
 
-void print(Screen& screen, const std::string_view& str, ranges_at_home::aRangeOf<Vec2i> auto positions, std::optional<ColorIndexPair> color = std::nullopt) {
+void print(Screen_t& screen, const std::string_view& str, ranges_at_home::aRangeOf<Vec2i> auto positions, std::optional<ColorIndexPair> color = std::nullopt) {
     for (auto [character, position] : ranges_at_home::zip(str, positions))
     {
         if (isValidImageIndex(screen.buffer, position)) {
-            screen.buffer.at(position) = CharacterRom::PET::CharacterForCodepoint(character).value_or(static_cast<Screen::Text_t>(CharacterRom::PET::SpecialCharacters::Bullet));
+            screen.buffer.at(position) = CharacterRom::PET::CharacterForCodepoint(character).value_or(static_cast<Screen_t::Text_t>(CharacterRom::PET::SpecialCharacters::Bullet));
             if (color.has_value()) {
                 screen.color.at(position) = color.value();
             }
@@ -142,28 +145,31 @@ void print(Screen& screen, const std::string_view& str, ranges_at_home::aRangeOf
 }
 
 
-void draw(const Screen& screen, anImageOf<uint8_t> auto& destination)
+void draw(const Screen_t& screen, anImageOf<uint8_t> auto& destination)
 {
     using namespace ranges_at_home;
-    auto line = destination.line(destination.height() - CHARACTER_HEIGHT);
+    auto line = destination.line(destination.height() - Screen_t::CharacterHeight);
     uint8_t* drawPointer = line.data();
     auto textLines = screen.buffer.linesView();
     auto colorLines = screen.color.linesView();
     for (const auto [textLine, colorLine] : zip(textLines, colorLines))
     {
         uint8_t* linePointer = drawPointer;
-        for (int y = CHARACTER_HEIGHT - 1; y >= 0; --y) {
+        for (int y = Screen_t::CharacterHeight - 1; y >= 0; --y) {
             uint64_t* dst = reinterpret_cast<uint64_t*>(linePointer);
 
-            for (const auto [t, c] : zip(textLine, colorLine))
+            for (int x = 0; x < Screen_t::ColumnCount; ++x)
             {
-                const uint64_t pixels8 = spread(screen.characters.at({0, t * 8 + y}));
+                const auto& text = textLine[x];
+                const auto& color = colorLine[x];
+                const uint64_t pixels8 = spread(screen.characters[text].at({0, y}));
                 const uint64_t background = ~(pixels8 * 0xFF) / 0xFF;
-                *dst++ = pixels8 * c.foreground | background * c.background;
+                *dst++ = pixels8 * color.foreground | background * color.background;
             }
+
             linePointer += destination.pitch();
         }
-        drawPointer -= destination.pitch() * CHARACTER_HEIGHT;
+        drawPointer -= destination.pitch() * Screen_t::CharacterHeight;
     }
 }
 
@@ -182,7 +188,7 @@ struct GameMemory {
 
     Vec2i boardOffset;
 
-    Screen screen;
+    Screen_t screen;
 
     uint32_t activeControllerIndex;
     Vec2i moveSelector;
@@ -227,20 +233,20 @@ void resetGame(GameMemory& memory) {
     }
 }
 
-void showBoard(const GameBoard_t& board, Screen& screen, Vec2i offset) {
+void showBoard(const GameBoard_t& board, Screen_t& screen, Vec2i offset) {
     for (auto position : Generators::Rectangle(Vec2i{}, board.maxIndex()))
     {
         auto destination = position + offset;
-        Screen::Text_t t;
+        Screen_t::Text_t t;
         ColorIndexPair c = {1,0};
 
         auto cell = board.at(position);
         if (testFlag<CellState, CellState::FlaggedFlag>(cell)) {
-            t = static_cast<Screen::Text_t>(CharacterRom::PET::SpecialCharacters::LineCrossDiag);
+            t = static_cast<Screen_t::Text_t>(CharacterRom::PET::SpecialCharacters::LineCrossDiag);
             c = {static_cast<uint8_t>(PaletteC64::Color::white), 0};
         }
         else if (testFlag<CellState, CellState::HiddenFlag>(cell)) {
-            t = static_cast<Screen::Text_t>(CharacterRom::PET::SpecialCharacters::HalfTone);
+            t = static_cast<Screen_t::Text_t>(CharacterRom::PET::SpecialCharacters::HalfTone);
             c = {3, 14};
         }
         else
@@ -409,7 +415,7 @@ struct Minesweeper {
         switch(memory.state) {
             case GameState::Init:
                 PaletteC64::writeTo(memory.palette.data());
-                callbacks.readFile(CharROM::Filename.data(), memory.screen.characters.bytes(), memory.screen.characters.bytesSize());
+                callbacks.readFile(CharROM::Filename.data(), memory.screen.characters.front().bytes(), sizeof(memory.screen.characters));
                 memory.screen.buffer.fill(CharROM::CharacterTable[' ']);
                 memory.screen.color.fill(color);
                 memory.boardOffset = (memory.screen.buffer.size2d() - memory.board.size2d()) / 2;
@@ -536,26 +542,7 @@ struct Minesweeper {
         }
 
         if (memory.screen.isDirty) {
-            auto line = memory.videobuffer.line(memory.videobuffer.height() - CHARACTER_HEIGHT);
-            uint8_t* drawPointer = line.data();
-            auto textLines = memory.screen.buffer.linesView();
-            auto colorLines = memory.screen.color.linesView();
-            for (const auto [textLine, colorLine] : zip(textLines, colorLines))
-            {
-                uint8_t* linePointer = drawPointer;
-                for (int y = CHARACTER_HEIGHT - 1; y >= 0; --y) {
-                    uint64_t* dst = reinterpret_cast<uint64_t*>(linePointer);
-
-                    for (const auto [t, c] : zip(textLine, colorLine))
-                    {
-                        const uint64_t pixels8 = spread(memory.screen.characters.at({0, t * 8 + y}));
-                        const uint64_t background = ~(pixels8 * 0xFF) / 0xFF;
-                        *dst++ = pixels8 * c.foreground | background * c.background;
-                    }
-                    linePointer += memory.videobuffer.pitch();
-                }
-                drawPointer -= memory.videobuffer.pitch() * CHARACTER_HEIGHT;
-            }
+            draw(memory.screen, memory.videobuffer);
             memory.screen.isDirty = false;
             memory.isVideoBufferDirty = true;
         }
