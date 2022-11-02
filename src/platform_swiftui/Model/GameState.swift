@@ -23,7 +23,7 @@ func setCursorVisible(_ shouldShow: Bool, currentlyHidden: Bool) -> Bool
 #endif
 
 
-class GameState : ObservableObject {
+class GameState {
     let settings: GameSettings
     let platformInput: PlatformInput
     let platformAudio: PlatformAudio
