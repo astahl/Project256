@@ -32,10 +32,6 @@ struct Project256App: App {
         subscriptions = AppSubscriptions()
     }
 
-    func doTick(_ _: Date) {
-        gameState.tick()
-    }
-
     func startSubscriptions() {
         resetTickSubscription(tickTargetHz: gameSettings.tickTargetHz)
         resetProfilingSubscription(isProfiling: self.showProfilingView)
@@ -47,7 +43,7 @@ struct Project256App: App {
             self.subscriptions.profiling = Timer.publish(every: 1.0, on: .main, in: .default)
                 .autoconnect()
                 .sink {
-                    date in
+                    _ in
                     PlatformProfiling.withInstance {
                         profiling in
                         profilingString = String(unsafeUninitializedCapacity: 1000) {
@@ -66,7 +62,7 @@ struct Project256App: App {
         if (tickTargetHz != 0) {
             self.subscriptions.highfrequency = Timer.publish(every: 1 / tickTargetHz, on: .main, in: .common)
                 .autoconnect()
-                .sink(receiveValue: self.doTick)
+                .sink {_ in gameState.tick() }
         }
     }
 
