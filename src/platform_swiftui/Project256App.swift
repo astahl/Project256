@@ -11,7 +11,7 @@ import Combine
 
 
 
-@main
+ @main
 struct Project256App: App {
     class AppSubscriptions {
         var profiling: AnyCancellable? = nil
@@ -21,6 +21,7 @@ struct Project256App: App {
     @State var profilingString = String()
     @State var gameState: GameState
     @State var gameSettings: GameSettings
+    @State var showProfilingView = false
 
     var subscriptions: AppSubscriptions
 
@@ -31,61 +32,58 @@ struct Project256App: App {
         subscriptions = AppSubscriptions()
     }
 
-    func doTick(_ _: Date) {
-        gameState.tick()
+    func startSubscriptions() {
+        resetTickSubscription(tickTargetHz: gameSettings.tickTargetHz)
+        resetProfilingSubscription(isProfiling: self.showProfilingView)
+    }
+
+    func resetProfilingSubscription(isProfiling: Bool) {
+        self.subscriptions.profiling?.cancel()
+        if isProfiling {
+            self.subscriptions.profiling = Timer.publish(every: 1.0, on: .main, in: .default)
+                .autoconnect()
+                .sink {
+                    _ in
+                    PlatformProfiling.withInstance {
+                        profiling in
+                        profilingString = String(unsafeUninitializedCapacity: 1000) {
+                            buffer in
+                            return Int(profiling.timingData.printTo(buffer: buffer.baseAddress!, size: Int32(buffer.count)))
+                        }
+                        profiling.timingData.clear()
+                    }
+                }
+        }
+    }
+
+    func resetTickSubscription(tickTargetHz: Double)
+    {
+        self.subscriptions.highfrequency?.cancel()
+        if (tickTargetHz != 0) {
+            self.subscriptions.highfrequency = Timer.publish(every: 1 / tickTargetHz, on: .main, in: .common)
+                .autoconnect()
+                .sink {_ in gameState.tick() }
+        }
     }
 
     var body: some Scene {
         WindowGroup {
             ZStack {
                 GameView(state: gameState)
-                .onAppear {
-                    self.subscriptions.highfrequency = Timer.publish(every: 1 / gameSettings.tickTargetHz, on: .main, in: .common)
-                        .autoconnect()
-                        .sink(receiveValue: self.doTick)
-                    self.subscriptions.profiling = Timer.publish(every: 1.0, on: .main, in: .default)
-                        .autoconnect()
-                        .sink {
-                            date in
-                            PlatformProfiling.withInstance {
-                                profiling in
-                                profilingString = String(unsafeUninitializedCapacity: 1000) {
-                                    buffer in
-                                    return Int(profiling.timingData.printTo(buffer: buffer.baseAddress!, size: Int32(buffer.count)))
-                                }
-                                profiling.timingData.clear()
-                            }
-                        }
-                }
-                .onDisappear {
-                    print("disappear")
-
-//                    self.subscriptions.profiling?.cancel()
-//                    self.subscriptions.highfrequency?.cancel()
-                    // just quit when window is closed
-                    exit(EXIT_SUCCESS)
-                }
-//                .background(.linearGradient(.init(colors: [Color.cyan, Color.purple]), startPoint: .topLeading, endPoint: .bottomTrailing))
+                    .onAppear {
+                        startSubscriptions()
+                    }
+                    .onDisappear {
+                        // just quit when window is closed
+                        exit(EXIT_SUCCESS)
+                    }
+                    //.background(.linearGradient(.init(colors: [Color.cyan, Color.purple]), startPoint: .topLeading, endPoint: .bottomTrailing))
 
                 //.overlay(Ellipse().foregroundColor(.gray).opacity(0.3).blur(radius: 100))
-                //.ignoresSafeArea()
-                .onChange(of: gameSettings.tickTargetHz, perform: {
-                    newTickTarget in
+                    //.ignoresSafeArea()
 
-                    self.subscriptions.highfrequency?.cancel()
-                    if (newTickTarget != 0) {
-                        self.subscriptions.highfrequency = Timer.publish(every: 1 / newTickTarget, on: .main, in: .common)
-                            .autoconnect()
-                            .sink(receiveValue: self.doTick)
-                    }
-                })
-                HStack {
-                    Text(profilingString)
-                        .font(.body.monospaced())
-                        .multilineTextAlignment(.leading)
-                        .shadow(radius: 5)
-                        .padding()
-                    Spacer()
+                if self.showProfilingView {
+                    ProfilingView(profilingString: profilingString)
                 }
             }
         }
@@ -94,6 +92,9 @@ struct Project256App: App {
             CommandGroup(replacing: .newItem) {
             }
         }
+        .onChange(of: gameSettings.tickTargetHz, perform: resetTickSubscription(tickTargetHz:))
+        .onChange(of: self.showProfilingView, perform: resetProfilingSubscription(isProfiling:))
+
         #if os(macOS)
         Settings {
             List {
@@ -124,13 +125,7 @@ struct Project256App: App {
                         Text(fps.rawValue.formatted())
                     }
                 }
-//                (value: $gameState.frameTargetHz, in: 0...120, step: 5) {
-//                    Text("FPS Target \(gameState.tickTargetHz)")
-//                } minimumValueLabel: {
-//                    Text("0")
-//                } maximumValueLabel: {
-//                    Text("120")
-//                }
+                Toggle("Profiling", isOn: $showProfilingView)
             }.padding()
         }
         #endif

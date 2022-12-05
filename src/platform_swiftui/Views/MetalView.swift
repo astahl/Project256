@@ -96,7 +96,7 @@ class MyMTKView : MTKView {
             profiling in
             profiling.timingData.interval(timer: eTimerDraw, interval: eTimingDrawBefore)
         }
-        updateViewport(withDrawableSize: drawableSize)
+        self.updateViewport(withDrawableSize: drawableSize)
 
         guard let renderPassDescriptor = self.currentRenderPassDescriptor else {
             return
