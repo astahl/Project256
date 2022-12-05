@@ -42,6 +42,7 @@
     <ClInclude Include="..\..\src\game\TestBed.hpp" />
     <ClInclude Include="..\..\src\game\Utility\ABunchOf.hpp" />
     <ClInclude Include="..\..\src\game\Utility\CircularIndex.hpp" />
+    <ClInclude Include="..\..\src\game\Utility\Flags.hpp" />
     <ClInclude Include="..\..\src\game\Utility\FrameInput.hpp" />
     <ClInclude Include="..\..\src\game\Utility\Text.hpp" />
     <ClInclude Include="..\..\src\game\Utility\Timers.hpp" />
