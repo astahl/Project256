@@ -15,6 +15,7 @@
 #include "Math/Vec2Math.hpp"
 #include "FML/RangesAtHome.hpp"
 #include "Utility/Text.hpp"
+#include "Utility/Flags.hpp"
 
 #include <array>
 #include <random>
@@ -241,11 +242,13 @@ void showBoard(const GameBoard_t& board, Screen_t& screen, Vec2i offset) {
         ColorIndexPair c = {1,0};
 
         auto cell = board.at(position);
-        if (testFlag<CellState, CellState::FlaggedFlag>(cell)) {
+        const auto flags = Flags{cell};
+        using enum CellState;
+        if (flags.test(FlaggedFlag)) {
             t = static_cast<Screen_t::Text_t>(CharacterRom::PET::SpecialCharacters::LineCrossDiag);
             c = {static_cast<uint8_t>(PaletteC64::Color::white), 0};
         }
-        else if (testFlag<CellState, CellState::HiddenFlag>(cell)) {
+        else if (flags.test(HiddenFlag)) {
             t = static_cast<Screen_t::Text_t>(CharacterRom::PET::SpecialCharacters::HalfTone);
             c = {3, 14};
         }

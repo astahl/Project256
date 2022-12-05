@@ -72,6 +72,7 @@
 		681C0C502871A6310021710E /* Timers.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Timers.hpp; sourceTree = "<group>"; };
 		681C0C52287228EB0021710E /* TestBed.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = TestBed.hpp; sourceTree = "<group>"; };
 		681C0C5328736D860021710E /* Text.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Text.hpp; sourceTree = "<group>"; };
+		681C75C6293E95D300BCB078 /* Flags.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Flags.hpp; sourceTree = "<group>"; };
 		682F425B28CBFFC50059AD96 /* ABunchOf.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ABunchOf.hpp; sourceTree = "<group>"; };
 		682F425C28CDFF3A0059AD96 /* Minesweeper.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Minesweeper.hpp; sourceTree = "<group>"; };
 		682F425D28CE095A0059AD96 /* Waves.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Waves.hpp; sourceTree = "<group>"; };
@@ -134,6 +135,7 @@
 		681C0C512871A6690021710E /* Utility */ = {
 			isa = PBXGroup;
 			children = (
+				681C75C6293E95D300BCB078 /* Flags.hpp */,
 				6887FE3F28F19BEF00761DE1 /* FrameInput.hpp */,
 				682F425B28CBFFC50059AD96 /* ABunchOf.hpp */,
 				68177537288C143300200C0E /* CircularIndex.hpp */,
