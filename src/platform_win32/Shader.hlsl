@@ -26,3 +26,35 @@ float4 pixelShader(FragmentData data) : SV_TARGET
 {
 	return g_texture.Sample(g_sampler, data.uv);
 }
+
+float4 pixelShaderFiltered(FragmentData data) : SV_TARGET
+{
+	const float bias = 0.5;
+	const float remBias = (1.0 - bias) * 0.25;
+	const float spread = 0.3;
+	uint texWidth = 0;
+	uint texHeight = 0;
+	g_texture.GetDimensions(texWidth, texHeight);
+	const float2 stepSize = 0.25 * spread * float2(1.0f / texWidth, 1.0f / texHeight);
+
+	float4 color = float4(0, 0, 0, 0);
+	// +++++++++
+	// +     1 +
+	// +4      +
+	// +   0   +
+	// +      2+
+	// + 3     +
+	// +++++++++
+
+	const float2 samplePoint1 = data.uv + float2(stepSize.x, 2 * stepSize.y);
+	const float2 samplePoint2 = data.uv + float2(2 * stepSize.x, -stepSize.y);
+	const float2 samplePoint3 = data.uv + float2(-stepSize.x, -2 * stepSize.y);
+	const float2 samplePoint4 = data.uv + float2(-2 * stepSize.x, stepSize.y);
+
+	color += bias * g_texture.Sample(g_sampler, data.uv);
+	color += remBias * g_texture.Sample(g_sampler, samplePoint1);
+	color += remBias * g_texture.Sample(g_sampler, samplePoint2);
+	color += remBias * g_texture.Sample(g_sampler, samplePoint3);
+	color += remBias * g_texture.Sample(g_sampler, samplePoint4);
+	return color;
+}

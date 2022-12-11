@@ -162,7 +162,7 @@ Direct3D12View::Direct3D12View(HWND hwnd, UINT width, UINT height)
 			};
 
 			D3D12_STATIC_SAMPLER_DESC sampler{
-				.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT,
+				.Filter = D3D12_FILTER_MIN_LINEAR_MAG_MIP_POINT,
 				.AddressU = D3D12_TEXTURE_ADDRESS_MODE_BORDER,
 				.AddressV = D3D12_TEXTURE_ADDRESS_MODE_BORDER,
 				.AddressW = D3D12_TEXTURE_ADDRESS_MODE_BORDER,
@@ -208,7 +208,7 @@ Direct3D12View::Direct3D12View(HWND hwnd, UINT width, UINT height)
 		size_t lastSlashPos = pathBuf.find_last_of(L'\\');
 		if (lastSlashPos != std::wstring::npos) pathBuf.erase(lastSlashPos + 1);
 		std::wstring shaderPath = pathBuf + L"Shader.hlsl";
-		HRESULT result = D3DCompileFromFile(shaderPath.c_str(), nullptr, nullptr, "pixelShader", "ps_5_0", compileFlags, 0, &pixelShader, &error);
+		HRESULT result = D3DCompileFromFile(shaderPath.c_str(), nullptr, nullptr, "pixelShaderFiltered", "ps_5_0", compileFlags, 0, &pixelShader, &error);
 		if (!SUCCEEDED(result)) {
 			std::string errorMsg((char*)error.Get()->GetBufferPointer(), error.Get()->GetBufferSize());
 			OutputDebugStringA(errorMsg.c_str());
