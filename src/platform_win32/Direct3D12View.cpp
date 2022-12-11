@@ -78,6 +78,8 @@ Direct3D12View::Direct3D12View(HWND hwnd, UINT width, UINT height)
 
 	ExitOnFail(mDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&mCommandQueue)));
 
+	mCommandQueue->SetName(L"Main Command Queue");
+
 	// Swap Chain
 	DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {
 		.Width = mWidth,
@@ -109,6 +111,7 @@ Direct3D12View::Direct3D12View(HWND hwnd, UINT width, UINT height)
 		};
 
 		ExitOnFail(mDevice->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&mRtvHeap)));
+		mRtvHeap->SetName(L"RTV Descriptor Heap");
 
 		D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc{
 			.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
@@ -116,6 +119,7 @@ Direct3D12View::Direct3D12View(HWND hwnd, UINT width, UINT height)
 			.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
 		};
 		ExitOnFail(mDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvHeap)));
+		mSrvHeap->SetName(L"SRV Descriptor Heap");
 
 		mRtvDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 		mSrvDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
@@ -320,6 +324,7 @@ Direct3D12View::Direct3D12View(HWND hwnd, UINT width, UINT height)
 
 		ExitOnFail(mDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, mCommandAllocator[mFrameIndex].Get(), mPipelineState.Get(), IID_PPV_ARGS(&mCommandList)));
 		//ExitOnFail(mDevice->CreateCommandList1(0, D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_LIST_FLAG_NONE, IID_PPV_ARGS(&mCommandList)));
+		mCommandList->SetName(L"Command List");
 
 		// create Texture
 		{
@@ -349,9 +354,11 @@ Direct3D12View::Direct3D12View(HWND hwnd, UINT width, UINT height)
 				&props,
 				D3D12_HEAP_FLAG_NONE,
 				&textureDesc,
-				D3D12_RESOURCE_STATE_COPY_DEST,
+				D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
 				nullptr,
 				IID_PPV_ARGS(&mTexture)));
+
+			mTexture->SetName(L"Texture");
 
 			// Create the GPU upload buffer.
 			D3D12_HEAP_PROPERTIES uploadHeapProps{
@@ -388,6 +395,7 @@ Direct3D12View::Direct3D12View(HWND hwnd, UINT width, UINT height)
 				D3D12_RESOURCE_STATE_GENERIC_READ,
 				nullptr,
 				IID_PPV_ARGS(&mTextureUploadHeap)));
+			mTextureUploadHeap->SetName(L"Texture Upload Heap");
 
 			const size_t memSize = DrawBufferHeight * DrawBufferWidth * 4;
 
@@ -524,6 +532,7 @@ void Direct3D12View::Draw()
 	profiling_time_interval(&GameState::timingData, eTimerDraw, eTimingDrawWaitAndSetup);
 
 	if (mNeedsUpload) {
+		WaitForGpu();
 		mNeedsUpload = false;
 		D3D12_PLACED_SUBRESOURCE_FOOTPRINT layout{};
 		D3D12_RESOURCE_DESC textureDesc = mTexture->GetDesc();
@@ -651,6 +660,7 @@ void Direct3D12View::CreateRenderTargetViews()
 	for (UINT i = 0; i < FrameCount; ++i) {
 		ExitOnFail(mSwapChain->GetBuffer(i, IID_PPV_ARGS(&mRenderTargets[i])));
 		mDevice->CreateRenderTargetView(mRenderTargets[i].Get(), nullptr, rtvHandle);
+		mRenderTargets[i]->SetName(L"RenderTargetView Nr. X");
 		rtvHandle.ptr += mRtvDescriptorSize;
 	}
 }
