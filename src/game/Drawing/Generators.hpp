@@ -96,7 +96,7 @@ struct Line {
         bool mSteep;
         Vec2i mCurrentPosition;
         Vec2i mTo;
-        mutable bool mFinished;
+        bool mFinished;
         int mCurrentError;
 
         constexpr Vec2i operator*() const {

@@ -38,6 +38,7 @@
 		685741D22868ED8C00B13B23 /* Faufau.ilbm in Resources */ = {isa = PBXBuildFile; fileRef = 685741CE2868ED8C00B13B23 /* Faufau.ilbm */; };
 		6859DD0228673522009137CC /* GameSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6859DD0128673522009137CC /* GameSettings.swift */; };
 		6859DD0328673522009137CC /* GameSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6859DD0128673522009137CC /* GameSettings.swift */; };
+		687CC8442947B76A00FAE240 /* TestsMain.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 687CC8382947B68900FAE240 /* TestsMain.cpp */; };
 		689A250D284BE37D0086DD58 /* Palettes.hpp in Sources */ = {isa = PBXBuildFile; fileRef = 689A250B284BE37D0086DD58 /* Palettes.hpp */; };
 		689E03232857A61D00DF8738 /* GameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 689E03222857A61D00DF8738 /* GameView.swift */; };
 		689E03242857A61D00DF8738 /* GameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 689E03222857A61D00DF8738 /* GameView.swift */; };
@@ -60,6 +61,18 @@
 		68FC4A112863A6C9009FC29D /* test.bmp in Resources */ = {isa = PBXBuildFile; fileRef = 68FC4A102863A6C9009FC29D /* test.bmp */; };
 		68FC4A122863A6C9009FC29D /* test.bmp in Resources */ = {isa = PBXBuildFile; fileRef = 68FC4A102863A6C9009FC29D /* test.bmp */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		687CC83B2947B71000FAE240 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		6808AAD22912EAB600949EA2 /* ProfilingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfilingView.swift; sourceTree = "<group>"; };
@@ -95,6 +108,10 @@
 		685741CD2868ED8C00B13B23 /* Faufau.brush */ = {isa = PBXFileReference; lastKnownFileType = file; name = Faufau.brush; path = ../../assets/Faufau.brush; sourceTree = "<group>"; };
 		685741CE2868ED8C00B13B23 /* Faufau.ilbm */ = {isa = PBXFileReference; lastKnownFileType = file; name = Faufau.ilbm; path = ../../assets/Faufau.ilbm; sourceTree = "<group>"; };
 		6859DD0128673522009137CC /* GameSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameSettings.swift; sourceTree = "<group>"; };
+		687CC8382947B68900FAE240 /* TestsMain.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = TestsMain.cpp; path = ../../../src/tests/TestsMain.cpp; sourceTree = "<group>"; };
+		687CC83D2947B71000FAE240 /* TestProject256 */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = TestProject256; sourceTree = BUILT_PRODUCTS_DIR; };
+		687CC8452947B87C00FAE240 /* Test.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = Test.hpp; path = ../../../src/tests/Test.hpp; sourceTree = "<group>"; };
+		687CC8472947BCCC00FAE240 /* TrigonometryTest.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = TrigonometryTest.hpp; path = ../../../../src/tests/Math/TrigonometryTest.hpp; sourceTree = "<group>"; };
 		6887FE3F28F19BEF00761DE1 /* FrameInput.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = FrameInput.hpp; sourceTree = "<group>"; };
 		689A1ACA2875FF5B0057090F /* Trigonometry.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Trigonometry.hpp; sourceTree = "<group>"; };
 		689A250B284BE37D0086DD58 /* Palettes.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Palettes.hpp; sourceTree = "<group>"; };
@@ -123,6 +140,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		68455598283D8044004AD3FB /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		687CC83A2947B71000FAE240 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -221,6 +245,7 @@
 			children = (
 				68455595283D8044004AD3FB /* Project256.app */,
 				6845559B283D8044004AD3FB /* Project256.app */,
+				687CC83D2947B71000FAE240 /* TestProject256 */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -246,12 +271,31 @@
 		687B91AD283D7E95007604C7 = {
 			isa = PBXGroup;
 			children = (
+				687CC8372947B63A00FAE240 /* Tests */,
 				68FC4A0C2861B67C009FC29D /* Assets */,
 				6821D85B28591C01008D4128 /* Game */,
 				6845558B283D7F22004AD3FB /* Platform */,
 				6845559C283D8044004AD3FB /* macOS */,
 				68455596283D8044004AD3FB /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		687CC8372947B63A00FAE240 /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				687CC8462947BC8300FAE240 /* Math */,
+				687CC8382947B68900FAE240 /* TestsMain.cpp */,
+				687CC8452947B87C00FAE240 /* Test.hpp */,
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
+		687CC8462947BC8300FAE240 /* Math */ = {
+			isa = PBXGroup;
+			children = (
+				687CC8472947BCCC00FAE240 /* TrigonometryTest.hpp */,
+			);
+			path = Math;
 			sourceTree = "<group>";
 		};
 		689E03202857A5E300DF8738 /* Views */ = {
@@ -339,6 +383,23 @@
 			productReference = 6845559B283D8044004AD3FB /* Project256.app */;
 			productType = "com.apple.product-type.application";
 		};
+		687CC83C2947B71000FAE240 /* TestProject256 */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 687CC8412947B71000FAE240 /* Build configuration list for PBXNativeTarget "TestProject256" */;
+			buildPhases = (
+				687CC8392947B71000FAE240 /* Sources */,
+				687CC83A2947B71000FAE240 /* Frameworks */,
+				687CC83B2947B71000FAE240 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = TestProject256;
+			productName = TestProject256;
+			productReference = 687CC83D2947B71000FAE240 /* TestProject256 */;
+			productType = "com.apple.product-type.tool";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -354,6 +415,9 @@
 					};
 					6845559A283D8044004AD3FB = {
 						CreatedOnToolsVersion = 13.4;
+					};
+					687CC83C2947B71000FAE240 = {
+						CreatedOnToolsVersion = 14.1;
 					};
 				};
 			};
@@ -372,6 +436,7 @@
 			targets = (
 				68455594283D8044004AD3FB /* Project256 (iOS) */,
 				6845559A283D8044004AD3FB /* Project256 (macOS) */,
+				687CC83C2947B71000FAE240 /* TestProject256 */,
 			);
 		};
 /* End PBXProject section */
@@ -457,6 +522,14 @@
 				689E032A2857BEF300DF8738 /* KeyboardMouseModifiers.swift in Sources */,
 				68565FE9287B123800D07090 /* Chronometer.swift in Sources */,
 				68D205D32854101100CB4213 /* Vec2Math.hpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		687CC8392947B71000FAE240 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				687CC8442947B76A00FAE240 /* TestsMain.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -881,6 +954,73 @@
 			};
 			name = Release;
 		};
+		687CC8422947B71000FAE240 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 957DHFM274;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_CPP_EXCEPTIONS = YES;
+				GCC_ENABLE_CPP_RTTI = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		687CC8432947B71000FAE240 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 957DHFM274;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_NS_ASSERTIONS = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_ENABLE_CPP_EXCEPTIONS = YES;
+				GCC_ENABLE_CPP_RTTI = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -907,6 +1047,15 @@
 			buildConfigurations = (
 				687B91B2283D7E95007604C7 /* Debug */,
 				687B91B3283D7E95007604C7 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		687CC8412947B71000FAE240 /* Build configuration list for PBXNativeTarget "TestProject256" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				687CC8422947B71000FAE240 /* Debug */,
+				687CC8432947B71000FAE240 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
