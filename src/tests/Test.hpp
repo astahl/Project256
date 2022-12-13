@@ -25,6 +25,7 @@ struct Throws { using exception_t = E; };
 template <typename T, int precision>
 struct IsNear {
     static_assert(precision >= 0, "precision must be at least 0");
+
     static constexpr T epsilon = [] {
         T val{1};
         for (int i = 0; i < precision; ++i) {
@@ -33,13 +34,13 @@ struct IsNear {
         return val;
     }();
     T a;
+
     bool operator()(const T& b) const
     {
         auto d = a - b;
         return d < 0 ? -d <= epsilon : d <= epsilon;
     }
 };
-
 
 
 }
@@ -77,7 +78,8 @@ struct Test {
         }
     }
 
-    constexpr std::ostream& expect(auto&& value, std::predicate<decltype(value)> auto matcher)
+    template<typename T, std::predicate<T> M>
+    constexpr std::ostream& expect(T&& value, M matcher)
     {
         using value_t = std::remove_cvref_t<decltype(value)>;
 
@@ -85,19 +87,15 @@ struct Test {
             return success();
         else
             return fail() << " value " << value;
-
     }
 
-    constexpr std::ostream& expect(auto&& value, auto matcher)
+    template<typename T, std::equality_comparable_with <T> M>
+    constexpr std::ostream& expect(T&& value, M matcher)
     {
-        using value_t = std::remove_cvref_t<decltype(value)>;
-        if constexpr (std::equality_comparable_with<decltype(matcher), value_t>)
-        {
-            if (matcher == value)
-                return success();
-            else
-                return fail() << " value " << value << " equals (==) " << matcher;
-        }
+        if (matcher == value)
+            return success();
+        else
+            return fail() << " value " << value << " equals (==) " << matcher;
     }
 
     std::ostream& success() {

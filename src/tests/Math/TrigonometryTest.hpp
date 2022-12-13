@@ -13,10 +13,14 @@
 
 void test_myCos(Test& test) {
     using IsNear = Matchers::IsNear<double, 2>;
+
+    static_assert(std::predicate<IsNear, double>);
+
     for (double x = 0.0; x < 10.0; x += 0.01) {
         double my = myCos(x);
         double std = std::cos(x);
-        test.expect(my, IsNear{std});
+        auto pred = IsNear{ std };
+        test.expect(my, pred);
         my = my; std = std;
     }
 
