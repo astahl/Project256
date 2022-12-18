@@ -8,9 +8,11 @@
 #include "Test.hpp"
 
 #include "Math/TrigonometryTest.hpp"
+#include "Math/FixedPointTest.hpp"
 
 int main() {
     Test t{};
     t.add(test_myCos);
+    FixedPointTest::addAll(t);
     return t.run();
 }
