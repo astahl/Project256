@@ -349,7 +349,7 @@ constexpr ColorArgbWrapper shiftRightMult(ColorArgbWrapper color, int shift, int
     };
 }
 
-template <int Width, typename TColorSpace, typename T, bool Dither = true, typename TIndex = typename TColorSpace::difference_type>
+template <int Width, typename TColorSpace, typename T, bool Dither = true>
 compiletime void ConvertBitmapFrom32BppToIndex(const ColorARGB* source, int width, int height, const TColorSpace& colorSpace, T* destination) {
     if constexpr (Dither) {
         constexpr int W = Width + 2;

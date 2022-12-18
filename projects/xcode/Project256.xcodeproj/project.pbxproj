@@ -108,10 +108,12 @@
 		685741CD2868ED8C00B13B23 /* Faufau.brush */ = {isa = PBXFileReference; lastKnownFileType = file; name = Faufau.brush; path = ../../assets/Faufau.brush; sourceTree = "<group>"; };
 		685741CE2868ED8C00B13B23 /* Faufau.ilbm */ = {isa = PBXFileReference; lastKnownFileType = file; name = Faufau.ilbm; path = ../../assets/Faufau.ilbm; sourceTree = "<group>"; };
 		6859DD0128673522009137CC /* GameSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameSettings.swift; sourceTree = "<group>"; };
-		687CC8382947B68900FAE240 /* TestsMain.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = TestsMain.cpp; path = ../../../src/tests/TestsMain.cpp; sourceTree = "<group>"; };
+		687CC8382947B68900FAE240 /* TestsMain.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = TestsMain.cpp; sourceTree = "<group>"; };
 		687CC83D2947B71000FAE240 /* TestProject256 */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = TestProject256; sourceTree = BUILT_PRODUCTS_DIR; };
-		687CC8452947B87C00FAE240 /* Test.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = Test.hpp; path = ../../../src/tests/Test.hpp; sourceTree = "<group>"; };
-		687CC8472947BCCC00FAE240 /* TrigonometryTest.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = TrigonometryTest.hpp; path = ../../../../src/tests/Math/TrigonometryTest.hpp; sourceTree = "<group>"; };
+		687CC8452947B87C00FAE240 /* Test.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Test.hpp; sourceTree = "<group>"; };
+		687CC8472947BCCC00FAE240 /* TrigonometryTest.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = TrigonometryTest.hpp; sourceTree = "<group>"; };
+		68877CE7294F2BC500BBD34C /* FixedPoint.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = FixedPoint.hpp; sourceTree = "<group>"; };
+		68877CE8294F2CC200BBD34C /* FixedPointTest.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = FixedPointTest.hpp; sourceTree = "<group>"; };
 		6887FE3F28F19BEF00761DE1 /* FrameInput.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = FrameInput.hpp; sourceTree = "<group>"; };
 		689A1ACA2875FF5B0057090F /* Trigonometry.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Trigonometry.hpp; sourceTree = "<group>"; };
 		689A250B284BE37D0086DD58 /* Palettes.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Palettes.hpp; sourceTree = "<group>"; };
@@ -222,6 +224,7 @@
 			children = (
 				68D205D12854101100CB4213 /* Vec2Math.hpp */,
 				689A1ACA2875FF5B0057090F /* Trigonometry.hpp */,
+				68877CE7294F2BC500BBD34C /* FixedPoint.hpp */,
 			);
 			path = Math;
 			sourceTree = "<group>";
@@ -287,13 +290,15 @@
 				687CC8382947B68900FAE240 /* TestsMain.cpp */,
 				687CC8452947B87C00FAE240 /* Test.hpp */,
 			);
-			path = Tests;
+			name = Tests;
+			path = ../../src/tests;
 			sourceTree = "<group>";
 		};
 		687CC8462947BC8300FAE240 /* Math */ = {
 			isa = PBXGroup;
 			children = (
 				687CC8472947BCCC00FAE240 /* TrigonometryTest.hpp */,
+				68877CE8294F2CC200BBD34C /* FixedPointTest.hpp */,
 			);
 			path = Math;
 			sourceTree = "<group>";

@@ -12,7 +12,8 @@ extern "C" {
 
 Vec2f clipSpaceDrawBufferScale(unsigned int viewportWidth, unsigned int viewportHeight)
 {
-    // we COULD assert that viewport dimensions are not greater than UINT16_MAX each...
+    assert(viewportHeight > 0);
+    assert(viewportWidth < UINT16_MAX);
     uint32_t viewportAspectRatio16_16 = (viewportWidth << 16) / viewportHeight;
     uint32_t drawAspectRatio16_16 = (DrawAspectH << 16) / DrawAspectV;
 

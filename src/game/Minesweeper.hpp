@@ -405,10 +405,10 @@ struct Minesweeper {
         }
         const GameController& controller = input.controllers[memory.activeControllerIndex];
 
-        bool up = controller.stickLeft.up.endedDown || controller.stickRight.up.endedDown || controller.dPad.up.endedDown;
-        bool down = controller.stickLeft.down.endedDown || controller.stickRight.down.endedDown || controller.dPad.down.endedDown;
-        bool left = controller.stickLeft.left.endedDown || controller.stickRight.left.endedDown || controller.dPad.left.endedDown;
-        bool right = controller.stickLeft.right.endedDown || controller.stickRight.right.endedDown || controller.dPad.right.endedDown;
+        bool up = controller.stickLeft.up.endedDown || controller.dPad.up.endedDown;
+        bool down = controller.stickLeft.down.endedDown || controller.dPad.down.endedDown;
+        bool left = controller.stickLeft.left.endedDown || controller.dPad.left.endedDown;
+        bool right = controller.stickLeft.right.endedDown || controller.dPad.right.endedDown;
         auto buttonPressed = [](const auto& btn) { return btn.endedDown && btn.transitionCount; };
         bool primary = buttonPressed(controller.buttonA) || buttonPressed(input.mouse.buttonLeft) || !input.taps.empty();
         bool secondary = buttonPressed(controller.buttonB) || buttonPressed(input.mouse.buttonRight);
@@ -559,7 +559,7 @@ struct Minesweeper {
                          alternate(
                              VLine(markerPosition, -CHARACTER_HEIGHT),
                              VLine(markerPosition + Vec2i{CHARACTER_WIDTH - 1, 0}, -CHARACTER_HEIGHT))),
-                    HLine(markerPosition + Vec2i{0, -CHARACTER_HEIGHT}, CHARACTER_WIDTH))) {
+                    HLine(markerPosition + Vec2i{0, 1 - CHARACTER_HEIGHT}, CHARACTER_WIDTH))) {
                 if (pix >= Vec2i{} && pix < memory.videobuffer.size2d()) {
                     memory.videobuffer.at(pix) = 1;
                 }
