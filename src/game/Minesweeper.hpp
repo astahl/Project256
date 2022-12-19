@@ -38,41 +38,8 @@ enum class CellState : uint8_t {
     FlaggedMine = HiddenMine | FlaggedFlag,
 };
 
-template<typename T, T flag>
-requires(std::is_enum_v<T>)
-bool testFlag(const T value) {
-    using underlying_t = std::underlying_type_t<T>;
-    return (static_cast<underlying_t>(value) & static_cast<underlying_t>(flag)) == static_cast<underlying_t>(flag);
-}
 
-template<typename T, T flag>
-requires(std::is_enum_v<T>)
-void setFlag(T& value) {
-    using underlying_t = std::underlying_type_t<T>;
-    value = static_cast<T>(static_cast<underlying_t>(value) | static_cast<underlying_t>(flag));
-}
-
-template<typename T, T flag>
-requires(std::is_enum_v<T>)
-void unsetFlag(T& value) {
-    using underlying_t = std::underlying_type_t<T>;
-    value = static_cast<T>(static_cast<underlying_t>(value) & ~static_cast<underlying_t>(flag));
-}
-
-template<typename T, T flag>
-requires(std::is_enum_v<T>)
-bool toggleFlag(T& value) {
-    using underlying_t = std::underlying_type_t<T>;
-    bool isSet = testFlag<T, flag>(value);
-    if (isSet) {
-        unsetFlag<T, flag>(value);
-    }
-    else {
-        setFlag<T, flag>(value);
-    }
-    return !isSet;
-}
-
+using CellState_t = Flags<CellState>;
 
 enum class GameState {
     Init,
@@ -87,7 +54,7 @@ const auto MINECOUNT = 40;
 const auto WIDTH = 16;
 const auto HEIGHT = 16;
 
-using GameBoard_t = Image<CellState, WIDTH, HEIGHT>;
+using GameBoard_t = Image<CellState_t, WIDTH, HEIGHT>;
 
 const auto CHARACTER_WIDTH = 8;
 const auto CHARACTER_HEIGHT = 8;
@@ -230,7 +197,7 @@ void resetGame(GameMemory& memory) {
     }
 
     for (auto& cell : memory.board.pixels()) {
-        cell = static_cast<CellState>(static_cast<uint8_t>(cell) | static_cast<uint8_t>(CellState::HiddenFlag));
+        cell.set(CellState::HiddenFlag);
     }
 }
 
@@ -254,7 +221,7 @@ void showBoard(const GameBoard_t& board, Screen_t& screen, Vec2i offset) {
         }
         else
         {
-            switch (cell) {
+            switch (cell.value) {
                 case CellState::Mine:
                     t = CharROM::CharacterTable['*'];
                     c = {static_cast<uint8_t>(PaletteC64::Color::red), 0}; break;
@@ -310,9 +277,9 @@ Vec2i mapPositions(auto position, const T& imageFrom, const U& imageTo) {
 void onActionUnhideSelect(GameMemory& memory) {
     const Vec2i boardPosition = memory.selectedCell;
     if (boardPosition >= Vec2i{} && boardPosition <= memory.board.maxIndex()) {
-        CellState& cell = memory.board.at(boardPosition);
-        if (testFlag<CellState, CellState::HiddenFlag>(cell)) {
-            unsetFlag<CellState, CellState::HiddenFlag>(cell);
+        auto& cell = memory.board.at(boardPosition);
+        if (cell.test(CellState::HiddenFlag)) {
+            cell.reset(CellState::HiddenFlag);
             ++memory.turnCount;
             if (cell == CellState::Mine) {
                 memory.state = GameState::Lose;
@@ -325,7 +292,7 @@ void onActionUnhideSelect(GameMemory& memory) {
                     for (auto pos : Generators::Rectangle({}, memory.board.maxIndex()))
                     {
                         auto& fillingCell = memory.board.at(pos);
-                        if (!testFlag<CellState, CellState::HiddenFlag>(fillingCell)) {
+                        if (!fillingCell.test(CellState::HiddenFlag)) {
                             continue;
                         }
                         auto cornerMin = max(pos - Vec2i{1,1}, Vec2i{});
@@ -336,8 +303,7 @@ void onActionUnhideSelect(GameMemory& memory) {
                             }
                             auto& neighborCell = memory.board.at(neighborPos);
                             if (neighborCell == CellState::Free) {
-                                unsetFlag<CellState, CellState::HiddenFlag>(fillingCell);
-                                unsetFlag<CellState, CellState::FlaggedFlag>(fillingCell);
+                                fillingCell.reset(CellState::HiddenFlag, CellState::FlaggedFlag);
                                 changedCells++;
                                 break;
                             }
@@ -350,7 +316,7 @@ void onActionUnhideSelect(GameMemory& memory) {
 
             auto cells = memory.board.pixels();
             if (std::all_of(cells.begin(), cells.end(), [](auto& c) {
-                return !testFlag<CellState, CellState::HiddenFlag>(c) || c == CellState::HiddenMine || c == CellState::FlaggedMine;
+                return !c.test(CellState::HiddenFlag) || c == CellState::HiddenMine || c == CellState::FlaggedMine;
             })) {
                 memory.state = GameState::Win;
             };
@@ -364,9 +330,9 @@ void onActionUnhideSelect(GameMemory& memory) {
 void onActionFlagSelected(GameMemory& memory) {
     const Vec2i boardPosition = memory.selectedCell;
     if (boardPosition >= Vec2i{} && boardPosition <= memory.board.maxIndex()) {
-        CellState& cell = memory.board.at(boardPosition);
-        if (testFlag<CellState, CellState::HiddenFlag>(cell)) {
-            toggleFlag<CellState, CellState::FlaggedFlag>(cell);
+        auto& cell = memory.board.at(boardPosition);
+        if (cell.test(CellState::HiddenFlag)) {
+            cell.toggle(CellState::FlaggedFlag);
             showBoard(memory.board, memory.screen, memory.boardOffset);
             memory.screen.isDirty = true;
         }
