@@ -140,6 +140,7 @@
     <ClCompile Include="..\..\..\src\tests\TestsMain.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\src\tests\Math\FixedPointTest.hpp" />
     <ClInclude Include="..\..\..\src\tests\Math\TrigonometryTest.hpp" />
     <ClInclude Include="..\..\..\src\tests\Test.hpp" />
   </ItemGroup>
