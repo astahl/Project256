@@ -16,7 +16,7 @@ void somethingWorks(Test& t)
     FixedPointReal<1, int> a{2.5};
     FixedPointReal<2, int> b{a};
     FixedPointReal<3, int> c = a;
-    t.expect(a.toInt(), 2);
+    t.expect(static_cast<int>(a), 2);
     t.expect(b.data, 0b1010);
     t.expect(c.data, 0b10100);
 
@@ -24,9 +24,11 @@ void somethingWorks(Test& t)
 
     FixedPointReal<0, int> d = a;
     t.expect(d.data, 0b10);
+    int implicit = d;
+    t.expect(d.toInt(), implicit);
+
     FixedPointReal<-1, int> e = a;
     t.expect(e.data, 0b1);
-
 
     FixedPointReal<8, uint8_t> f{0.5};
     t.expect(f.data, 128);

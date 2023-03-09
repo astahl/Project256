@@ -17,7 +17,6 @@ struct RawTag {};
 template <int P, std::integral T>
 struct FixedPointReal {
     static const int precision = P;
-
     T data;
 
     constexpr FixedPointReal() {
@@ -26,6 +25,10 @@ struct FixedPointReal {
 
     constexpr FixedPointReal(T value, RawTag) {
         data = value;
+    }
+
+    constexpr FixedPointReal(T value) requires(P == 0) {
+        return data = value;
     }
 
     template <int Q>
@@ -59,15 +62,15 @@ struct FixedPointReal {
             data = static_cast<T>(value);
         }
         if constexpr (P > 0) {
-            data = static_cast<T>((T{1} << P) * value);
+            data = static_cast<T>((1 << P) * value);
         }
         if constexpr (P < 0) {
-            data = static_cast<T>(value / (T{1} << -P));
+            data = static_cast<T>(value / (1 << -P));
         }
     }
 
     template<std::integral U = int>
-    constexpr U toInt() {
+    constexpr explicit operator U() const {
         if constexpr (P == 0) {
             return static_cast<U>(data);
         }
@@ -79,8 +82,12 @@ struct FixedPointReal {
         }
     }
 
+    constexpr operator T() const requires(P == 0) {
+        return data;
+    }
+
     template <std::floating_point U = float>
-    constexpr U toFloat() {
+    constexpr explicit operator U() const {
         if constexpr (P == 0) {
             return static_cast<U>(data);
         }
@@ -90,6 +97,16 @@ struct FixedPointReal {
         if constexpr (P < 0) {
             return static_cast<U>(data) * (1 << -P);
         }
+    }
+
+    template<std::integral U = int>
+    constexpr U toInt() const {
+        return static_cast<U>(*this);
+    }
+
+    template <std::floating_point U = float>
+    constexpr U toFloat() const {
+        return static_cast<U>(*this);
     }
 };
 

@@ -6,7 +6,7 @@
 ///
 /// Windows
 ///
-/// * Fix scaling blur issues (custom supersampling shader?)
+/// * [x] Fix scaling blur issues (custom supersampling shader?)
 ///
 /// Mac
 ///

@@ -95,7 +95,7 @@ struct Test {
         if (matcher == value)
             return success();
         else
-            return fail() << " value " << value << " equals (==) " << matcher;
+            return fail() << " value " << static_cast<M>(value) << " equals (==) " << matcher;
     }
 
     std::ostream& success() {
