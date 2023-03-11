@@ -52,11 +52,8 @@ constant unsigned InputMaxTaps = 20;
 constant unsigned InputMaxTextLength = 256;
 
 #ifdef __cplusplus
-#include <cstdint>
 #define _Bool bool
 extern "C" {
-#else
-#include "stdint.h"
 #endif
 
 struct Vec2f {
