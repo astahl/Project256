@@ -19,79 +19,60 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\platform_win32\Direct3D12View.cpp" />
-    <ClCompile Include="..\..\src\platform_win32\GameState.cpp" />
-    <ClCompile Include="..\..\src\platform_win32\MainWindow.cpp" />
-    <ClCompile Include="..\..\src\platform_win32\PlatformAudio.cpp" />
-    <ClCompile Include="..\..\src\platform_win32\WinMain.cpp" />
+    <ClInclude Include="..\..\..\src\game\defines.h" />
+    <ClInclude Include="..\..\..\src\game\Drawing\Generators.hpp" />
+    <ClInclude Include="..\..\..\src\game\Drawing\Images.hpp" />
+    <ClInclude Include="..\..\..\src\game\Drawing\InterleavedBitmaps.hpp" />
+    <ClInclude Include="..\..\..\src\game\Drawing\Palettes.hpp" />
+    <ClInclude Include="..\..\..\src\game\Drawing\Sprites.hpp" />
+    <ClInclude Include="..\..\..\src\game\FML\RangesAtHome.hpp" />
+    <ClInclude Include="..\..\..\src\game\Math\FixedPoint.hpp" />
+    <ClInclude Include="..\..\..\src\game\Math\Trigonometry.hpp" />
+    <ClInclude Include="..\..\..\src\game\Math\Vec2Math.hpp" />
+    <ClInclude Include="..\..\..\src\game\Minesweeper.hpp" />
+    <ClInclude Include="..\..\..\src\game\Profiling\Timings.h" />
+    <ClInclude Include="..\..\..\src\game\Project256.h" />
+    <ClInclude Include="..\..\..\src\game\TestBed.hpp" />
+    <ClInclude Include="..\..\..\src\game\Utility\ABunchOf.hpp" />
+    <ClInclude Include="..\..\..\src\game\Utility\CircularIndex.hpp" />
+    <ClInclude Include="..\..\..\src\game\Utility\Flags.hpp" />
+    <ClInclude Include="..\..\..\src\game\Utility\FrameInput.hpp" />
+    <ClInclude Include="..\..\..\src\game\Utility\Text.hpp" />
+    <ClInclude Include="..\..\..\src\game\Utility\Timers.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\src\platform_win32\Direct3D12View.h" />
-    <ClInclude Include="..\..\src\platform_win32\GameState.h" />
-    <ClInclude Include="..\..\src\platform_win32\MainWindow.h" />
-    <ClInclude Include="..\..\src\platform_win32\PlatformAudio.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <CopyFileToFolders Include="..\..\src\platform_win32\Shader.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
-      <FileType>Document</FileType>
-    </CopyFileToFolders>
-  </ItemGroup>
-  <ItemGroup>
-    <CopyFileToFolders Include="..\..\assets\CharacterRomPET8x8x256.bin">
-      <DeploymentContent>true</DeploymentContent>
-      <FileType>Document</FileType>
-    </CopyFileToFolders>
-  </ItemGroup>
-  <ItemGroup>
-    <CopyFileToFolders Include="..\..\assets\test.bmp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
-      <DeploymentContent>true</DeploymentContent>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
-    </CopyFileToFolders>
-  </ItemGroup>
-  <ItemGroup>
-    <CopyFileToFolders Include="..\..\assets\Faufau.brush">
-      <FileType>Document</FileType>
-    </CopyFileToFolders>
-    <CopyFileToFolders Include="..\..\assets\Faufau.ilbm">
-      <FileType>Document</FileType>
-    </CopyFileToFolders>
+    <ClCompile Include="..\..\..\src\game\Profiling\Timings.cpp" />
+    <ClCompile Include="..\..\..\src\game\Project256.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{2eef0e53-162f-4e26-ad34-eba748660df6}</ProjectGuid>
-    <RootNamespace>Project256</RootNamespace>
+    <ProjectGuid>{9fee762d-b66f-4db0-8f14-3aa3108d2e70}</ProjectGuid>
+    <RootNamespace>Game256</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -118,23 +99,24 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>$(SolutionDir)..\..\out\$(Platform)$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\..\tmp\$(ProjectName)_$(Platform)$(Configuration)\</IntDir>
-    <AllProjectIncludesArePublic>true</AllProjectIncludesArePublic>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>$(SolutionDir)..\..\out\$(Platform)$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\..\tmp\$(ProjectName)_$(Platform)$(Configuration)\</IntDir>
-    <AllProjectIncludesArePublic>true</AllProjectIncludesArePublic>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;GAME256_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableUAC>false</EnableUAC>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -143,32 +125,37 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;GAME256_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableUAC>false</EnableUAC>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>Level4</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;GAME256_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <TreatWarningAsError>true</TreatWarningAsError>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>Game256.lib;Xinput.lib;d3d12.lib;dxgi.lib;dxguid.lib;d3dcompiler.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(OutDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <EnableUAC>false</EnableUAC>
     </Link>
-    <ProjectReference />
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -176,21 +163,22 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;GAME256_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\..\src\game;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>Game256.lib;Xinput.lib;d3d12.lib;dxgi.lib;d3dcompiler.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(OutDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <EnableUAC>false</EnableUAC>
     </Link>
-    <ProjectReference />
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

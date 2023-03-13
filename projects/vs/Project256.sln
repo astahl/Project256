@@ -4,8 +4,16 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 17.2.32516.85
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Project256", "Project256.vcxproj", "{2EEF0E53-162F-4E26-AD34-EBA748660DF6}"
+	ProjectSection(ProjectDependencies) = postProject
+		{9FEE762D-B66F-4DB0-8F14-3AA3108D2E70} = {9FEE762D-B66F-4DB0-8F14-3AA3108D2E70}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestProject256", "TestProject256\TestProject256.vcxproj", "{905A86EE-0492-4A6D-AD40-CD3B0B94AE95}"
+	ProjectSection(ProjectDependencies) = postProject
+		{9FEE762D-B66F-4DB0-8F14-3AA3108D2E70} = {9FEE762D-B66F-4DB0-8F14-3AA3108D2E70}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Game256", "Game256\Game256.vcxproj", "{9FEE762D-B66F-4DB0-8F14-3AA3108D2E70}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -31,6 +39,14 @@ Global
 		{905A86EE-0492-4A6D-AD40-CD3B0B94AE95}.Release|x64.Build.0 = Release|x64
 		{905A86EE-0492-4A6D-AD40-CD3B0B94AE95}.Release|x86.ActiveCfg = Release|Win32
 		{905A86EE-0492-4A6D-AD40-CD3B0B94AE95}.Release|x86.Build.0 = Release|Win32
+		{9FEE762D-B66F-4DB0-8F14-3AA3108D2E70}.Debug|x64.ActiveCfg = Debug|x64
+		{9FEE762D-B66F-4DB0-8F14-3AA3108D2E70}.Debug|x64.Build.0 = Debug|x64
+		{9FEE762D-B66F-4DB0-8F14-3AA3108D2E70}.Debug|x86.ActiveCfg = Debug|Win32
+		{9FEE762D-B66F-4DB0-8F14-3AA3108D2E70}.Debug|x86.Build.0 = Debug|Win32
+		{9FEE762D-B66F-4DB0-8F14-3AA3108D2E70}.Release|x64.ActiveCfg = Release|x64
+		{9FEE762D-B66F-4DB0-8F14-3AA3108D2E70}.Release|x64.Build.0 = Release|x64
+		{9FEE762D-B66F-4DB0-8F14-3AA3108D2E70}.Release|x86.ActiveCfg = Release|Win32
+		{9FEE762D-B66F-4DB0-8F14-3AA3108D2E70}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

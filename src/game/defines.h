@@ -23,4 +23,10 @@
 #define CF_SWIFT_NAME(a)
 #endif
 
+#ifdef GAME256_EXPORTS
+#define GAME256_API __declspec(dllexport)
+#else
+#define GAME256_API __declspec(dllimport)
+#endif
+
 #endif /* defines_h */

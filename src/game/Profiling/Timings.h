@@ -52,13 +52,13 @@ struct TimingData {
 extern "C" {
 #endif
 
-void profiling_time_set(struct TimingData* data, enum TimingTimer timer)
+GAME256_API void profiling_time_set(struct TimingData* data, enum TimingTimer timer)
     CF_SWIFT_NAME(ProfilingTime.startTimer(self:_:));
-void profiling_time_interval(struct TimingData* data, enum TimingTimer timer, enum TimingInterval interval)
+GAME256_API void profiling_time_interval(struct TimingData* data, enum TimingTimer timer, enum TimingInterval interval)
     CF_SWIFT_NAME(ProfilingTime.interval(self:timer:interval:));
-int profiling_time_print(struct TimingData* data, char* buffer, int bufferSize)
+GAME256_API int profiling_time_print(struct TimingData* data, char* buffer, int bufferSize)
     CF_SWIFT_NAME(ProfilingTime.printTo(self:buffer:size:));
-void profiling_time_clear(struct TimingData* data)
+GAME256_API void profiling_time_clear(struct TimingData* data)
     CF_SWIFT_NAME(ProfilingTime.clear(self:));
 
 

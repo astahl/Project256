@@ -19,26 +19,8 @@
     <Filter Include="Header Files\Platform">
       <UniqueIdentifier>{7adc4c76-d84e-4309-b655-a8edeb530ff6}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Drawing">
-      <UniqueIdentifier>{3c40c6e5-13a2-4167-8206-0c1aff137e95}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\FML">
-      <UniqueIdentifier>{2df96f80-c727-4fba-80d1-4db7b4267923}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Profiling">
-      <UniqueIdentifier>{2ab806c8-0f24-4124-8614-16cdc2ea312d}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Profiling">
-      <UniqueIdentifier>{3d6ed653-ae58-4e89-9f32-cdde7bba52c2}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Assets">
       <UniqueIdentifier>{8faa85f7-73a2-4454-a8e7-e6ba0c45839c}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Math">
-      <UniqueIdentifier>{733ee4ae-ea31-4178-ac0b-47a8e53f0800}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Utility">
-      <UniqueIdentifier>{85bed556-91e6-459e-bffa-ec187ca8d9a7}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -54,20 +36,11 @@
     <ClCompile Include="..\..\src\platform_win32\GameState.cpp">
       <Filter>Source Files\Platform</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\game\Project256.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\game\Profiling\Timings.cpp">
-      <Filter>Source Files\Profiling</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\platform_win32\PlatformAudio.cpp">
       <Filter>Source Files\Platform</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\src\game\Project256.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\platform_win32\MainWindow.h">
       <Filter>Header Files\Platform</Filter>
     </ClInclude>
@@ -77,59 +50,8 @@
     <ClInclude Include="..\..\src\platform_win32\GameState.h">
       <Filter>Header Files\Platform</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\game\defines.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\game\FML\RangesAtHome.hpp">
-      <Filter>Header Files\FML</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\game\Drawing\Palettes.hpp">
-      <Filter>Header Files\Drawing</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\game\Drawing\Generators.hpp">
-      <Filter>Header Files\Drawing</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\game\Drawing\Sprites.hpp">
-      <Filter>Header Files\Drawing</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\game\Profiling\Timings.h">
-      <Filter>Header Files\Profiling</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\game\Math\Vec2Math.hpp">
-      <Filter>Header Files\Math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\game\Drawing\InterleavedBitmaps.hpp">
-      <Filter>Header Files\Drawing</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\game\Drawing\Images.hpp">
-      <Filter>Header Files\Drawing</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\game\Utility\Text.hpp">
-      <Filter>Header Files\Utility</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\game\Utility\Timers.hpp">
-      <Filter>Header Files\Utility</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\game\Math\Trigonometry.hpp">
-      <Filter>Header Files\Math</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\platform_win32\PlatformAudio.h">
       <Filter>Header Files\Platform</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\game\TestBed.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\game\Utility\CircularIndex.hpp">
-      <Filter>Header Files\Utility</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\game\Utility\ABunchOf.hpp">
-      <Filter>Header Files\Utility</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\game\Utility\FrameInput.hpp">
-      <Filter>Header Files\Utility</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\game\Utility\Flags.hpp">
-      <Filter>Header Files\Utility</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

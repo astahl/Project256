@@ -23,6 +23,7 @@
 #ifndef PROJECT_256_H
 #define PROJECT_256_H
 
+
 #include "defines.h"
 
 // global static constants
@@ -177,11 +178,11 @@ struct GameOutput {
 	struct Rumble rumble[InputMaxControllers];
 };
 
-struct Vec2f clipSpaceDrawBufferScale(unsigned int viewportWidth, unsigned int viewportHeight);
-void cleanInput(struct GameInput* input);
-struct GameOutput doGameThings(struct GameInput* input, void* memory, struct PlatformCallbacks callbacks);
-void writeDrawBuffer(void* memory, void* buffer);
-void writeAudioBuffer(void* memory, void* buffer, struct AudioBufferDescriptor bufferDescriptor);
+GAME256_API struct Vec2f clipSpaceDrawBufferScale(unsigned int viewportWidth, unsigned int viewportHeight);
+GAME256_API void cleanInput(struct GameInput* input);
+GAME256_API struct GameOutput doGameThings(struct GameInput* input, void* memory, struct PlatformCallbacks callbacks);
+GAME256_API void writeDrawBuffer(void* memory, void* buffer);
+GAME256_API void writeAudioBuffer(void* memory, void* buffer, struct AudioBufferDescriptor bufferDescriptor);
 
 #ifdef __cplusplus
 }

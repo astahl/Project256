@@ -1,0 +1,105 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Header Files\Drawing">
+      <UniqueIdentifier>{ddda4d02-51e6-4fe4-bc2f-cbc824c40b4c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\FML">
+      <UniqueIdentifier>{8202a150-b3b7-450d-b0e1-77ec13456a6f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Math">
+      <UniqueIdentifier>{5497a75d-7260-44da-8f87-612977c51dfe}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Profiling">
+      <UniqueIdentifier>{eb919536-7331-4e0a-bf06-75ef65d6651f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Utility">
+      <UniqueIdentifier>{9b6cb52b-a3af-42ee-9e2c-5ab368b004f6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Profiling">
+      <UniqueIdentifier>{3b87e407-7cdc-4834-9746-8f73321821d4}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\src\game\Drawing\Generators.hpp">
+      <Filter>Header Files\Drawing</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\game\Drawing\Images.hpp">
+      <Filter>Header Files\Drawing</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\game\Drawing\InterleavedBitmaps.hpp">
+      <Filter>Header Files\Drawing</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\game\Drawing\Palettes.hpp">
+      <Filter>Header Files\Drawing</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\game\Drawing\Sprites.hpp">
+      <Filter>Header Files\Drawing</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\game\FML\RangesAtHome.hpp">
+      <Filter>Header Files\FML</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\game\Math\Trigonometry.hpp">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\game\Math\Vec2Math.hpp">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\game\Profiling\Timings.h">
+      <Filter>Header Files\Profiling</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\game\Utility\ABunchOf.hpp">
+      <Filter>Header Files\Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\game\Utility\CircularIndex.hpp">
+      <Filter>Header Files\Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\game\Utility\Flags.hpp">
+      <Filter>Header Files\Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\game\Utility\FrameInput.hpp">
+      <Filter>Header Files\Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\game\Utility\Text.hpp">
+      <Filter>Header Files\Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\game\Utility\Timers.hpp">
+      <Filter>Header Files\Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\game\defines.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\game\Project256.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\game\TestBed.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\game\Math\FixedPoint.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\game\Minesweeper.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\src\game\Profiling\Timings.cpp">
+      <Filter>Source Files\Profiling</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\game\Project256.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
