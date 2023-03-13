@@ -23,10 +23,15 @@
 #define CF_SWIFT_NAME(a)
 #endif
 
+/// Windows automatic DLL Export / Import macros, clang/gcc visibility
+#ifdef _MSC_VER
 #ifdef GAME256_EXPORTS
 #define GAME256_API __declspec(dllexport)
 #else
 #define GAME256_API __declspec(dllimport)
+#endif
+#else
+#define GAME256_API __attribute__((visibility("default")))
 #endif
 
 #endif /* defines_h */
