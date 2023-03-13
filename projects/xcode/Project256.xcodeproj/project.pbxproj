@@ -17,8 +17,6 @@
 		6845559F283D8044004AD3FB /* Project256App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6845558E283D8043004AD3FB /* Project256App.swift */; };
 		684555AB283D86C9004AD3FB /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 684555AA283D86C9004AD3FB /* Assets.xcassets */; };
 		684555AC283D86C9004AD3FB /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 684555AA283D86C9004AD3FB /* Assets.xcassets */; };
-		685035D3283F9D4E00355252 /* Project256.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 68455589283D7F08004AD3FB /* Project256.cpp */; };
-		685035D4283F9D4F00355252 /* Project256.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 68455589283D7F08004AD3FB /* Project256.cpp */; };
 		685035D92842921900355252 /* DrawBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 685035D82842921900355252 /* DrawBuffer.swift */; };
 		685035DA2842921900355252 /* DrawBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 685035D82842921900355252 /* DrawBuffer.swift */; };
 		68565FE1287B08F400D07090 /* PlatformInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68565FE0287B08F400D07090 /* PlatformInput.swift */; };
@@ -38,31 +36,52 @@
 		685741D22868ED8C00B13B23 /* Faufau.ilbm in Resources */ = {isa = PBXBuildFile; fileRef = 685741CE2868ED8C00B13B23 /* Faufau.ilbm */; };
 		6859DD0228673522009137CC /* GameSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6859DD0128673522009137CC /* GameSettings.swift */; };
 		6859DD0328673522009137CC /* GameSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6859DD0128673522009137CC /* GameSettings.swift */; };
+		68636ADD29BCCB8600AA00DA /* Timings.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 68D205D52854EE2F00CB4213 /* Timings.cpp */; };
+		68636ADE29BCCB8600AA00DA /* Project256.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 68455589283D7F08004AD3FB /* Project256.cpp */; };
+		68636ADF29BCCB9700AA00DA /* Timings.h in Headers */ = {isa = PBXBuildFile; fileRef = 68D205D62854EE2F00CB4213 /* Timings.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		68636AE029BCCB9900AA00DA /* Project256.h in Headers */ = {isa = PBXBuildFile; fileRef = 6845558A283D7F08004AD3FB /* Project256.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		68636AE129BCCC4000AA00DA /* Game256.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 68636AD229BCCB5300AA00DA /* Game256.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		68636AE229BCCC6500AA00DA /* Game256.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 68636AD229BCCB5300AA00DA /* Game256.dylib */; settings = {ATTRIBUTES = (Required, ); }; };
 		687CC8442947B76A00FAE240 /* TestsMain.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 687CC8382947B68900FAE240 /* TestsMain.cpp */; };
-		689A250D284BE37D0086DD58 /* Palettes.hpp in Sources */ = {isa = PBXBuildFile; fileRef = 689A250B284BE37D0086DD58 /* Palettes.hpp */; };
 		689E03232857A61D00DF8738 /* GameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 689E03222857A61D00DF8738 /* GameView.swift */; };
 		689E03242857A61D00DF8738 /* GameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 689E03222857A61D00DF8738 /* GameView.swift */; };
 		689E03262857A67600DF8738 /* DrawBufferView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 689E03252857A67600DF8738 /* DrawBufferView.swift */; };
 		689E03272857A67600DF8738 /* DrawBufferView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 689E03252857A67600DF8738 /* DrawBufferView.swift */; };
 		689E03292857BEF300DF8738 /* KeyboardMouseModifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 689E03282857BEF300DF8738 /* KeyboardMouseModifiers.swift */; };
 		689E032A2857BEF300DF8738 /* KeyboardMouseModifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 689E03282857BEF300DF8738 /* KeyboardMouseModifiers.swift */; };
-		68D205CC28512A0000CB4213 /* Generators.hpp in Sources */ = {isa = PBXBuildFile; fileRef = 68D205CB28512A0000CB4213 /* Generators.hpp */; };
-		68D205CD28512A0000CB4213 /* Generators.hpp in Sources */ = {isa = PBXBuildFile; fileRef = 68D205CB28512A0000CB4213 /* Generators.hpp */; };
-		68D205D22854101100CB4213 /* Vec2Math.hpp in Sources */ = {isa = PBXBuildFile; fileRef = 68D205D12854101100CB4213 /* Vec2Math.hpp */; };
-		68D205D32854101100CB4213 /* Vec2Math.hpp in Sources */ = {isa = PBXBuildFile; fileRef = 68D205D12854101100CB4213 /* Vec2Math.hpp */; };
-		68D205D72854EE2F00CB4213 /* Timings.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 68D205D52854EE2F00CB4213 /* Timings.cpp */; };
-		68D205D82854EE2F00CB4213 /* Timings.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 68D205D52854EE2F00CB4213 /* Timings.cpp */; };
 		68D205DC2855EAAF00CB4213 /* MetalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6819ACC1283ECD8E00CCBFD5 /* MetalView.swift */; };
 		68D205DD2855EAB000CB4213 /* MetalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6819ACC1283ECD8E00CCBFD5 /* MetalView.swift */; };
 		68D205DE2855EE3700CB4213 /* GameState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 685035D528428EE200355252 /* GameState.swift */; };
 		68D205DF2855EE3800CB4213 /* GameState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 685035D528428EE200355252 /* GameState.swift */; };
+		68F516F829BCD32A001C5A25 /* Game256.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 68636AD229BCCB5300AA00DA /* Game256.dylib */; };
 		68FC4A0E2861B6F4009FC29D /* CharacterRomPET8x8x256.bin in Resources */ = {isa = PBXBuildFile; fileRef = 68FC4A0D2861B6F4009FC29D /* CharacterRomPET8x8x256.bin */; };
 		68FC4A0F2861B6F4009FC29D /* CharacterRomPET8x8x256.bin in Resources */ = {isa = PBXBuildFile; fileRef = 68FC4A0D2861B6F4009FC29D /* CharacterRomPET8x8x256.bin */; };
 		68FC4A112863A6C9009FC29D /* test.bmp in Resources */ = {isa = PBXBuildFile; fileRef = 68FC4A102863A6C9009FC29D /* test.bmp */; };
 		68FC4A122863A6C9009FC29D /* test.bmp in Resources */ = {isa = PBXBuildFile; fileRef = 68FC4A102863A6C9009FC29D /* test.bmp */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		68F516F929BCD3C0001C5A25 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 687B91AE283D7E95007604C7 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 68636AD129BCCB5300AA00DA;
+			remoteInfo = Game256;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXCopyFilesBuildPhase section */
+		68636ACD29BCCA5B00AA00DA /* Embed Libraries */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				68636AE129BCCC4000AA00DA /* Game256.dylib in Embed Libraries */,
+			);
+			name = "Embed Libraries";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		687CC83B2947B71000FAE240 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -108,6 +127,7 @@
 		685741CD2868ED8C00B13B23 /* Faufau.brush */ = {isa = PBXFileReference; lastKnownFileType = file; name = Faufau.brush; path = ../../assets/Faufau.brush; sourceTree = "<group>"; };
 		685741CE2868ED8C00B13B23 /* Faufau.ilbm */ = {isa = PBXFileReference; lastKnownFileType = file; name = Faufau.ilbm; path = ../../assets/Faufau.ilbm; sourceTree = "<group>"; };
 		6859DD0128673522009137CC /* GameSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameSettings.swift; sourceTree = "<group>"; };
+		68636AD229BCCB5300AA00DA /* Game256.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = Game256.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
 		687CC8382947B68900FAE240 /* TestsMain.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = TestsMain.cpp; sourceTree = "<group>"; };
 		687CC83D2947B71000FAE240 /* TestProject256 */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = TestProject256; sourceTree = BUILT_PRODUCTS_DIR; };
 		687CC8452947B87C00FAE240 /* Test.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Test.hpp; sourceTree = "<group>"; };
@@ -139,10 +159,19 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				68F516F829BCD32A001C5A25 /* Game256.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		68455598283D8044004AD3FB /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				68636AE229BCCC6500AA00DA /* Game256.dylib in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		68636AD029BCCB5300AA00DA /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -251,6 +280,7 @@
 				68455595283D8044004AD3FB /* Project256.app */,
 				6845559B283D8044004AD3FB /* Project256.app */,
 				687CC83D2947B71000FAE240 /* TestProject256 */,
+				68636AD229BCCB5300AA00DA /* Game256.dylib */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -282,6 +312,7 @@
 				6845558B283D7F22004AD3FB /* Platform */,
 				6845559C283D8044004AD3FB /* macOS */,
 				68455596283D8044004AD3FB /* Products */,
+				68F516F729BCD32A001C5A25 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -342,6 +373,13 @@
 			path = Audio;
 			sourceTree = "<group>";
 		};
+		68F516F729BCD32A001C5A25 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		68FC4A0C2861B67C009FC29D /* Assets */ = {
 			isa = PBXGroup;
 			children = (
@@ -354,6 +392,18 @@
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		68636ACE29BCCB5300AA00DA /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				68636ADF29BCCB9700AA00DA /* Timings.h in Headers */,
+				68636AE029BCCB9900AA00DA /* Project256.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
 
 /* Begin PBXNativeTarget section */
 		68455594283D8044004AD3FB /* Project256 (iOS) */ = {
@@ -380,15 +430,34 @@
 				68455597283D8044004AD3FB /* Sources */,
 				68455598283D8044004AD3FB /* Frameworks */,
 				68455599283D8044004AD3FB /* Resources */,
+				68636ACD29BCCA5B00AA00DA /* Embed Libraries */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				68F516FA29BCD3C0001C5A25 /* PBXTargetDependency */,
 			);
 			name = "Project256 (macOS)";
 			productName = "Project256 (macOS)";
 			productReference = 6845559B283D8044004AD3FB /* Project256.app */;
 			productType = "com.apple.product-type.application";
+		};
+		68636AD129BCCB5300AA00DA /* Game256 */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 68636ADA29BCCB5300AA00DA /* Build configuration list for PBXNativeTarget "Game256" */;
+			buildPhases = (
+				68636ACE29BCCB5300AA00DA /* Headers */,
+				68636ACF29BCCB5300AA00DA /* Sources */,
+				68636AD029BCCB5300AA00DA /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Game256;
+			productName = Game256;
+			productReference = 68636AD229BCCB5300AA00DA /* Game256.dylib */;
+			productType = "com.apple.product-type.library.dynamic";
 		};
 		687CC83C2947B71000FAE240 /* TestProject256 */ = {
 			isa = PBXNativeTarget;
@@ -423,6 +492,9 @@
 					6845559A283D8044004AD3FB = {
 						CreatedOnToolsVersion = 13.4;
 					};
+					68636AD129BCCB5300AA00DA = {
+						CreatedOnToolsVersion = 14.2;
+					};
 					687CC83C2947B71000FAE240 = {
 						CreatedOnToolsVersion = 14.1;
 					};
@@ -441,6 +513,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
+				68636AD129BCCB5300AA00DA /* Game256 */,
 				68455594283D8044004AD3FB /* Project256 (iOS) */,
 				6845559A283D8044004AD3FB /* Project256 (macOS) */,
 				687CC83C2947B71000FAE240 /* TestProject256 */,
@@ -482,24 +555,20 @@
 			files = (
 				685035D92842921900355252 /* DrawBuffer.swift in Sources */,
 				68565FEB287B12D600D07090 /* PlatformCallbacks.swift in Sources */,
-				685035D3283F9D4E00355252 /* Project256.cpp in Sources */,
 				68565FE8287B123800D07090 /* Chronometer.swift in Sources */,
 				6859DD0228673522009137CC /* GameSettings.swift in Sources */,
 				68565FE1287B08F400D07090 /* PlatformInput.swift in Sources */,
 				68D205DC2855EAAF00CB4213 /* MetalView.swift in Sources */,
-				68D205CC28512A0000CB4213 /* Generators.hpp in Sources */,
 				6819ACC5283EDFFC00CCBFD5 /* MetalViewShader.metal in Sources */,
 				68565FE5287B121100D07090 /* TupleAccess.swift in Sources */,
 				689E03232857A61D00DF8738 /* GameView.swift in Sources */,
 				6808AAD32912EAB600949EA2 /* ProfilingView.swift in Sources */,
 				68177539288D5DA300200C0E /* PlatformProfiling.swift in Sources */,
-				68D205D72854EE2F00CB4213 /* Timings.cpp in Sources */,
 				6845559E283D8044004AD3FB /* Project256App.swift in Sources */,
 				68565FF1287B444100D07090 /* PlatformAudio.swift in Sources */,
 				68D205DF2855EE3800CB4213 /* GameState.swift in Sources */,
 				689E03262857A67600DF8738 /* DrawBufferView.swift in Sources */,
 				689E03292857BEF300DF8738 /* KeyboardMouseModifiers.swift in Sources */,
-				68D205D22854101100CB4213 /* Vec2Math.hpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -510,25 +579,29 @@
 				685035DA2842921900355252 /* DrawBuffer.swift in Sources */,
 				68565FEF287B1D8A00D07090 /* InputEvents.swift in Sources */,
 				68565FEC287B12D600D07090 /* PlatformCallbacks.swift in Sources */,
-				685035D4283F9D4F00355252 /* Project256.cpp in Sources */,
 				68D205DD2855EAB000CB4213 /* MetalView.swift in Sources */,
 				6808AAD42912EAB600949EA2 /* ProfilingView.swift in Sources */,
-				68D205CD28512A0000CB4213 /* Generators.hpp in Sources */,
 				6819ACC6283EDFFC00CCBFD5 /* MetalViewShader.metal in Sources */,
 				689E03242857A61D00DF8738 /* GameView.swift in Sources */,
 				6817753A288D5DA300200C0E /* PlatformProfiling.swift in Sources */,
 				6859DD0328673522009137CC /* GameSettings.swift in Sources */,
 				68565FF2287B444100D07090 /* PlatformAudio.swift in Sources */,
-				68D205D82854EE2F00CB4213 /* Timings.cpp in Sources */,
 				68565FE6287B121100D07090 /* TupleAccess.swift in Sources */,
 				68565FE2287B08F400D07090 /* PlatformInput.swift in Sources */,
 				6845559F283D8044004AD3FB /* Project256App.swift in Sources */,
 				68D205DE2855EE3700CB4213 /* GameState.swift in Sources */,
-				689A250D284BE37D0086DD58 /* Palettes.hpp in Sources */,
 				689E03272857A67600DF8738 /* DrawBufferView.swift in Sources */,
 				689E032A2857BEF300DF8738 /* KeyboardMouseModifiers.swift in Sources */,
 				68565FE9287B123800D07090 /* Chronometer.swift in Sources */,
-				68D205D32854101100CB4213 /* Vec2Math.hpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		68636ACF29BCCB5300AA00DA /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				68636ADD29BCCB8600AA00DA /* Timings.cpp in Sources */,
+				68636ADE29BCCB8600AA00DA /* Project256.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -541,6 +614,14 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		68F516FA29BCD3C0001C5A25 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 68636AD129BCCB5300AA00DA /* Game256 */;
+			targetProxy = 68F516F929BCD3C0001C5A25 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		684555A5283D8044004AD3FB /* Debug */ = {
@@ -766,7 +847,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 12.3;
+				MACOSX_DEPLOYMENT_TARGET = 13.1;
 				MARKETING_VERSION = 1.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -840,7 +921,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 12.3;
+				MACOSX_DEPLOYMENT_TARGET = 13.1;
 				MARKETING_VERSION = 1.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
@@ -851,6 +932,93 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		68636ADB29BCCB5300AA00DA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 957DHFM274;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				EXECUTABLE_PREFIX = "";
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_CPP_EXCEPTIONS = NO;
+				GCC_ENABLE_CPP_RTTI = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				INSTALL_PATH = "@executable_path/../Frameworks";
+				MACH_O_TYPE = mh_dylib;
+				MACOSX_DEPLOYMENT_TARGET = 13.1;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchsimulator watchos macosx iphonesimulator iphoneos driverkit appletvsimulator appletvos";
+				SUPPORTS_MACCATALYST = YES;
+			};
+			name = Debug;
+		};
+		68636ADC29BCCB5300AA00DA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 957DHFM274;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				ENABLE_NS_ASSERTIONS = NO;
+				EXECUTABLE_PREFIX = "";
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_ENABLE_CPP_EXCEPTIONS = NO;
+				GCC_ENABLE_CPP_RTTI = NO;
+				GCC_OPTIMIZATION_LEVEL = s;
+				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				INSTALL_PATH = "@executable_path/../Frameworks";
+				MACH_O_TYPE = mh_dylib;
+				MACOSX_DEPLOYMENT_TARGET = 13.1;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchsimulator watchos macosx iphonesimulator iphoneos driverkit appletvsimulator appletvos";
+				SUPPORTS_MACCATALYST = YES;
 			};
 			name = Release;
 		};
@@ -953,6 +1121,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				ONLY_ACTIVE_ARCH = NO;
 				SDKROOT = macosx;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_ENFORCE_EXCLUSIVE_ACCESS = "debug-only";
@@ -1047,6 +1216,15 @@
 			buildConfigurations = (
 				684555A8283D8044004AD3FB /* Debug */,
 				684555A9283D8044004AD3FB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		68636ADA29BCCB5300AA00DA /* Build configuration list for PBXNativeTarget "Game256" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				68636ADB29BCCB5300AA00DA /* Debug */,
+				68636ADC29BCCB5300AA00DA /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
