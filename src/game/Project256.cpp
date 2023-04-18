@@ -45,7 +45,7 @@ void cleanInput(GameInput* input) {
             axis[axis1Index].start = axis[axis1Index].end;
         }
         Axis2* axis2 = &controller.stickLeft;
-        for (int axis2Index = 0; axis2Index < InputControllerAxis1Count; ++axis2Index)
+        for (int axis2Index = 0; axis2Index < InputControllerAxis2Count; ++axis2Index)
         {
             axis2[axis2Index].left.transitionCount = 0;
             axis2[axis2Index].up.transitionCount = 0;
@@ -92,7 +92,6 @@ GameOutput doGameThings(GameInput* pInput, void* pMemory, PlatformCallbacks plat
 
     auto& memory = *reinterpret_cast<Game::MemoryLayout*>(pMemory);
     auto& input = *reinterpret_cast<FrameInput::Input*>(pInput);
-
     return Game::doGameThings(memory, input, platform);
 }
 

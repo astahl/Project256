@@ -72,7 +72,7 @@ class DrawBuffer {
         switch testPattern {
         case .SolidColor(let color):
             if let colorInt = color.toUInt32ARGB() {
-                self.data.assign(repeating: colorInt)
+                self.data.update(repeating: colorInt)
             }
         case .Checkerboard(let color1, let color2, let size):
             if let colorInt1 = color1.toUInt32ARGB(),

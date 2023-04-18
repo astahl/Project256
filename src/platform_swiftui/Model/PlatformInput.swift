@@ -85,7 +85,7 @@ extension GameInput {
             ptr in
             cString.withUnsafeBufferPointer {
                 cStrPtr in
-                ptr.assign(from: cStrPtr.baseAddress!, count: count)
+                ptr.update(from: cStrPtr.baseAddress!, count: count)
             }
         }
         self.textLength += UInt32(count)

@@ -150,6 +150,8 @@
 		68D205D52854EE2F00CB4213 /* Timings.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Timings.cpp; sourceTree = "<group>"; };
 		68D205D62854EE2F00CB4213 /* Timings.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Timings.h; sourceTree = "<group>"; };
 		68D205D9285516A900CB4213 /* RangesAtHome.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = RangesAtHome.hpp; sourceTree = "<group>"; };
+		68F5170729BFC239001C5A25 /* LinAlg.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LinAlg.hpp; sourceTree = "<group>"; };
+		68F5170829BFC559001C5A25 /* LinAlgTest.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LinAlgTest.hpp; sourceTree = "<group>"; };
 		68FC4A0D2861B6F4009FC29D /* CharacterRomPET8x8x256.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; name = CharacterRomPET8x8x256.bin; path = ../../assets/CharacterRomPET8x8x256.bin; sourceTree = "<group>"; };
 		68FC4A102863A6C9009FC29D /* test.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; name = test.bmp; path = ../../assets/test.bmp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -256,6 +258,7 @@
 				68D205D12854101100CB4213 /* Vec2Math.hpp */,
 				689A1ACA2875FF5B0057090F /* Trigonometry.hpp */,
 				68877CE7294F2BC500BBD34C /* FixedPoint.hpp */,
+				68F5170729BFC239001C5A25 /* LinAlg.hpp */,
 			);
 			path = Math;
 			sourceTree = "<group>";
@@ -332,6 +335,7 @@
 			children = (
 				687CC8472947BCCC00FAE240 /* TrigonometryTest.hpp */,
 				68877CE8294F2CC200BBD34C /* FixedPointTest.hpp */,
+				68F5170829BFC559001C5A25 /* LinAlgTest.hpp */,
 			);
 			path = Math;
 			sourceTree = "<group>";

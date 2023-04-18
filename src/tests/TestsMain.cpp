@@ -9,10 +9,12 @@
 
 #include "Math/TrigonometryTest.hpp"
 #include "Math/FixedPointTest.hpp"
+#include "Math/LinAlgTest.hpp"
 
 int main() {
     Test t{};
     t.add(test_myCos);
     FixedPointTest::addAll(t);
+    t.add(testMatrix);
     return t.run();
 }

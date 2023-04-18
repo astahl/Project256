@@ -22,8 +22,6 @@
 #include "Project256.h"
 #include <mutex>
 
-#include <iostream>
-
 
 
 using VRAM = Image<uint8_t, DrawBufferWidth, DrawBufferHeight, ImageOrigin::BottomLeft>;
@@ -237,7 +235,6 @@ struct TestBed {
             memory.voice.use(voice);
             memory.isInitialized = true;
         }
-
 
         constant auto black = static_cast<VRAM::PixelType>(findNearest(WebColorRGB::Black, memory.palette).index);
         constant auto white = static_cast<VRAM::PixelType>(findNearest(WebColorRGB::White, memory.palette).index);
