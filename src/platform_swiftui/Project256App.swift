@@ -67,67 +67,73 @@ struct Project256App: App {
     }
 
     var body: some Scene {
-        WindowGroup {
+
+#if os(macOS)
+        Window("Hello", id: "main") {
             ZStack {
                 GameView(state: gameState)
                     .onAppear {
                         startSubscriptions()
                     }
-                    .onDisappear {
-                        // just quit when window is closed
-                        exit(EXIT_SUCCESS)
-                    }
-                    //.background(.linearGradient(.init(colors: [Color.cyan, Color.purple]), startPoint: .topLeading, endPoint: .bottomTrailing))
-
+                //.background(.linearGradient(.init(colors: [Color.cyan, Color.purple]), startPoint: .topLeading, endPoint: .bottomTrailing))
+                
                 //.overlay(Ellipse().foregroundColor(.gray).opacity(0.3).blur(radius: 100))
-                    //.ignoresSafeArea()
-
+                //.ignoresSafeArea()
+                
                 if self.showProfilingView {
                     ProfilingView(profilingString: profilingString)
                 }
             }
+            .onChange(of: gameSettings.tickTargetHz, perform: resetTickSubscription(tickTargetHz:))
+            .onChange(of: self.showProfilingView, perform: resetProfilingSubscription(isProfiling:))
         }
-        .commands {
-            // remove new window command
-            CommandGroup(replacing: .newItem) {
+            Settings {
+                List {
+                    Slider(value: $gameSettings.tickScale, in: 0...5, step: 0.1) {
+                        Text("Tick Scale \(gameSettings.tickScale)")
+                    } minimumValueLabel: {
+                        Text("0")
+                    } maximumValueLabel: {
+                        Text("5")
+                    }
+                    Slider(value: $gameSettings.timeScale, in: 0...5, step: 0.1) {
+                        Text("Time Scale \(gameSettings.timeScale)")
+                    }  minimumValueLabel: {
+                        Text("0")
+                    } maximumValueLabel: {
+                        Text("5")
+                    }
+                    Slider(value: $gameSettings.tickTargetHz, in: 0...200, step: 5) {
+                        Text("Tick Hz \(gameSettings.tickTargetHz)")
+                    } minimumValueLabel: {
+                        Text("0")
+                    } maximumValueLabel: {
+                        Text("200")
+                    }
+                    Picker("FPS Target", selection: $gameSettings.frameTargetHz) {
+                        ForEach(FPSTargets.allCases) {
+                            fps in
+                            Text(fps.rawValue.formatted())
+                        }
+                    }
+                    Toggle("Profiling", isOn: $showProfilingView)
+                }.padding()
             }
-        }
-        .onChange(of: gameSettings.tickTargetHz, perform: resetTickSubscription(tickTargetHz:))
-        .onChange(of: self.showProfilingView, perform: resetProfilingSubscription(isProfiling:))
-
-        #if os(macOS)
-        Settings {
-            List {
-                Slider(value: $gameSettings.tickScale, in: 0...5, step: 0.1) {
-                    Text("Tick Scale \(gameSettings.tickScale)")
-                } minimumValueLabel: {
-                    Text("0")
-                } maximumValueLabel: {
-                    Text("5")
-                }
-                Slider(value: $gameSettings.timeScale, in: 0...5, step: 0.1) {
-                    Text("Time Scale \(gameSettings.timeScale)")
-                }  minimumValueLabel: {
-                    Text("0")
-                } maximumValueLabel: {
-                    Text("5")
-                }
-                Slider(value: $gameSettings.tickTargetHz, in: 0...200, step: 5) {
-                    Text("Tick Hz \(gameSettings.tickTargetHz)")
-                } minimumValueLabel: {
-                    Text("0")
-                } maximumValueLabel: {
-                    Text("200")
-                }
-                Picker("FPS Target", selection: $gameSettings.frameTargetHz) {
-                    ForEach(FPSTargets.allCases) {
-                        fps in
-                        Text(fps.rawValue.formatted())
+        #else
+            WindowGroup {
+                ZStack {
+                    GameView(state: gameState)
+                        .onAppear {
+                            startSubscriptions()
+                        }
+                    if self.showProfilingView {
+                        ProfilingView(profilingString: profilingString)
                     }
                 }
-                Toggle("Profiling", isOn: $showProfilingView)
-            }.padding()
-        }
-        #endif
+            }
+            .onChange(of: gameSettings.tickTargetHz, perform: resetTickSubscription(tickTargetHz:))
+            .onChange(of: self.showProfilingView, perform: resetProfilingSubscription(isProfiling:))
+
+            #endif
     }
 }
